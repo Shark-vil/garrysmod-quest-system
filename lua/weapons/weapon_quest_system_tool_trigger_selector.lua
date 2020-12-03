@@ -84,9 +84,7 @@ function SWEP:Initialize()
 					Color(135, 135, 135, 100)
 				)
 			end
-		end
-
-		if current_trigger.type == 'sphere' then
+		elseif current_trigger.type == 'sphere' then
 			local center = current_trigger.center
 			local radius = current_trigger.radius
 
@@ -114,9 +112,7 @@ function SWEP:SetTriggerPosition(value)
 		else
 			current_trigger.vec2 = value
 		end
-	end
-
-	if current_trigger.type == 'sphere' then
+	elseif current_trigger.type == 'sphere' then
 		if current_trigger.center == nil then
 			current_trigger.center = value
 		else
@@ -134,9 +130,7 @@ function SWEP:ClearTriggerPosition()
 	if current_trigger.type == 'box' then
 		current_trigger.vec1 = nil
 		current_trigger.vec2 = nil
-	end
-
-	if current_trigger.type == 'sphere' then
+	elseif current_trigger.type == 'sphere' then
 		current_trigger.center = nil
 		current_trigger.radius = nil
 	end
@@ -152,12 +146,27 @@ function SWEP:GetPlayerOwner()
 	return owner
 end
 
-function SWEP:PrimaryAttack()
-	if SERVER then return end
+function SWEP:IsDelayTriggerClick()
 	if self.DelayTriggerClick > CurTime() then 
 		self.DelayTriggerClick = CurTime() + 0.3
-		return 
+		return true
 	end
+	self.DelayTriggerClick = CurTime() + 0.5
+	return false
+end
+
+function SWEP:IsDelayTriggerSwitch()
+	if self.DelayTriggerSwitch > CurTime() then 
+		self.DelayTriggerSwitch = CurTime() + 0.3
+		return true
+	end
+	self.DelayTriggerSwitch = CurTime() + 0.5
+	return false
+end
+
+function SWEP:PrimaryAttack()
+	if SERVER then return end
+	if self:IsDelayTriggerClick() then return end
 
 	local owner = self:GetPlayerOwner()
 	if owner ~= nil then
@@ -179,16 +188,11 @@ function SWEP:PrimaryAttack()
 			surface.PlaySound('common/wpn_select.wav')
 		end
 	end
-
-	self.DelayTriggerClick = CurTime() + 0.5
 end
 
 function SWEP:Reload()
 	if SERVER then return end
-	if self.DelayTriggerSwitch > CurTime() then 
-		self.DelayTriggerSwitch = CurTime() + 0.3
-		return 
-	end
+	if self:IsDelayTriggerSwitch() then return end
 
 	self:ClearTriggerPosition()
 
@@ -203,19 +207,13 @@ function SWEP:Reload()
 	
 	self.CurrentTriggerIndex = index
 	self.CurrentTrigger = triggers[self.CurrentTriggerIndex]
-	self.DelayTriggerSwitch = CurTime() + 0.5
 end
 
 function SWEP:SecondaryAttack()
 	if SERVER then return end
-	if self.DelayTriggerClick > CurTime() then 
-		self.DelayTriggerClick = CurTime() + 0.3
-		return 
-	end
-	
-	self:ClearTriggerPosition()
+	if self:IsDelayTriggerClick() then return end
 
-	self.DelayTriggerClick = CurTime() + 0.5
+	self:ClearTriggerPosition()
 end
 
 function SWEP:OnDrop()
