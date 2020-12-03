@@ -35,5 +35,3 @@ local function auto_using(local_directory_path, not_root_directory)
 end
 
 auto_using(root_directory)
-
-getFullPathToFile, using, auto_using, root_directory = nil
