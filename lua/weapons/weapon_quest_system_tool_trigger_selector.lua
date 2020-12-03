@@ -50,7 +50,7 @@ SWEP.DelayTriggerClick = 0
 function SWEP:Initialize()
 	if SERVER then return end
 
-	hook.Add('PreDrawEffects', self, function()
+	hook.Add('PostDrawOpaqueRenderables', self, function()
 		local current_trigger = self.CurrentTrigger
 
 		if current_trigger.type == 'box' then
@@ -98,7 +98,7 @@ function SWEP:Initialize()
 
 			if center ~= nil and radius ~= nil then
 				render.SetMaterial(Material("color"))
-				render.DrawWireframeSphere(center, radius, 30, 30, Color(135, 135, 135, 100))
+				render.DrawWireframeSphere(center, radius, 30, 30, Color(255, 255, 255, 100))
 				render.DrawSphere(center, radius, 30, 30, Color(135, 135, 135, 100))
 			end
 		end
