@@ -8,6 +8,11 @@ local function getFullPathToFile(local_file_path, not_root_directory)
     end
 end
 
+local function p_include(file_path)
+    include(file_path)
+    MsgN('QSystem file load - ' .. file_path)
+end
+
 local function using(local_file_path, network_type, not_root_directory)
     local file_path = getFullPathToFile(local_file_path, not_root_directory)    
     network_type = network_type or 'sh'
@@ -15,9 +20,13 @@ local function using(local_file_path, network_type, not_root_directory)
 
     if network_type == 'cl' or network_type == 'sh' then
         if SERVER then AddCSLuaFile(file_path) end
-        include(file_path)
+        if CLIENT and network_type == 'cl' then
+            p_include(file_path)
+        elseif network_type == 'sh' then
+            p_include(file_path)
+        end
     elseif network_type == 'sv' and SERVER then
-        include(file_path)
+        p_include(file_path)
     end
 end
 
