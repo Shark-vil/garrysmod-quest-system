@@ -13,3 +13,4 @@ local function using(local_file_path, network_type)
 end
 
 using('main')
+using('tools/trigger_tool')
