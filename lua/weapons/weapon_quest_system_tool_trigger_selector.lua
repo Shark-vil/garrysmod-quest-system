@@ -208,7 +208,14 @@ end
 
 function SWEP:SecondaryAttack()
 	if SERVER then return end
+	if self.DelayTriggerClick > CurTime() then 
+		self.DelayTriggerClick = CurTime() + 0.3
+		return 
+	end
+	
 	self:ClearTriggerPosition()
+
+	self.DelayTriggerClick = CurTime() + 0.5
 end
 
 function SWEP:OnDrop()
