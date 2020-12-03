@@ -128,6 +128,9 @@ else
                     trigger = trigger
                 }
                 PrintTable(trigger_save)
+                surface.PlaySound('buttons/blip1.wav')
+            else
+                surface.PlaySound('Resource/warning.wav')
             end
         end
         PanelManager:AddPanel( InfoButtonYes )
