@@ -14,8 +14,8 @@ local function p_include(file_path)
 end
 
 local function using(local_file_path, network_type, not_root_directory)
-    local file_path = getFullPathToFile(local_file_path, not_root_directory)    
-    network_type = network_type or 'sh'
+    local file_path = getFullPathToFile(local_file_path, not_root_directory)
+    network_type = network_type or string.sub(string.GetPathFromFilename(local_file_path), 1, 2)
     network_type = string.lower(network_type)
 
     if network_type == 'cl' or network_type == 'sh' then
@@ -30,17 +30,24 @@ local function using(local_file_path, network_type, not_root_directory)
     end
 end
 
-local function auto_using(local_directory_path, not_root_directory)
-    local files, directories = file.Find(local_directory_path .. "/*", "LUA")
-    
-    for _, file_path in pairs(files) do
-        local type = string.sub(file_path, 1, 2)
-        using(local_directory_path .. '/' .. file_path, type, true)
-    end
+-- Classes
+using('classes/sh_c_quest.lua')
+-- Main
+using('sh_main.lua')
+-- Stor
+using('storage/sv_quest_progress.lua')
+-- EX
+using('extension/sh_player_quest.lua')
+-- Tools
+using('tools/trigger_editor/cl_trigger_editor.lua')
+using('tools/trigger_editor/sv_trigger_editor.lua')
+-- Events
+using('events/sv_trigger_event.lua')
+-- Quests
+using('quests/q_kill_zombie.lua', 'sh')
 
-    for _, directory_path in pairs(directories) do
-        auto_using(local_directory_path .. '/' .. directory_path, true)
-    end
+if SERVER then
+    concommand.Add('set_quest', function(ply)
+        ply:SetQuest('q_kill_zombie')
+    end)
 end
-
-auto_using(root_directory)
