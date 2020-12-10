@@ -11,6 +11,12 @@ net.Receive('sv_network_qsystem_trigger_save', function(len, ply)
         file.CreateDir(file_path)
     end
 
-    file_path = 'quest_system/triggers/' .. tdata.id .. '/' .. tdata.name .. '.json'
+    file_path = file_path .. '/' .. game.GetMap()
+
+    if not file.Exists(file_path, 'DATA') then
+        file.CreateDir(file_path)
+    end
+
+    file_path = file_path .. '/' .. tdata.name .. '.json'
     file.Write(file_path, util.TableToJSON(tdata.trigger))
 end)

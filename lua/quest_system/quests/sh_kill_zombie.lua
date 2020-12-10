@@ -50,7 +50,7 @@ local quest = {
             construct = function(eQuest)
                 if CLIENT then
                     local quest = eQuest:GetQuest()
-                    eQuest:Notify('Успех!', 'Квест успешно выполнен')
+                    eQuest:Notify('Завершено', 'Вы успешно выполнили квест.')
                 else
                     eQuest:Complete()
                 end

@@ -34,7 +34,7 @@ function ENT:SetStep(step, delay)
 		self.triggers = {}
 		if quest.steps[step].triggers ~= nil then
 			for trigger_name, _ in pairs(quest.steps[step].triggers) do
-				local file_path = 'quest_system/triggers/' .. quest.id .. '/' .. trigger_name .. '.json'
+				local file_path = 'quest_system/triggers/' .. quest.id .. '/' .. game.GetMap() .. '/' .. trigger_name .. '.json'
 				if file.Exists(file_path, 'DATA') then
 					local trigger = util.JSONToTable(file.Read(file_path, "DATA"))
 					table.insert(self.triggers, {
