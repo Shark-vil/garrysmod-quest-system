@@ -5,9 +5,83 @@ concommand.Add("qsystem_open_trigger_editor", function(ply)
     net.SendToServer()
 end)
 
+local OpenTriggerPanelEditor, OpenQuestSelectPanel, OpenTriggerSelectPanel
+
 net.Receive('cl_network_qsystem_open_trigger_editor', function(len, ply)
+    OpenQuestSelectPanel()
+end)
+
+local allQuests
+OpenQuestSelectPanel = function()
+    local notsend = false
+    local frame = vgui.Create("DFrame")
+    frame:SetPos(20, 20)
+    frame:SetSize(550, 350)
+    frame:SetTitle("Select quest")
+    frame:MakePopup()
+    frame:Center()
+    frame.OnClose = function()
+        if notsend then return end
+        net.Start('sv_network_qsystem_close_trigger_editor')
+        net.SendToServer()
+    end
+
+    allQuests = QuestSystem:GetAllQuest()
+
+    local QuestList = vgui.Create("DListView", frame)
+    QuestList:Dock(FILL)
+    QuestList:SetMultiSelect(false)
+    QuestList:AddColumn("Id")
+    QuestList:AddColumn("Title")
+
+    for _, quest in pairs(allQuests) do
+        QuestList:AddLine(quest.id, quest.title)
+    end
+
+    QuestList.OnRowSelected = function(lst, index, pnl)
+        OpenTriggerSelectPanel(allQuests[pnl:GetColumnText(1)])
+        notsend = true
+        frame:Close()
+    end
+end
+
+OpenTriggerSelectPanel = function(quest)
+    local notsend = false
+    local frame = vgui.Create("DFrame")
+    frame:SetPos(20, 20)
+    frame:SetSize(550, 350)
+    frame:SetTitle("Select trigger")
+    frame:MakePopup()
+    frame:Center()
+    frame.OnClose = function(self)
+        if notsend then return end
+        OpenQuestSelectPanel()
+    end
+
+    local QuestList = vgui.Create("DListView", frame)
+    QuestList:Dock(FILL)
+    QuestList:SetMultiSelect(false)
+    QuestList:AddColumn("Id")
+    QuestList:AddColumn("Type")
+    QuestList:AddColumn("Data")
+
+    for _, step in pairs(quest.steps) do
+        if step.triggers ~= nil then
+            for name, _ in pairs(step.triggers) do
+                QuestList:AddLine(name, 'type', 'data')
+            end
+        end
+    end
+
+    QuestList.OnRowSelected = function(lst, index, pnl)
+        OpenTriggerPanelEditor(quest, pnl:GetColumnText(1))
+        notsend = true
+        frame:Close()
+    end
+end
+
+OpenTriggerPanelEditor = function(quest, trigger_name)
     local trigger = nil
-    local trigger_name = nil
     local delay = 0
 
     local PanelManager = DFCL:New( "qsystem_trigger_editor" )
@@ -17,7 +91,7 @@ net.Receive('cl_network_qsystem_open_trigger_editor', function(len, ply)
 
     local InfoPanel = vgui.Create( "DFrame" )
     InfoPanel:MakePopup()
-    InfoPanel:SetSize( 230, 270 )
+    InfoPanel:SetSize( 230, 180 )
     InfoPanel:SetPos( 100, ScrH()/2 - 10 )
     InfoPanel:SetTitle( "Trigger editor" )
     InfoPanel:SetSizable( false )
@@ -72,43 +146,30 @@ net.Receive('cl_network_qsystem_open_trigger_editor', function(len, ply)
         end
     end
     InfoPanel.OnClose = function()
+        local weapon = LocalPlayer():GetWeapon(weapon_class)
+        weapon:ClearTriggerPosition()
+        OpenTriggerSelectPanel(quest)
         PanelManager:Destruct()
     end
     PanelManager:AddPanel( InfoPanel, true )
 
-    local InfoTextPrintLabel = vgui.Create( "DLabel" )
-    InfoTextPrintLabel:SetParent( InfoPanel )
-    InfoTextPrintLabel:SetFont( "Default" )
-    InfoTextPrintLabel:SetText( "Trigger name:" )
-    InfoTextPrintLabel:SetPos( 15, 90 )
-    InfoTextPrintLabel:SizeToContents()
-    PanelManager:AddPanel( InfoTextPrintLabel )
-
-    local InfoTextPrint = vgui.Create( "DTextEntry" )
-    InfoTextPrint:SetParent( InfoPanel )
-    InfoTextPrint:SetPos( 15, 110 )
-    InfoTextPrint:SetSize( 200, 25 )
-    InfoTextPrint.OnEnter = function( self )
-        trigger_name = self:GetValue()
-        PanelManager:PanelStateReset()
-    end
-    InfoTextPrint.OnMousePressed = function( self, keyCode )
-        PanelManager:SetFocusPanel( self )
-    end
-    PanelManager:AddPanel( InfoTextPrint )
-
     local InfoButtonYes = vgui.Create( "DButton" )
     InfoButtonYes:SetParent( InfoPanel )
     InfoButtonYes:SetText( "Save" )
-    InfoButtonYes:SetPos( 15, 170 )
+    InfoButtonYes:SetPos( 15, 100 )
     InfoButtonYes:SetSize( 200, 30 )
     InfoButtonYes.DoClick = function ()
         if trigger_name ~= nil and trigger ~= nil then
             local trigger_save = {
+                id = quest.id,
                 name = trigger_name,
                 trigger = trigger
             }
-            PrintTable(trigger_save)
+            
+            net.Start('sv_network_qsystem_trigger_save')
+            net.WriteTable(trigger_save)
+            net.SendToServer()
+
             surface.PlaySound('buttons/blip1.wav')
         else
             surface.PlaySound('Resource/warning.wav')
@@ -119,12 +180,10 @@ net.Receive('cl_network_qsystem_open_trigger_editor', function(len, ply)
     local InfoButtonNo = vgui.Create( "DButton" )
     InfoButtonNo:SetParent( InfoPanel )
     InfoButtonNo:SetText( "Exit" )
-    InfoButtonNo:SetPos( 15, 210 )
+    InfoButtonNo:SetPos( 15, 140 )
     InfoButtonNo:SetSize( 200, 30 )
     InfoButtonNo.DoClick = function()
-        net.Start('sv_network_qsystem_close_trigger_editor')
-        net.SendToServer()
         InfoPanel:Close()
     end
     PanelManager:AddPanel( InfoButtonNo )
-end)
+end

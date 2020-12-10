@@ -15,7 +15,7 @@ end
 
 local function using(local_file_path, network_type, not_root_directory)
     local file_path = getFullPathToFile(local_file_path, not_root_directory)
-    network_type = network_type or string.sub(string.GetPathFromFilename(local_file_path), 1, 2)
+    network_type = network_type or string.sub(string.GetFileFromFilename(local_file_path), 1, 2)
     network_type = string.lower(network_type)
 
     if network_type == 'cl' or network_type == 'sh' then
@@ -30,24 +30,28 @@ local function using(local_file_path, network_type, not_root_directory)
     end
 end
 
--- Classes
-using('classes/sh_c_quest.lua')
--- Main
 using('sh_main.lua')
--- Stor
-using('storage/sv_quest_progress.lua')
--- EX
 using('extension/sh_player_quest.lua')
--- Tools
 using('tools/trigger_editor/cl_trigger_editor.lua')
 using('tools/trigger_editor/sv_trigger_editor.lua')
--- Events
-using('events/sv_trigger_event.lua')
--- Quests
-using('quests/q_kill_zombie.lua', 'sh')
+using('events/sh_quest_step_init.lua')
+using('events/sv_quest_autoloader.lua')
+using('events/sv_player_disconnected.lua')
+using('storage/sv_trigger_storage.lua')
+using('quests/sh_kill_zombie.lua')
 
 if SERVER then
-    concommand.Add('set_quest', function(ply)
-        ply:SetQuest('q_kill_zombie')
+    file.CreateDir('quest_system')
+    file.CreateDir('quest_system/players')
+    file.CreateDir('quest_system/triggers')
+
+    concommand.Add('start_quest', function(ply)
+        ply:SaveQuest('kill_zombie')
+        ply:EnableQuest('kill_zombie')
+    end)
+
+    concommand.Add('stop_quest', function(ply)
+        ply:DisableQuest('kill_zombie')
+        ply:RemoveQuest('kill_zombie')
     end)
 end
