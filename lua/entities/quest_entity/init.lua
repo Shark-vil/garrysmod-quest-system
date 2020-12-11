@@ -15,6 +15,8 @@ function ENT:SetStep(step, delay)
 	local ply = self:GetPlayer()
 
 	if quest ~= nil and quest.steps[step] ~= nil then
+		self:SetNWString('step', step)
+
 		timer.Simple(delay, function()
 			if IsValid(self) then
 				net.Start('cl_network_qsystem_entity_step_construct')
@@ -24,12 +26,6 @@ function ENT:SetStep(step, delay)
 				net.Send(ply)
 			end
 		end)
-
-		self:SetNWString('step', step)
-
-		if quest.steps[step].construct ~= nil then
-			quest.steps[step].construct(self)
-		end
 
 		self.triggers = {}
 		if quest.steps[step].triggers ~= nil then
@@ -56,8 +52,6 @@ function ENT:SetStep(step, delay)
 		end)
 	end
 
-	self:OnNextStep()
-
 	timer.Simple(delay, function()
 		if IsValid(self) then
 			net.Start('cl_network_qsystem_entity_step_done')
@@ -65,6 +59,14 @@ function ENT:SetStep(step, delay)
 			net.WriteString(step)
 			net.Send(ply)
 		end
+	end)
+
+	timer.Simple(delay + 0.5, function()
+		if quest.steps[step].construct ~= nil then
+			quest.steps[step].construct(self)
+		end
+
+		self:OnNextStep()
 	end)
 end
 

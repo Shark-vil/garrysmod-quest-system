@@ -1,9 +1,13 @@
 local meta = FindMetaTable('Player')
 
+function meta:PlayerId()
+    return self:SteamID64() or 'localhost'
+end
+
 function meta:SaveQuest(quest_id, step)
     if CLIENT then return end
 
-    local file_path = 'quest_system/players/' .. self:SteamID64()
+    local file_path = 'quest_system/players/' .. self:PlayerId()
     if not file.Exists(file_path, 'DATA') then
         file.CreateDir(file_path)
     end
@@ -26,7 +30,7 @@ end
 function meta:ReadQuest(quest_id)
     if CLIENT then return end
 
-    local file_path = 'quest_system/players/' .. self:SteamID64() .. '/' .. quest_id .. '.json'
+    local file_path = 'quest_system/players/' .. self:PlayerId() .. '/' .. quest_id .. '.json'
     if file.Exists(file_path, 'DATA') then
         return util.JSONToTable(file.Read(file_path, "DATA"))
     end
@@ -36,7 +40,7 @@ end
 function meta:ReadAllQuest()
     if CLIENT then return end
 
-    local file_path = 'quest_system/players/' .. self:SteamID64() .. '/*'
+    local file_path = 'quest_system/players/' .. self:PlayerId() .. '/*'
     local quest_files = file.Find(file_path, 'DATA')
     if #quest_files ~= 0 then
         local quests = {}
@@ -55,7 +59,7 @@ end
 function meta:RemoveQuest(quest_id)
     if CLIENT then return end
 
-    local file_path = 'quest_system/players/' .. self:SteamID64() .. '/' .. quest_id .. '.json'
+    local file_path = 'quest_system/players/' .. self:PlayerId() .. '/' .. quest_id .. '.json'
     if file.Exists(file_path, 'DATA') then
         file.Delete(file_path)
         return true

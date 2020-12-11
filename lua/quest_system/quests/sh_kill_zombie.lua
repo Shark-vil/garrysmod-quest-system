@@ -59,4 +59,4 @@ local quest = {
     }
 }
 
-QuestSystem:SetQuest(quest)
+list.Set('QuestSystem', quest.id, quest)

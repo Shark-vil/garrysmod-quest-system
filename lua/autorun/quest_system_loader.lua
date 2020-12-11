@@ -40,6 +40,14 @@ using('events/sv_player_disconnected.lua')
 using('storage/sv_trigger_storage.lua')
 using('quests/sh_kill_zombie.lua')
 
+local Category = "Quest"
+local NPC = { 	
+	Name = "Quest NPC", 
+	Class = "npc_quest",
+	Category = Category,
+}
+list.Set( "NPC", NPC.Class, NPC )
+
 if SERVER then
     file.CreateDir('quest_system')
     file.CreateDir('quest_system/players')

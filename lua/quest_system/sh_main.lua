@@ -22,16 +22,11 @@ if CLIENT then
 end
 
 QuestSystem = QuestSystem or {}
-QuestSystem.storage = {}
-
-function QuestSystem:SetQuest(quest)
-    QuestSystem.storage[quest.id] = quest
-end
 
 function QuestSystem:GetQuest(quest_id)
-    return QuestSystem.storage[quest_id]
+    return list.Get('QuestSystem')[quest_id]
 end
 
 function QuestSystem:GetAllQuest()
-    return QuestSystem.storage
+    return list.Get('QuestSystem')
 end
