@@ -1,9 +1,9 @@
 if SERVER then
-    util.AddNetworkString('cl_network_qsystem_entity_step_construct')
-    util.AddNetworkString('cl_network_qsystem_entity_step_triggers')
-    util.AddNetworkString('cl_network_qsystem_entity_step_done')
+    util.AddNetworkString('cl_qsystem_entity_step_construct')
+    util.AddNetworkString('cl_qsystem_entity_step_triggers')
+    util.AddNetworkString('cl_qsystem_entity_step_done')
 else
-    net.Receive('cl_network_qsystem_entity_step_construct', function()
+    net.Receive('cl_qsystem_entity_step_construct', function()
         local ent = net.ReadEntity()
         local quest_id = net.ReadString()
         local step = net.ReadString()
@@ -14,7 +14,7 @@ else
         end
     end)
 
-    net.Receive('cl_network_qsystem_entity_step_triggers', function()
+    net.Receive('cl_qsystem_entity_step_triggers', function()
         local ent = net.ReadEntity()
         local triggers = net.ReadTable()
         local quest = QuestSystem:GetQuest(quest_id)
@@ -24,7 +24,7 @@ else
         end
     end)
 
-    net.Receive('cl_network_qsystem_entity_step_done', function()
+    net.Receive('cl_qsystem_entity_step_done', function()
         local ent = net.ReadEntity()
         local step = net.ReadString()
         ent:OnNextStep(step)

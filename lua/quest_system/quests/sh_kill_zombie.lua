@@ -2,13 +2,14 @@ local quest = {
     id = 'kill_zombie',
     title = 'Убить зомби',
     description = 'Найдите и убейте зомби который докучает местным жителям. Можно использовать любое оружие.',
+    payment = 500,
     steps = {
         start = {
             construct = function(eQuest)
-                if CLIENT then
-                    local quest = eQuest:GetQuest()
-                    eQuest:Notify(quest.title, quest.description)
-                end
+                if SERVER then return end
+                
+                local quest = eQuest:GetQuest()
+                eQuest:Notify(quest.title, quest.description)
             end,
             triggers = {
                 spawn_zombie_trigger_1 = function(eQuest, entities)
@@ -28,7 +29,7 @@ local quest = {
         spawn = {
             construct = function(eQuest)
                 if CLIENT then return end
-                
+
                 local npc = ents.Create('npc_zombie')
                 npc:SetPos(Vector(1100, -2026, -79))
                 npc:Spawn()
@@ -49,9 +50,9 @@ local quest = {
         complete = {
             construct = function(eQuest)
                 if CLIENT then
-                    local quest = eQuest:GetQuest()
-                    eQuest:Notify('Завершено', 'Вы успешно выполнили квест.')
+                    eQuest:Notify('Завершено', 'Спасибо за вашу помощь! Больше это отродье не будет никому мешать.')
                 else
+                    eQuest:Reward()
                     eQuest:Complete()
                 end
             end,

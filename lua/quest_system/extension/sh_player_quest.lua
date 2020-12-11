@@ -4,6 +4,20 @@ function meta:PlayerId()
     return self:SteamID64() or 'localhost'
 end
 
+function meta:QuestIsActive(quest_id)
+    local eQuests = ents.FindByClass('quest_entity')
+    if #eQuests ~= 0 then
+        for _, eQuest in pairs(eQuests) do
+            local ply = eQuest:GetPlayer()
+            
+            if ply == self and eQuest:GetQuestId() == quest_id then
+                return true
+            end
+        end
+    end
+    return false
+end
+
 function meta:SaveQuest(quest_id, step)
     if CLIENT then return end
 
@@ -72,6 +86,8 @@ function meta:EnableQuest(quest_id)
 
     local quest_data = self:ReadQuest(quest_id)
     if quest_data ~= nil then
+        if self:QuestIsActive(quest_id) then return end
+        
         local ent = ents.Create('quest_entity')
         ent:SetQuest(quest_id, self)
         ent:Spawn()
@@ -161,4 +177,24 @@ function meta:SetQuestStep(quest_id, step)
     end
 
     return false
+end
+
+function meta:IsQuestEditAccess(isAlive)
+    if isAlive and not self:Alive() then return false end
+
+    if self:IsAdmin() or self:IsSuperAdmin() then
+        return true
+    else
+        return false
+    end
+end
+
+function meta:QSystemIsSpam()
+    if self:IsQuestEditAccess() then return false end
+    local lastRequest = self.qSystemLastRequest or 0
+    if lastRequest < SysTime() then
+        self.qSystemLastRequest = SysTime() + 0.1
+        return false
+    end
+    return true
 end

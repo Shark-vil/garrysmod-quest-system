@@ -164,8 +164,12 @@ function SWEP:IsDelayTriggerSwitch()
 	return false
 end
 
+function SWEP:CallOnClient(hookType)
+	if game.SinglePlayer() then self:CallOnClient(hookType) end
+end
+
 function SWEP:PrimaryAttack()
-	if SERVER then return end
+	if SERVER then self:CallOnClient('PrimaryAttack') return end
 	if self:IsDelayTriggerClick() then return end
 
 	local owner = self:GetPlayerOwner()
@@ -191,7 +195,7 @@ function SWEP:PrimaryAttack()
 end
 
 function SWEP:Reload()
-	if SERVER then return end
+	if SERVER then self:CallOnClient('Reload') return end
 	if self:IsDelayTriggerSwitch() then return end
 
 	self:ClearTriggerPosition()
@@ -210,7 +214,7 @@ function SWEP:Reload()
 end
 
 function SWEP:SecondaryAttack()
-	if SERVER then return end
+	if SERVER then self:CallOnClient('SecondaryAttack') return end
 	if self:IsDelayTriggerClick() then return end
 
 	self:ClearTriggerPosition()

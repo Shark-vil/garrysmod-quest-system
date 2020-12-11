@@ -1,8 +1,7 @@
-util.AddNetworkString('sv_network_qsystem_trigger_save')
+util.AddNetworkString('sv_qsystem_trigger_save')
 
-net.Receive('sv_network_qsystem_trigger_save', function(len, ply)
-    if not IsValid(ply) then return end
-    if not ply:IsAdmin() and not ply:IsSuperAdmin() then return end
+net.Receive('sv_qsystem_trigger_save', function(len, ply)
+    if not ply:IsQuestEditAccess() then return end
 
     local tdata = net.ReadTable()
     local file_path = 'quest_system/triggers/' .. tdata.id

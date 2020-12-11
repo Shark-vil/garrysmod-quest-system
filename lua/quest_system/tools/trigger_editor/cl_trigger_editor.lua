@@ -1,13 +1,13 @@
 local weapon_class = 'weapon_quest_system_tool_trigger_selector'
 
 concommand.Add("qsystem_open_trigger_editor", function(ply)
-    net.Start('sv_network_qsystem_open_trigger_editor')
+    net.Start('sv_qsystem_open_trigger_editor')
     net.SendToServer()
 end)
 
 local OpenTriggerPanelEditor, OpenQuestSelectPanel, OpenTriggerSelectPanel
 
-net.Receive('cl_network_qsystem_open_trigger_editor', function(len, ply)
+net.Receive('cl_qsystem_open_trigger_editor', function(len, ply)
     OpenQuestSelectPanel()
 end)
 
@@ -22,7 +22,7 @@ OpenQuestSelectPanel = function()
     frame:Center()
     frame.OnClose = function()
         if notsend then return end
-        net.Start('sv_network_qsystem_close_trigger_editor')
+        net.Start('sv_qsystem_close_trigger_editor')
         net.SendToServer()
     end
 
@@ -74,11 +74,23 @@ OpenTriggerSelectPanel = function(quest)
     end
 
     QuestList.OnRowSelected = function(lst, index, pnl)
-        OpenTriggerPanelEditor(quest, pnl:GetColumnText(1))
-        notsend = true
-        frame:Close()
+        timer.Simple(0.1, function()
+            OpenTriggerPanelEditor(quest, pnl:GetColumnText(1)) 
+            notsend = true
+            frame:Close()
+        end)
     end
 end
+
+net.Receive('cl_qsystem_get_trigger_info', function()
+    local data = net.ReadTable()
+    if data ~= nil and table.Count(data) ~= 0 then
+        local weapon = LocalPlayer():GetWeapon(weapon_class)
+        if IsValid(weapon) then
+            weapon.CurrentTrigger = data
+        end
+    end
+end)
 
 OpenTriggerPanelEditor = function(quest, trigger_name)
     local trigger = nil
@@ -166,7 +178,7 @@ OpenTriggerPanelEditor = function(quest, trigger_name)
                 trigger = trigger
             }
             
-            net.Start('sv_network_qsystem_trigger_save')
+            net.Start('sv_qsystem_trigger_save')
             net.WriteTable(trigger_save)
             net.SendToServer()
 
@@ -186,4 +198,9 @@ OpenTriggerPanelEditor = function(quest, trigger_name)
         InfoPanel:Close()
     end
     PanelManager:AddPanel( InfoButtonNo )
+
+    net.Start('sv_qsystem_get_trigger_info')
+    net.WriteString(quest.id)
+    net.WriteString(trigger_name)
+    net.SendToServer()
 end

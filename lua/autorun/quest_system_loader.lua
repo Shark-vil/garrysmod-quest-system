@@ -1,5 +1,17 @@
 local root_directory = 'quest_system'
 
+file.CreateDir('quest_system')
+file.CreateDir('quest_system/players')
+file.CreateDir('quest_system/triggers')
+
+local Category = "Quest"
+local NPC = { 	
+	Name = "Quest NPC", 
+	Class = "npc_quest",
+	Category = Category,
+}
+list.Set( "NPC", NPC.Class, NPC )
+
 local function getFullPathToFile(local_file_path, not_root_directory)
     if not not_root_directory then
         return root_directory .. '/' .. local_file_path
@@ -39,27 +51,4 @@ using('events/sv_quest_autoloader.lua')
 using('events/sv_player_disconnected.lua')
 using('storage/sv_trigger_storage.lua')
 using('quests/sh_kill_zombie.lua')
-
-local Category = "Quest"
-local NPC = { 	
-	Name = "Quest NPC", 
-	Class = "npc_quest",
-	Category = Category,
-}
-list.Set( "NPC", NPC.Class, NPC )
-
-if SERVER then
-    file.CreateDir('quest_system')
-    file.CreateDir('quest_system/players')
-    file.CreateDir('quest_system/triggers')
-
-    concommand.Add('start_quest', function(ply)
-        ply:SaveQuest('kill_zombie')
-        ply:EnableQuest('kill_zombie')
-    end)
-
-    concommand.Add('stop_quest', function(ply)
-        ply:DisableQuest('kill_zombie')
-        ply:RemoveQuest('kill_zombie')
-    end)
-end
+using('gui/sh_simple_quest_menu.lua')

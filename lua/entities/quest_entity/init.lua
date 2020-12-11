@@ -19,7 +19,7 @@ function ENT:SetStep(step, delay)
 
 		timer.Simple(delay, function()
 			if IsValid(self) then
-				net.Start('cl_network_qsystem_entity_step_construct')
+				net.Start('cl_qsystem_entity_step_construct')
 				net.WriteEntity(self)
 				net.WriteString(self:GetQuestId())
 				net.WriteString(step)
@@ -44,7 +44,7 @@ function ENT:SetStep(step, delay)
 		local triggers = self.triggers
 		timer.Simple(delay, function()
 			if IsValid(self) then
-				net.Start('cl_network_qsystem_entity_step_triggers')
+				net.Start('cl_qsystem_entity_step_triggers')
 				net.WriteEntity(self)
 				net.WriteTable(triggers)
 				net.Send(ply)
@@ -54,7 +54,7 @@ function ENT:SetStep(step, delay)
 
 	timer.Simple(delay, function()
 		if IsValid(self) then
-			net.Start('cl_network_qsystem_entity_step_done')
+			net.Start('cl_qsystem_entity_step_done')
 			net.WriteEntity(self)
 			net.WriteString(step)
 			net.Send(ply)
@@ -74,6 +74,22 @@ function ENT:NextStep(step)
 	local ply = self:GetPlayer()
 	if IsValid(ply) then
 		ply:SetQuestStep(self:GetQuestId(), step)
+	end
+end
+
+--[[
+	DarkRp Only
+]]
+function ENT:Reward()
+	if engine.ActiveGamemode() ~= 'darkrp' then return end
+
+	local ply = self:GetPlayer()
+	if ply.addMoney ~= nil then
+		local payment = self:GetQuest().payment
+		if payment ~= nil then
+			ply:addMoney(payment)
+			DarkRP.notify(ply, 4, 4, 'Ваша награда за выполнение квеста - ' .. DarkRP.formatMoney(payment))
+		end
 	end
 end
 
