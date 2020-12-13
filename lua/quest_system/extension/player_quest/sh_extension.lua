@@ -70,10 +70,31 @@ function meta:QSystemIsSpam()
     return true
 end
 
+local notifyHistory = {}
+hook.Add('Think', 'QuestNotifyAnimationPosition', function()
+    for i = #notifyHistory, 1, -1 do
+        local data = notifyHistory[i]
+        if data == nil or data.deltime < RealTime() then
+            table.remove(notifyHistory, i)
+        end
+    end
+
+    if #notifyHistory ~= 0 then        
+        local new_y = 15        
+        for i = 1, #notifyHistory do
+            local data = notifyHistory[i]
+            if data ~= nil then
+                data.panel:SetPos(15, new_y)
+                new_y = new_y + 160
+            end
+        end
+    end
+end)
 function meta:QuestNotify(title, desc, lifetime, image, bgcolor)
     bgcolor = bgcolor or Color(64, 64, 64)
     image = image or "entities/npc_kleiner.png"
     lifetime = lifetime or 5
+    lifetime = lifetime + #notifyHistory
 
     if SERVER then
         net.Start('cl_qsystem_player_notify')
@@ -88,6 +109,12 @@ function meta:QuestNotify(title, desc, lifetime, image, bgcolor)
         NotifyPanel:SetPos(15, 15)
         NotifyPanel:SetSize(400, 150)
         NotifyPanel:SetLife(lifetime)
+        NotifyPanel:LerpPositions(1, true)
+
+        table.insert(notifyHistory, {
+            panel = NotifyPanel,
+            deltime = RealTime() + lifetime
+        })
     
         local bg = vgui.Create("DPanel", NotifyPanel)
         bg:Dock(FILL)
