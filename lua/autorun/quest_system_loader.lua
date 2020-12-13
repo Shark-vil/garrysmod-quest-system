@@ -6,6 +6,7 @@ file.CreateDir('quest_system/triggers')
 file.CreateDir('quest_system/points')
 file.CreateDir('quest_system/events')
 file.CreateDir('quest_system/players_data')
+file.CreateDir('quest_system/save_npc')
 
 local Category = "Quest"
 local NPC = {
@@ -71,6 +72,7 @@ using('events/sh_quest_step_init.lua')
 using('events/sh_nodraw_npc.lua')
 using('events/sv_quest_autoloader.lua')
 using('events/sv_player_disconnected.lua')
+using('events/sv_npc_autoloader.lua')
 
 using('storage/trigger/sh_storage.lua')
 using('storage/points/sh_storage.lua')
