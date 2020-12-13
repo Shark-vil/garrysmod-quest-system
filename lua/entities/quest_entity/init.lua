@@ -25,20 +25,6 @@ function ENT:SetStep(step)
 	if quest ~= nil and quest.steps[step] ~= nil then
 		self:SetNWString('step', step)
 
-		timer.Simple(delay, function()
-			if IsValid(self) then
-				net.Start('cl_qsystem_entity_step_construct')
-				net.WriteEntity(self)
-				net.WriteString(self:GetQuestId())
-				net.WriteString(step)
-				if quest.isEvent then
-					net.Broadcast()
-				else
-					net.Send(ply)
-				end
-			end
-		end)
-
 		self.triggers = {}
 		if quest.steps[step].triggers ~= nil then
 			for trigger_name, _ in pairs(quest.steps[step].triggers) do
@@ -99,14 +85,14 @@ function ENT:SetStep(step)
 	if step == 'start' then
 		if quest.isEvent then
 			quest.title = '[Событие] ' .. quest.title
+		end
 
-			if quest.timeToNextStep ~= nil and quest.nextStep ~= nil then
-				quest.description = quest.description .. '\nДо начала: ' .. quest.timeToNextStep .. ' сек.'
-			end
+		if quest.timeToNextStep ~= nil and quest.nextStep ~= nil then
+			quest.description = quest.description .. '\nДо начала: ' .. quest.timeToNextStep .. ' сек.'
+		end
 
-			if quest.timeQuest ~= nil then
-				quest.description = quest.description .. '\nВремя выполнения: ' .. quest.timeQuest .. ' сек.'
-			end
+		if quest.timeQuest ~= nil then
+			quest.description = quest.description .. '\nВремя выполнения: ' .. quest.timeQuest .. ' сек.'
 		end
 	end
 
@@ -116,6 +102,24 @@ function ENT:SetStep(step)
 	if quest.steps[step].construct ~= nil then
 		start_result = quest.steps[step].construct(self)
 	end
+
+	timer.Simple(delay, function()
+		if IsValid(self) then
+			net.Start('cl_qsystem_entity_step_construct')
+			net.WriteEntity(self)
+			net.WriteString(self:GetQuestId())
+			net.WriteString(step)
+			if step == 'start' then
+				net.WriteString(utf8.force(quest.title))
+				net.WriteString(utf8.force(quest.description))
+			end
+			if quest.isEvent then
+				net.Broadcast()
+			else
+				net.Send(ply)
+			end
+		end
+	end)
 
 	timer.Simple(delay, function()
 		if IsValid(self) then
@@ -131,13 +135,7 @@ function ENT:SetStep(step)
 	end)
 
 	if step == 'start' then
-		if quest.isEvent then
-			quest.title = '[Событие] ' .. quest.title
-		end
-
 		if quest.timeToNextStep ~= nil and quest.nextStep ~= nil then
-			quest.description = quest.description .. ' (До начала: ' .. quest.timeToNextStep .. ' сек.)'
-
 			timer.Simple(quest.timeToNextStep, function()
 				if IsValid(self) then
 					if quest.nextStepCheck ~= nil then

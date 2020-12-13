@@ -5,7 +5,7 @@ local quest = {
     payment = 500,
     isEvent = true,
     npcNotReactionOtherPlayer = true,
-    timeToNextStep = 15,
+    timeToNextStep = 20,
     nextStep = 'spawn_combines',
     nextStepCheck = function(eQuest)
         if #eQuest.players ~= 0 then
@@ -15,7 +15,7 @@ local quest = {
             return false
         end
     end,
-    timeQuest = 60,
+    timeQuest = 120,
     failedText = {
         title = 'Задание провалено',
         text = 'Время выполнения истекло.'

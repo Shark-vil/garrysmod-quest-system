@@ -4,6 +4,7 @@ local quest = {
     description = 'Наш наниматель потерял свою коробку с ценными вещами. Найдите её и отнесите заказчику.',
     payment = 500,
     npcNotReactionOtherPlayer = false,
+    timeQuest = 240,
     functions = {
         spawn_npc_on_trigger = function(eQuest, entities)
             if table.HasValue(entities, eQuest:GetPlayer()) then

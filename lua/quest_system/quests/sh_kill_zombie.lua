@@ -3,6 +3,7 @@ local quest = {
     title = 'Убить зомби',
     description = 'Найдите и убейте зомби который докучает местным жителям. Можно использовать любое оружие.',
     payment = 500,
+    timeQuest = 300,
     steps = {
         start = {
             construct = function(eQuest)

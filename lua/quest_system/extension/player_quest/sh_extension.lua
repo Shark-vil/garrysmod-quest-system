@@ -70,14 +70,16 @@ function meta:QSystemIsSpam()
     return true
 end
 
-function meta:QuestNotify(title, desc, image, bgcolor)
+function meta:QuestNotify(title, desc, lifetime, image, bgcolor)
     bgcolor = bgcolor or Color(64, 64, 64)
     image = image or "entities/npc_kleiner.png"
+    lifetime = lifetime or 5
 
     if SERVER then
         net.Start('cl_qsystem_player_notify')
         net.WriteString(title)
         net.WriteString(desc)
+        net.WriteFloat(lifetime)
         net.WriteString(image)
         net.WriteColor(bgcolor)
         net.Send(self)
@@ -85,6 +87,7 @@ function meta:QuestNotify(title, desc, image, bgcolor)
         local NotifyPanel = vgui.Create("DNotify")
         NotifyPanel:SetPos(15, 15)
         NotifyPanel:SetSize(400, 150)
+        NotifyPanel:SetLife(lifetime)
     
         local bg = vgui.Create("DPanel", NotifyPanel)
         bg:Dock(FILL)

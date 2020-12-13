@@ -8,7 +8,7 @@ file.CreateDir('quest_system/events')
 file.CreateDir('quest_system/players_data')
 
 local Category = "Quest"
-local NPC = { 	
+local NPC = {
 	Name = "Quest NPC", 
 	Class = "npc_quest",
 	Category = Category,
