@@ -13,6 +13,7 @@ ENT.triggers = {}
 ENT.points = {}
 ENT.npcs = {}
 ENT.items = {}
+ENT.weapons = {}
 
 function ENT:Initialize()
     self:SetModel('models/props_junk/PopCan01a.mdl')
@@ -21,19 +22,57 @@ function ENT:Initialize()
     self:SetSolid(SOLID_NONE)
     self:SetNoDraw(true)
 
-	hook.Run('EnableQuest', self)
-
-	hook.Add("PlayerUse", self, function(_self, ply, ent)
-		local step = self:GetQuestStepTable()
-		if step ~= nil and step.onUse ~= nil then
-			if self:GetPlayer() == ply then
-				step.onUse(self, ent)
-			end
+	if SERVER then
+		if self:IsExistStepArg('onUse') then
+			hook.Add("PlayerUse", self, function(_self, ply, ent)
+				local step = self:GetQuestStepTable()
+				if step ~= nil and step.onUse ~= nil then
+					if self:GetPlayer() == ply then
+						step.onUse(self, ent)
+					end
+				end
+			end)
 		end
-	end)
 
-	self:SetNWBool('StopThink', true)
-	self:SetNWFloat('ThinkDelay', 0)
+		if self:IsExistStepArg('onNPCKilled') then
+			hook.Add("OnNPCKilled", self, function(_self, npc, attacker, inflictor)
+				local step = self:GetQuestStepTable()
+				if step ~= nil and step.onNPCKilled ~= nil then
+					step.onNPCKilled(self, npc, attacker, inflictor)
+				end
+			end)
+		end
+
+		if self:IsExistStepArg('playerDeath') then
+			hook.Add("PlayerDeath", self, function(_self, victim, inflictor, attacker)
+				local step = self:GetQuestStepTable()
+				if step ~= nil and step.playerDeath ~= nil then
+					step.playerDeath(self, victim, inflictor, attacker)
+				end
+			end)
+		end
+
+		if self:IsExistStepArg('playerDisconnected') then
+			hook.Add("PlayerDisconnected", self, function(_self, ply)
+				local step = self:GetQuestStepTable()
+				if step ~= nil and step.playerDisconnected ~= nil then
+					step.playerDisconnected(self, ply)
+				end
+			end)
+		end
+
+		self:SetNWBool('StopThink', true)
+		self:SetNWFloat('ThinkDelay', 0)
+	end
+
+	hook.Run('EnableQuest', self)
+end
+
+function ENT:IsExistStepArg(arg)
+	for step_name, step_data in pairs(self:GetQuest().steps) do
+		if step_data[arg] ~= nil then return true end
+	end
+	return false
 end
 
 function ENT:GetQuest()
@@ -185,6 +224,9 @@ function ENT:OnRemove()
 
 	self:RemoveNPC()
 	self:RemoveItems()
+	if SERVER then
+		self:RemoveAllQuestWeapon()
+	end
 
 	hook.Run('DisableQuest', self)
 end
@@ -254,10 +296,23 @@ function ENT:OnNextStep(step)
 		self:SetNWBool('StopThink', false)
 		self:SetNWFloat('ThinkDelay', RealTime() + 1)
 	end
+
+	hook.Run('NewQuestStep', self, step)
 end
 
 function ENT:Notify(title, desc, image, bgcolor)
 	self:GetPlayer():QuestNotify(title, desc, image, bgcolor)
+end
+
+function ENT:IsQuestNPC(npc, type, tag)
+	for _, data in pairs(self.npcs) do
+		if data.npc == npc then
+			if type ~= nil and data.type ~= type then return false end
+			if tag ~= nil and data.tag ~= tag then return false end
+			return true
+		end
+	end
+	return false
 end
 
 function ENT:GetQuestNpc(type, tag)
@@ -279,6 +334,13 @@ function ENT:GetQuestNpc(type, tag)
 		end
 	end
 	return NULL
+end
+
+function ENT:IsQuestItem(item)
+	for _, data in pairs(self.items) do
+		if data.item == item then return true end
+	end
+	return false
 end
 
 function ENT:GetQuestItem(item_id)

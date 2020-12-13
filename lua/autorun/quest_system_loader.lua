@@ -51,6 +51,7 @@ using('cfg/sh_main_config.lua')
 
 using('net/sh_callback.lua')
 
+using('extension/player_getting_list/sv_player_lib.lua')
 using('extension/player_quest/sv_extension.lua')
 using('extension/player_quest/sh_extension.lua')
 using('extension/player_quest/cl_extension.lua')
@@ -60,6 +61,9 @@ using('tools/trigger_editor/cl_trigger_editor.lua')
 
 using('tools/points_editor/sv_points_editor.lua')
 using('tools/points_editor/cl_points_editor.lua')
+
+using('tools/structure_editor/sv_structure_editor.lua')
+using('tools/structure_editor/cl_strucutre_editor.lua')
 
 using('events/sh_quest_step_init.lua')
 using('events/sh_nodraw_npc.lua')
@@ -74,3 +78,5 @@ using('gui/simple_quest_menu/cl_menu.lua')
 
 using('quests/sh_kill_zombie.lua')
 using('quests/sh_search_box.lua')
+using('quests/sh_kill_drug_dealer.lua')
+using('quests/sh_player_killer.lua')

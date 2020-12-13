@@ -78,20 +78,20 @@ function ENT:SetStep(step)
 		end)
 	end
 
+	if quest.steps[step].construct ~= nil then
+		quest.steps[step].construct(self)
+	end
+	
+	self:OnNextStep(step)
+
 	timer.Simple(delay, function()
 		if IsValid(self) then
-			if quest.steps[step].construct ~= nil then
-				quest.steps[step].construct(self)
-			end
-			
-			self:OnNextStep(step)
+			net.Start('cl_qsystem_entity_step_done')
+			net.WriteEntity(self)
+			net.WriteString(step)
+			net.Send(ply)
 		end
 	end)
-
-	net.Start('cl_qsystem_entity_step_done')
-	net.WriteEntity(self)
-	net.WriteString(step)
-	net.Send(ply)
 end
 
 function ENT:NextStep(step)
@@ -104,17 +104,78 @@ end
 --[[
 	Darkrp mode only. Gives the player a reward and notifies him about it.
 --]]
-function ENT:Reward()
+function ENT:Reward(customPayment)
 	if engine.ActiveGamemode() ~= 'darkrp' then return end
 
 	local ply = self:GetPlayer()
 	if ply.addMoney ~= nil then
-		local payment = self:GetQuest().payment
+		local payment = customPayment or self:GetQuest().payment
 		if payment ~= nil then
 			ply:addMoney(payment)
 			DarkRP.notify(ply, 4, 4, 'Ваша награда за выполнение квеста - ' .. DarkRP.formatMoney(payment))
 		end
 	end
+end
+
+function ENT:Reparation(customPayment)
+	if self:GetQuest().payment ~= nil then
+		self:Reward(self:GetQuest().payment / 2)
+	end
+end
+
+function ENT:IsQuestWeapon(getWep)
+	for key, data in pairs(self.weapons) do
+		if IsValid(getWep) and data.weapon_class == getWep:GetClass() then
+			return true
+		end
+	end
+	return false
+end
+
+function ENT:GiveQuestWeapon(weapon_class)
+	local ply = self:GetPlayer()
+	local data = {
+		weapon_class = weapon_class,
+		weapon = NULL
+	}
+	local wep
+
+	if not ply:HasWeapon(weapon_class) then
+		wep = ply:Give(weapon_class)
+		data.weapon = wep
+	else
+		wep = ply:GetWeapon(weapon_class)
+	end
+
+	table.insert(self.weapons, data)
+
+	return wep
+end
+
+function ENT:RemoveQuestWeapon(weapon_class)
+	local ply = self:GetPlayer()
+	local plyWep = ply:GetWeapon(weapon_class)
+	for key, data in pairs(self.weapons) do
+		if data.weapon_class == weapon_class then
+			if IsValid(data.weapon) and IsValid(plyWep) and plyWep == data.weapon then
+				ply:StripWeapon(weapon_class)
+			end
+			table.remove(self.weapons, key)
+		end
+	end
+end
+
+function ENT:RemoveAllQuestWeapon()
+	local ply = self:GetPlayer()
+	for key, data in pairs(self.weapons) do
+		if IsValid(data.weapon) then
+			local plyWep = ply:GetWeapon(data.weapon_class)
+			if IsValid(plyWep) then
+				ply:StripWeapon(data.weapon_class)
+			end
+		end
+	end
+	self.weapons = {}
 end
 
 function ENT:Complete()
