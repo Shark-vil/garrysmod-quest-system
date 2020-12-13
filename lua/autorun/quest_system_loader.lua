@@ -7,6 +7,7 @@ file.CreateDir('quest_system/points')
 file.CreateDir('quest_system/events')
 file.CreateDir('quest_system/players_data')
 file.CreateDir('quest_system/save_npc')
+file.CreateDir('quest_system/compile')
 
 local Category = "Quest"
 local NPC = {
@@ -76,6 +77,7 @@ using('events/sv_npc_autoloader.lua')
 
 using('storage/trigger/sh_storage.lua')
 using('storage/points/sh_storage.lua')
+using('storage/sv_compile_quests.lua')
 
 using('gui/simple_quest_menu/sv_menu.lua')
 using('gui/simple_quest_menu/cl_menu.lua')
