@@ -29,32 +29,40 @@ local quest = {
         spawn = {
             construct = function(eQuest)
                 if CLIENT then return end
-
-                local npc = ents.Create('npc_zombie')
-                npc:SetPos(Vector(1100, -2026, -79))
-                npc:Spawn()
-                eQuest:AddQuestNPC(npc, 'enemy', 'kill_z')
+                eQuest:Notify('Враг близко', 'Неожиданно. Их оказалось больше, чем в заказе. Но это не важно, убейте всех.')
             end,
+            points = {
+                spawn_zombie = function(eQuest, positions)
+                    if CLIENT then return end
+
+                    for _, pos in pairs(positions) do
+                        local npc = ents.Create(table.Random({'npc_zombie', 'npc_headcrab', 'npc_fastzombie'}))
+                        npc:SetPos(pos)
+                        npc:Spawn()
+                        eQuest:AddQuestNPC(npc, 'enemy')
+                    end
+                end,
+            },
             think = function(eQuest)
-                if #eQuest.npcs ~= 0 then
-                    for _, data in pairs(eQuest.npcs) do
-                        if data.tag == 'kill_z' then
-                            if not IsValid(data.npc) or data.npc:Health() <= 0 then
-                                eQuest:NextStep('complete')
-                            end
+                if CLIENT then return end
+
+                local zombies = eQuest:GetQuestNpc('enemy')
+                if #zombies ~= 0 then
+                    for _, npc in pairs(zombies) do
+                        if IsValid(npc) then
+                            return
                         end
                     end
+                    eQuest:NextStep('complete')
                 end
             end
         },
         complete = {
             construct = function(eQuest)
-                if CLIENT then
-                    eQuest:Notify('Завершено', 'Спасибо за вашу помощь! Больше это отродье не будет никому мешать.')
-                else
-                    eQuest:Reward()
-                    eQuest:Complete()
-                end
+                if CLIENT then return end
+                eQuest:Notify('Завершено', 'Спасибо за вашу помощь! Больше это отродье не будет никому мешать.')
+                eQuest:Reward()
+                eQuest:Complete()
             end,
         }
     }

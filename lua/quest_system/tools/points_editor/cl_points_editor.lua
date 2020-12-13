@@ -1,13 +1,13 @@
-local weapon_class = 'weapon_quest_system_tool_trigger_selector'
+local weapon_class = 'weapon_quest_system_tool_point_selector'
 
-concommand.Add("qsystem_open_trigger_editor", function(ply)
-    net.Start('sv_qsystem_open_trigger_editor')
+concommand.Add("qsystem_open_points_editor", function(ply)
+    net.Start('sv_qsystem_open_points_editor')
     net.SendToServer()
 end)
 
-local OpenTriggerPanelEditor, OpenQuestSelectPanel, OpenTriggerSelectPanel
+local OpenPointsPanelEditor, OpenQuestSelectPanel, OpenPointsSelectPanel
 
-net.Receive('cl_qsystem_open_trigger_editor', function(len, ply)
+net.Receive('cl_qsystem_open_points_editor', function(len, ply)
     OpenQuestSelectPanel()
 end)
 
@@ -22,7 +22,7 @@ OpenQuestSelectPanel = function()
     frame:Center()
     frame.OnClose = function()
         if notsend then return end
-        net.Start('sv_qsystem_close_trigger_editor')
+        net.Start('sv_qsystem_close_points_editor')
         net.SendToServer()
     end
 
@@ -39,18 +39,18 @@ OpenQuestSelectPanel = function()
     end
 
     QuestList.OnRowSelected = function(lst, index, pnl)
-        OpenTriggerSelectPanel(allQuests[pnl:GetColumnText(1)])
+        OpenPointsSelectPanel(allQuests[pnl:GetColumnText(1)])
         notsend = true
         frame:Close()
     end
 end
 
-OpenTriggerSelectPanel = function(quest)
+OpenPointsSelectPanel = function(quest)
     local notsend = false
     local frame = vgui.Create("DFrame")
     frame:SetPos(20, 20)
     frame:SetSize(550, 350)
-    frame:SetTitle("Select trigger")
+    frame:SetTitle("Select point")
     frame:MakePopup()
     frame:Center()
     frame.OnClose = function(self)
@@ -64,8 +64,8 @@ OpenTriggerSelectPanel = function(quest)
     QuestList:AddColumn("Id")
 
     for _, step in pairs(quest.steps) do
-        if step.triggers ~= nil then
-            for name, _ in pairs(step.triggers) do
+        if step.points ~= nil then
+            for name, _ in pairs(step.points) do
                 QuestList:AddLine(name)
             end
         end
@@ -73,26 +73,26 @@ OpenTriggerSelectPanel = function(quest)
 
     QuestList.OnRowSelected = function(lst, index, pnl)
         timer.Simple(0.1, function()
-            OpenTriggerPanelEditor(quest, pnl:GetColumnText(1)) 
+            OpenPointsPanelEditor(quest, pnl:GetColumnText(1)) 
             notsend = true
             frame:Close()
         end)
     end
 end
 
-OpenTriggerPanelEditor = function(quest, trigger_name)
+OpenPointsPanelEditor = function(quest, points_name)
     local weapon = LocalPlayer():GetWeapon(weapon_class)
 
-    QuestSystem:GetStorage('trigger'):Read(quest.id, trigger_name, function(ply, data)
+    QuestSystem:GetStorage('points'):Read(quest.id, points_name, function(ply, data)
         if IsValid(weapon) then
-            weapon.CurrentTrigger = data
+            weapon.Points = data
         end
     end)
 
-    local trigger = nil
+    local points = nil
     local delay = 0
 
-    local PanelManager = DFCL:New( "qsystem_trigger_editor" )
+    local PanelManager = DFCL:New( "qsystem_points_editor" )
     PanelManager:AddMouseClickListener()
     PanelManager:AddContextMenuListener()
     PanelManager:AddFocusName( "DTextEntry" )
@@ -101,7 +101,7 @@ OpenTriggerPanelEditor = function(quest, trigger_name)
     InfoPanel:MakePopup()
     InfoPanel:SetSize( 230, 180 )
     InfoPanel:SetPos( 100, ScrH()/2 - 10 )
-    InfoPanel:SetTitle( "Trigger editor" )
+    InfoPanel:SetTitle( "Points editor" )
     InfoPanel:SetSizable( false )
     InfoPanel:SetDraggable( true )
     InfoPanel:ShowCloseButton( false )
@@ -110,47 +110,24 @@ OpenTriggerPanelEditor = function(quest, trigger_name)
     InfoPanel:SetVisible( true )
     InfoPanel.Paint = function( self, width, height )
         draw.RoundedBox( 0, 0, 0, width, height, Color(33,29,46,255) )
-        if trigger ~= nil then
+        if points ~= nil then
             surface.SetFont( "Trebuchet18" )
             surface.SetTextColor( 255, 255, 255, 255 )
             surface.SetTextPos( 15, 25 )
-            surface.DrawText( "Trigger:" )
+            surface.DrawText( "Points:" )
             surface.SetTextPos( 15, 40 )
-            surface.DrawText( trigger.type )
-            surface.SetTextColor( 94, 220, 255, 255 )
-            surface.SetFont( "Default" )
-            if trigger.type == 'box' then
-                if trigger.vec1 ~= nil then
-                    surface.SetTextPos( 15, 55 )
-                    surface.DrawText( tostring(trigger.vec1) )
-                end
-                if trigger.vec2 ~= nil then
-                    surface.SetTextPos( 15, 65 )
-                    surface.DrawText( tostring(trigger.vec2) )
-                end
-            end
-
-            if trigger.type == 'sphere' then
-                if trigger.center ~= nil then
-                    surface.SetTextPos( 15, 55 )
-                    surface.DrawText( tostring(trigger.center) )
-                end
-                if trigger.radius ~= nil then
-                    surface.SetTextPos( 15, 65 )
-                    surface.DrawText( trigger.radius )
-                end
-            end
+            surface.DrawText( #points )
         end
 
         if IsValid(weapon) then
-            trigger = weapon.CurrentTrigger
+            points = weapon.Points
         else
             self:Close()
         end
     end
     InfoPanel.OnClose = function()
-        weapon:ClearTriggerPosition()
-        OpenTriggerSelectPanel(quest)
+        weapon:ClearPoints()
+        OpenPointsSelectPanel(quest)
         PanelManager:Destruct()
     end
     PanelManager:AddPanel( InfoPanel, true )
@@ -161,8 +138,8 @@ OpenTriggerPanelEditor = function(quest, trigger_name)
     InfoButtonYes:SetPos( 15, 100 )
     InfoButtonYes:SetSize( 200, 30 )
     InfoButtonYes.DoClick = function ()
-        if trigger_name ~= nil and trigger ~= nil then
-            QuestSystem:GetStorage('trigger'):Save(quest.id, trigger_name, trigger)
+        if points_name ~= nil and points ~= nil then
+            QuestSystem:GetStorage('points'):Save(quest.id, points_name, points)
             surface.PlaySound('buttons/blip1.wav')
         else
             surface.PlaySound('Resource/warning.wav')

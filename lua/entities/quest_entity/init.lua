@@ -7,9 +7,9 @@ function ENT:SetQuest(quest_id, ply)
 	self:SetNWString('quest_id', quest_id)
 end
 
-function ENT:SetStep(step, delay)
-	delay = delay or 0
-	self.npcs = {}
+function ENT:SetStep(step)
+	self:SetNWBool('StopThink', true)
+	self:SetNWFloat('ThinkDelay', RealTime() + 1)
 
 	local quest = self:GetQuest()
 	local ply = self:GetPlayer()
@@ -17,15 +17,13 @@ function ENT:SetStep(step, delay)
 	if quest ~= nil and quest.steps[step] ~= nil then
 		self:SetNWString('step', step)
 
-		timer.Simple(delay, function()
-			if IsValid(self) then
-				net.Start('cl_qsystem_entity_step_construct')
-				net.WriteEntity(self)
-				net.WriteString(self:GetQuestId())
-				net.WriteString(step)
-				net.Send(ply)
-			end
-		end)
+		if IsValid(self) then
+			net.Start('cl_qsystem_entity_step_construct')
+			net.WriteEntity(self)
+			net.WriteString(self:GetQuestId())
+			net.WriteString(step)
+			net.Send(ply)
+		end
 
 		self.triggers = {}
 		if quest.steps[step].triggers ~= nil then
@@ -42,32 +40,48 @@ function ENT:SetStep(step, delay)
 		end
 
 		local triggers = self.triggers
-		timer.Simple(delay, function()
-			if IsValid(self) then
-				net.Start('cl_qsystem_entity_step_triggers')
-				net.WriteEntity(self)
-				net.WriteTable(triggers)
-				net.Send(ply)
-			end
-		end)
-	end
-
-	timer.Simple(delay, function()
 		if IsValid(self) then
-			net.Start('cl_qsystem_entity_step_done')
+			net.Start('cl_qsystem_entity_step_triggers')
 			net.WriteEntity(self)
-			net.WriteString(step)
+			net.WriteTable(triggers)
 			net.Send(ply)
 		end
-	end)
 
-	timer.Simple(delay + 0.5, function()
-		if quest.steps[step].construct ~= nil then
-			quest.steps[step].construct(self)
+		self.points = {}
+		if quest.steps[step].points ~= nil then
+			for point_name, _ in pairs(quest.steps[step].points) do
+				local file_path = 'quest_system/points/' .. quest.id .. '/' .. game.GetMap() .. '/' .. point_name .. '.json'
+				if file.Exists(file_path, 'DATA') then
+					local points = util.JSONToTable(file.Read(file_path, "DATA"))
+					table.insert(self.points, {
+						name = point_name,
+						points = points
+					})
+				end
+			end
 		end
 
-		self:OnNextStep()
-	end)
+		local points = self.points
+		if IsValid(self) then
+			net.Start('cl_qsystem_entity_step_points')
+			net.WriteEntity(self)
+			net.WriteTable(points)
+			net.Send(ply)
+		end
+	end
+
+	if quest.steps[step].construct ~= nil then
+		quest.steps[step].construct(self)
+	end
+
+	self:OnNextStep(step)
+
+	if IsValid(self) then
+		net.Start('cl_qsystem_entity_step_done')
+		net.WriteEntity(self)
+		net.WriteString(step)
+		net.Send(ply)
+	end
 end
 
 function ENT:NextStep(step)
@@ -78,8 +92,8 @@ function ENT:NextStep(step)
 end
 
 --[[
-	DarkRp Only
-]]
+	Darkrp mode only. Gives the player a reward and notifies him about it.
+--]]
 function ENT:Reward()
 	if engine.ActiveGamemode() ~= 'darkrp' then return end
 
@@ -98,4 +112,13 @@ function ENT:Complete()
 	local quest_id = self:GetQuestId()
 	ply:DisableQuest(quest_id)
 	ply:RemoveQuest(quest_id)
+	ply:SendLua([[surface.PlaySound('vo/NovaProspekt/al_done01.wav')]])
+end
+
+function ENT:Failed()
+	local ply = self:GetPlayer()
+	local quest_id = self:GetQuestId()
+	ply:DisableQuest(quest_id)
+	ply:RemoveQuest(quest_id)
+	ply:SendLua([[surface.PlaySound('vo/k_lab/ba_getoutofsight01.wav')]])
 end

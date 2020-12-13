@@ -44,8 +44,6 @@ SWEP.TriggerType = {
 
 SWEP.CurrentTriggerIndex = 1
 SWEP.CurrentTrigger = SWEP.TriggerType[SWEP.CurrentTriggerIndex]
-SWEP.DelayTriggerSwitch = 0
-SWEP.DelayTriggerClick = 0
 
 function SWEP:Initialize()
 	if SERVER then return end
@@ -146,21 +144,13 @@ function SWEP:GetPlayerOwner()
 	return owner
 end
 
-function SWEP:IsDelayTriggerClick()
-	if self.DelayTriggerClick > CurTime() then 
-		self.DelayTriggerClick = CurTime() + 0.3
+function SWEP:IsReloadDelay()
+	self.ReloadDelay = self.ReloadDelay or 0
+	if self.ReloadDelay > CurTime() then 
+		self.ReloadDelay = CurTime() + 0.3
 		return true
 	end
-	self.DelayTriggerClick = CurTime() + 0.5
-	return false
-end
-
-function SWEP:IsDelayTriggerSwitch()
-	if self.DelayTriggerSwitch > CurTime() then 
-		self.DelayTriggerSwitch = CurTime() + 0.3
-		return true
-	end
-	self.DelayTriggerSwitch = CurTime() + 0.5
+	self.ReloadDelay = CurTime() + 0.5
 	return false
 end
 
@@ -170,7 +160,7 @@ end
 
 function SWEP:PrimaryAttack()
 	if SERVER then self:CallOnClient('PrimaryAttack') return end
-	if self:IsDelayTriggerClick() then return end
+	if not IsFirstTimePredicted() then return end
 
 	local owner = self:GetPlayerOwner()
 	if owner ~= nil then
@@ -196,7 +186,7 @@ end
 
 function SWEP:Reload()
 	if SERVER then self:CallOnClient('Reload') return end
-	if self:IsDelayTriggerSwitch() then return end
+	if self:IsReloadDelay() then return end
 
 	self:ClearTriggerPosition()
 
@@ -215,7 +205,7 @@ end
 
 function SWEP:SecondaryAttack()
 	if SERVER then self:CallOnClient('SecondaryAttack') return end
-	if self:IsDelayTriggerClick() then return end
+	if not IsFirstTimePredicted() then return end
 
 	self:ClearTriggerPosition()
 end

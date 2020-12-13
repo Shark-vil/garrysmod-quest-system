@@ -3,6 +3,7 @@ local root_directory = 'quest_system'
 file.CreateDir('quest_system')
 file.CreateDir('quest_system/players')
 file.CreateDir('quest_system/triggers')
+file.CreateDir('quest_system/points')
 
 local Category = "Quest"
 local NPC = { 	
@@ -43,12 +44,35 @@ local function using(local_file_path, network_type, not_root_directory)
 end
 
 using('sh_main.lua')
-using('extension/sh_player_quest.lua')
-using('tools/trigger_editor/cl_trigger_editor.lua')
+
+using('resources/cl_fonts.lua')
+
+using('cfg/sh_main_config.lua')
+
+using('net/sh_callback.lua')
+
+using('extension/player_quest/sv_extension.lua')
+using('extension/player_quest/sh_extension.lua')
+using('extension/player_quest/cl_extension.lua')
+
 using('tools/trigger_editor/sv_trigger_editor.lua')
+using('tools/trigger_editor/cl_trigger_editor.lua')
+
+using('tools/points_editor/sv_points_editor.lua')
+using('tools/points_editor/cl_points_editor.lua')
+
 using('events/sh_quest_step_init.lua')
+using('events/sh_nodraw_npc.lua')
 using('events/sv_quest_autoloader.lua')
 using('events/sv_player_disconnected.lua')
-using('storage/sv_trigger_storage.lua')
+
+-- using('storage/sv_trigger_storage.lua')
+using('storage/trigger/sh_storage.lua')
+-- using('storage/sv_points_storage.lua')
+using('storage/points/sh_storage.lua')
+
+using('gui/simple_quest_menu/sv_menu.lua')
+using('gui/simple_quest_menu/cl_menu.lua')
+
 using('quests/sh_kill_zombie.lua')
-using('gui/sh_simple_quest_menu.lua')
+using('quests/sh_search_box.lua')
