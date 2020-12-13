@@ -5,6 +5,8 @@ SWEP.Author = "Shark_vil"
 SWEP.Purpose = "Create points for selected event."
 SWEP.Category = 'Quest System Tools'
 
+SWEP.AdminOnly = true
+
 SWEP.Slot = 0
 SWEP.SlotPos = 4
 

@@ -82,36 +82,7 @@ function meta:EnableQuest(quest_id)
         ent:Spawn()
         timer.Simple(1, function()
             if not IsValid(ent) then return end
-            local result = ent:SetStep(quest_data.step)
-            
-            if result ~= nil and isbool(result) and not result then
-                return
-            end
-
-            local delay = QuestSystem:GetConfig('DelayBetweenQuests')
-            if delay > 0 then
-                local current_delay = self:GetNWFloat('quest_delay')
-
-                if current_delay > os.time() then
-                    ent:Remove()
-                    local delay_math = current_delay - os.time()
-                    self:QuestNotify('Отклонено', 'Вы сможете взять новое задание только через ' 
-                        .. delay_math .. ' сек.')
-                    return
-                else
-                    local file_path = 'quest_system/players_data/' .. self:PlayerId()
-                    if not file.Exists(file_path, 'DATA') then
-                        file.CreateDir(file_path)
-                    end
-                    
-                    file_path = file_path .. '/delay.json'
-                    
-                    local current_delay = os.time() + delay
-
-                    self:SetNWFloat('quest_delay', current_delay)
-                    file.Write(file_path, current_delay)
-                end
-            end
+            ent:SetStep(quest_data.step)
         end)
     end
 end
@@ -162,3 +133,15 @@ function meta:SetQuestStep(quest_id, step)
 
     return false
 end
+
+concommand.Add('qsystem_players_reset_delay', function(ply)
+    if IsValid(ply) and ply:IsAdmin() and ply:IsSuperAdmin() then
+        for _, human in pairs(player.GetAll()) do
+            local file_path = 'quest_system/players_data/' .. human:PlayerId() .. '/delay.json'
+            if file.Exists(file_path, 'DATA') then
+                human:SetNWFloat('quest_delay', 0)
+                file.Delete(file_path)
+            end
+        end
+    end
+end)

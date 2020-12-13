@@ -3,24 +3,26 @@ local quest = {
     title = 'Охотник за головами',
     description = 'Убейте случайного игрока, которого предложит заказчик.',
     payment = 500,
+    condition = function(ply)
+        if table.Count(player.GetAll()) > 1 then
+            return true
+        else
+            ply:QuestNotify('Отказ', 'На сервере слишком мало игроков для начала этого задания.')
+            return false
+        end
+    end,
     steps = {
         start = {
             construct = function(eQuest)
                 if SERVER then 
-                    local getPlayers = player.GetAllOmit(eQuest:GetPlayer())
-                    if table.Count(getPlayers) > 1 then
-                        local target = table.Random(getPlayers)
-                        eQuest:SetNWEntity('playerTarget', target)
-                        
-                        local quest = eQuest:GetQuest()
-                        local text = 'Убейте игрока ' .. target:Nick() .. ' пока это не сделал кто-то другой.'
-                        eQuest:Notify(quest.title, text)
+                    local target = table.Random(player.GetAllOmit(eQuest:GetPlayer()))
+                    eQuest:SetNWEntity('playerTarget', target)
+                    
+                    local quest = eQuest:GetQuest()
+                    local text = 'Убейте игрока ' .. target:Nick() .. ' пока это не сделал кто-то другой.'
+                    eQuest:Notify(quest.title, text)
 
-                        eQuest:NextStep('kill_player')
-                    else
-                        eQuest:NextStep('few_players')
-                        return false
-                    end
+                    eQuest:NextStep('kill_player')
                 end
             end,
         },

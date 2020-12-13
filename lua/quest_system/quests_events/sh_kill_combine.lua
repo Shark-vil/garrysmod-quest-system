@@ -65,7 +65,20 @@ local quest = {
                     for _, pos in pairs(positions) do
                         local npc = ents.Create('npc_combine_s')
                         npc:SetPos(pos)
-                        npc:Give(table.Random({'weapon_ar2', 'weapon_shotgun', 'tfa_ins2_acr', 'tfa_ins2_rfb'}))
+                        npc:SetModel(table.Random({
+                            'models/Combine_Soldier.mdl',
+                            'models/Combine_Soldier_PrisonGuard.mdl',
+                            'models/Combine_Super_Soldier.mdl'
+                        }))
+                        npc:Give(table.Random({
+                            'weapon_ar2',
+                            'weapon_shotgun',
+                            'tfa_ins2_acr',
+                            'tfa_ins2_rfb',
+                            'tfa_ins2_spas12',
+                            'tfa_ins2_minimi',
+                            'tfa_ins2_ak12'
+                        }))
                         npc:Spawn()
                         eQuest:AddQuestNPC(npc, 'enemy')
                     end
