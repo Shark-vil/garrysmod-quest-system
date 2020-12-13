@@ -205,9 +205,9 @@ function ENT:OnNextStep(step)
 	end
 
 	if #self.npcs ~= 0 then
-		local quester = self:GetPlayer()
-		local classes = {}
 		if SERVER then
+			local quester = self:GetPlayer()
+			local classes = {}
 			local notReaction = self:GetQuest().npcNotReactionOtherPlayer or false
 
 			for _, ply in pairs(player.GetHumans()) do

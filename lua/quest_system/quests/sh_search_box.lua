@@ -39,7 +39,7 @@ local quest = {
                 end,
             },
             onUseItem = function(eQuest, item)
-                if item:GetItemId() == 'box' then
+                if eQuest:GetQuestItem('box') == item then
                     item:Remove()
                     eQuest:NextStep('spawn_npc_on_trigger')
                 end

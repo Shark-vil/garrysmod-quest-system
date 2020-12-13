@@ -66,9 +66,7 @@ using('events/sh_nodraw_npc.lua')
 using('events/sv_quest_autoloader.lua')
 using('events/sv_player_disconnected.lua')
 
--- using('storage/sv_trigger_storage.lua')
 using('storage/trigger/sh_storage.lua')
--- using('storage/sv_points_storage.lua')
 using('storage/points/sh_storage.lua')
 
 using('gui/simple_quest_menu/sv_menu.lua')

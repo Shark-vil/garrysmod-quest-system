@@ -8,6 +8,8 @@ function ENT:SetQuest(quest_id, ply)
 end
 
 function ENT:SetStep(step)
+	local delay = 0.5
+	
 	self:SetNWBool('StopThink', true)
 	self:SetNWFloat('ThinkDelay', RealTime() + 1)
 
@@ -17,13 +19,15 @@ function ENT:SetStep(step)
 	if quest ~= nil and quest.steps[step] ~= nil then
 		self:SetNWString('step', step)
 
-		if IsValid(self) then
-			net.Start('cl_qsystem_entity_step_construct')
-			net.WriteEntity(self)
-			net.WriteString(self:GetQuestId())
-			net.WriteString(step)
-			net.Send(ply)
-		end
+		timer.Simple(delay, function()
+			if IsValid(self) then
+				net.Start('cl_qsystem_entity_step_construct')
+				net.WriteEntity(self)
+				net.WriteString(self:GetQuestId())
+				net.WriteString(step)
+				net.Send(ply)
+			end
+		end)
 
 		self.triggers = {}
 		if quest.steps[step].triggers ~= nil then
@@ -40,12 +44,14 @@ function ENT:SetStep(step)
 		end
 
 		local triggers = self.triggers
-		if IsValid(self) then
-			net.Start('cl_qsystem_entity_step_triggers')
-			net.WriteEntity(self)
-			net.WriteTable(triggers)
-			net.Send(ply)
-		end
+		timer.Simple(delay, function()
+			if IsValid(self) then
+				net.Start('cl_qsystem_entity_step_triggers')
+				net.WriteEntity(self)
+				net.WriteTable(triggers)
+				net.Send(ply)
+			end
+		end)
 
 		self.points = {}
 		if quest.steps[step].points ~= nil then
@@ -62,26 +68,30 @@ function ENT:SetStep(step)
 		end
 
 		local points = self.points
+		timer.Simple(delay, function()
+			if IsValid(self) then
+				net.Start('cl_qsystem_entity_step_points')
+				net.WriteEntity(self)
+				net.WriteTable(points)
+				net.Send(ply)
+			end
+		end)
+	end
+
+	timer.Simple(delay, function()
 		if IsValid(self) then
-			net.Start('cl_qsystem_entity_step_points')
-			net.WriteEntity(self)
-			net.WriteTable(points)
-			net.Send(ply)
+			if quest.steps[step].construct ~= nil then
+				quest.steps[step].construct(self)
+			end
+			
+			self:OnNextStep(step)
 		end
-	end
+	end)
 
-	if quest.steps[step].construct ~= nil then
-		quest.steps[step].construct(self)
-	end
-
-	self:OnNextStep(step)
-
-	if IsValid(self) then
-		net.Start('cl_qsystem_entity_step_done')
-		net.WriteEntity(self)
-		net.WriteString(step)
-		net.Send(ply)
-	end
+	net.Start('cl_qsystem_entity_step_done')
+	net.WriteEntity(self)
+	net.WriteString(step)
+	net.Send(ply)
 end
 
 function ENT:NextStep(step)
