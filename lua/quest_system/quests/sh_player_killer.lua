@@ -19,6 +19,7 @@ local quest = {
                         eQuest:NextStep('kill_player')
                     else
                         eQuest:NextStep('few_players')
+                        return false
                     end
                 end
             end,

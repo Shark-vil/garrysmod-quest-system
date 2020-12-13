@@ -14,6 +14,7 @@ ENT.points = {}
 ENT.npcs = {}
 ENT.items = {}
 ENT.weapons = {}
+ENT.players = {}
 
 function ENT:Initialize()
     self:SetModel('models/props_junk/PopCan01a.mdl')
@@ -65,7 +66,16 @@ function ENT:Initialize()
 		self:SetNWFloat('ThinkDelay', 0)
 	end
 
-	hook.Run('EnableQuest', self)
+	timer.Simple(1, function()
+		if not IsValid(self) then return end
+
+		local quest = self:GetQuest()
+		if quest.isEvent then
+			hook.Run('EnableEvent', self, quest)
+		else
+			hook.Run('EnableQuest', self, quest)
+		end
+	end)
 end
 
 function ENT:IsExistStepArg(arg)
@@ -97,7 +107,37 @@ function ENT:GetQuestStep()
 end
 
 function ENT:GetPlayer()
-	return self:GetNWEntity('player')
+	return self.players[1]
+end
+
+function ENT:GetAllPlayers()
+	return self.players
+end
+
+function ENT:AddPlayer(ply)
+	if not table.HasValue(self.players, ply) then
+		table.insert(self.players, ply)
+
+		if SERVER then
+			net.Start('cl_qsystem_add_player')
+			net.WriteEntity(self)
+			net.WriteEntity(ply)
+			net.Broadcast()
+		end
+	end
+end
+
+function ENT:RemovePlayer(ply)
+	if table.HasValue(self.players, ply) then
+		table.RemoveByValue(self.players, ply)
+
+		if SERVER then
+			net.Start('cl_qsystem_remove_player')
+			net.WriteEntity(self)
+			net.WriteEntity(ply)
+			net.Broadcast()
+		end
+	end
 end
 
 function ENT:Think()
@@ -228,12 +268,18 @@ function ENT:OnRemove()
 		self:RemoveAllQuestWeapon()
 	end
 
-	hook.Run('DisableQuest', self)
+	local quest = self:GetQuest()
+	if quest.isEvent then
+		hook.Run('DisableEvent', self, quest)
+	else
+		hook.Run('DisableQuest', self, quest)
+	end
 end
 
 function ENT:OnNextStep(step)
+	local quest = self:GetQuest()
+	
 	if #self.points ~= 0 then
-		local quest = self:GetQuest()
 		local step = self:GetQuestStep()
 			
 		if quest.steps[step].points ~= nil then
@@ -248,18 +294,17 @@ function ENT:OnNextStep(step)
 
 	if #self.npcs ~= 0 then
 		if SERVER then
-			local quester = self:GetPlayer()
 			local classes = {}
-			local notReaction = self:GetQuest().npcNotReactionOtherPlayer or false
+			local notReaction = quest.npcNotReactionOtherPlayer or false
 
 			for _, ply in pairs(player.GetHumans()) do
 				for _, data in pairs(self.npcs) do
 					if IsValid(data.npc) then
-						if quester == ply then
+						if table.HasValue(self.players, ply) then
 							if data.type == 'enemy' then
-								data.npc:AddEntityRelationship(quester, D_HT, 70)
+								data.npc:AddEntityRelationship(ply, D_HT, 70)
 							elseif data.type == 'friend' then
-								data.npc:AddEntityRelationship(quester, D_LI, 70)
+								data.npc:AddEntityRelationship(ply, D_LI, 70)
 							end
 						else
 							if notReaction then
@@ -270,7 +315,7 @@ function ENT:OnNextStep(step)
 				end
 			end
 
-			if QuestSystem:GetConfig('NoDrawNPC_WhenCompletingQuest') then
+			if QuestSystem:GetConfig('NoDrawNPC_WhenCompletingQuest') and not quest.isEvent then
 				local class = data.npc:GetClass()
 				local quester = self:GetPlayer()
 				for _, data in pairs(self.npcs) do
@@ -297,11 +342,27 @@ function ENT:OnNextStep(step)
 		self:SetNWFloat('ThinkDelay', RealTime() + 1)
 	end
 
-	hook.Run('NewQuestStep', self, step)
+	if quest.isEvent then
+		hook.Run('NewEventStep', self, step, quest)
+	else
+		hook.Run('NewQuestStep', self, step, quest)
+	end
 end
 
 function ENT:Notify(title, desc, image, bgcolor)
 	self:GetPlayer():QuestNotify(title, desc, image, bgcolor)
+end
+
+function ENT:NotifyOnlyRegistred(title, desc, image, bgcolor)
+	for _, ply in pairs(self.players) do
+		ply:QuestNotify(title, desc, image, bgcolor)
+	end
+end
+
+function ENT:NotifyAll(title, desc, image, bgcolor)
+	for _, ply in pairs(player.GetHumans()) do
+		ply:QuestNotify(title, desc, image, bgcolor)
+	end
 end
 
 function ENT:IsQuestNPC(npc, type, tag)
@@ -354,7 +415,7 @@ end
 
 function ENT:AddQuestItem(item , item_id)
 
-	if item:GetClass() == 'quest_item' then
+	if IsValid(item) and item:GetClass() == 'quest_item' then
 		item:SetQuest(self)
 		item:SetId(item_id)
 	end
@@ -364,15 +425,20 @@ function ENT:AddQuestItem(item , item_id)
 		item = item
 	})
 
-	local quester = self:GetPlayer()
+	local quest = self:GetQuest()
 	if SERVER then
 		timer.Simple(1, function()
-			if not IsValid(quester) then return end
+			if not IsValid(self) then return end
+
 			net.Start('cl_qsystem_add_item')
 			net.WriteEntity(self)
 			net.WriteEntity(item)
 			net.WriteString(item_id)
-			net.Send(quester)
+			if quest.isEvent then
+				net.Broadcast()
+			else
+				net.Send(self:GetPlayer())
+			end
 		end)
 	end
 end
@@ -386,16 +452,21 @@ function ENT:AddQuestNPC(npc, type, tag)
 		npc = npc
 	})
 
-	local quester = self:GetPlayer()
+	local quest = self:GetQuest()
 	if SERVER then
 		timer.Simple(1, function()
-			if not IsValid(quester) then return end
+			if not IsValid(self) then return end
+
 			net.Start('cl_qsystem_add_npc')
 			net.WriteEntity(self)
 			net.WriteEntity(npc)
 			net.WriteString(type)
 			net.WriteString(tag)
-			net.Send(quester)
+			if quest.isEvent then
+				net.Broadcast()
+			else
+				net.Send(self:GetPlayer())
+			end
 		end)
 	end
 end

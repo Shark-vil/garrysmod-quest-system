@@ -48,6 +48,12 @@ function meta:ReadAllQuest()
     return {}
 end
 
+function meta:GetNumberQuestsActive()
+    local file_path = 'quest_system/players/' .. self:PlayerId() .. '/*'
+    local quest_files = file.Find(file_path, 'DATA')
+    return table.Count(quest_files)
+end
+
 function meta:RemoveQuest(quest_id)
     local file_path = 'quest_system/players/' .. self:PlayerId() .. '/' .. quest_id .. '.json'
     if file.Exists(file_path, 'DATA') then
@@ -58,6 +64,15 @@ function meta:RemoveQuest(quest_id)
 end
 
 function meta:EnableQuest(quest_id)
+    local maxQuests = QuestSystem:GetConfig('MaxActiveQuestsForOnePlayer')
+    if maxQuests > 0 then
+        local quests = self:GetNumberQuestsActive()
+        if quests > maxQuests then
+            self:QuestNotify('Отклонено', 'Вы не можете взять больше заданий, пока не выполните текущие.')
+            return
+        end
+    end
+
     local quest_data = self:ReadQuest(quest_id)
     if quest_data ~= nil then
         if self:QuestIsActive(quest_id) then return end
@@ -67,7 +82,36 @@ function meta:EnableQuest(quest_id)
         ent:Spawn()
         timer.Simple(1, function()
             if not IsValid(ent) then return end
-            ent:SetStep(quest_data.step)
+            local result = ent:SetStep(quest_data.step)
+            
+            if result ~= nil and isbool(result) and not result then
+                return
+            end
+
+            local delay = QuestSystem:GetConfig('DelayBetweenQuests')
+            if delay > 0 then
+                local current_delay = self:GetNWFloat('quest_delay')
+
+                if current_delay > os.time() then
+                    ent:Remove()
+                    local delay_math = current_delay - os.time()
+                    self:QuestNotify('Отклонено', 'Вы сможете взять новое задание только через ' 
+                        .. delay_math .. ' сек.')
+                    return
+                else
+                    local file_path = 'quest_system/players_data/' .. self:PlayerId()
+                    if not file.Exists(file_path, 'DATA') then
+                        file.CreateDir(file_path)
+                    end
+                    
+                    file_path = file_path .. '/delay.json'
+                    
+                    local current_delay = os.time() + delay
+
+                    self:SetNWFloat('quest_delay', current_delay)
+                    file.Write(file_path, current_delay)
+                end
+            end
         end)
     end
 end

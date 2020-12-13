@@ -4,6 +4,8 @@ file.CreateDir('quest_system')
 file.CreateDir('quest_system/players')
 file.CreateDir('quest_system/triggers')
 file.CreateDir('quest_system/points')
+file.CreateDir('quest_system/events')
+file.CreateDir('quest_system/players_data')
 
 local Category = "Quest"
 local NPC = { 	
@@ -80,3 +82,5 @@ using('quests/sh_kill_zombie.lua')
 using('quests/sh_search_box.lua')
 using('quests/sh_kill_drug_dealer.lua')
 using('quests/sh_player_killer.lua')
+
+using('quests_events/sh_kill_combine.lua')

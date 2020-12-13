@@ -5,6 +5,8 @@ if SERVER then
     util.AddNetworkString('cl_qsystem_entity_step_done')
     util.AddNetworkString('cl_qsystem_add_npc')
     util.AddNetworkString('cl_qsystem_add_item')
+    util.AddNetworkString('cl_qsystem_add_player')
+    util.AddNetworkString('cl_qsystem_remove_player')
 else
     net.Receive('cl_qsystem_entity_step_construct', function()
         local ent = net.ReadEntity()
@@ -58,5 +60,19 @@ else
         local id = net.ReadString()
         
         ent:AddQuestItem(item, id)
+    end)
+
+    net.Receive('cl_qsystem_add_player', function()
+        local ent = net.ReadEntity()
+        local ply = net.ReadEntity()
+
+        ent:AddPlayer(ply)
+    end)
+
+    net.Receive('cl_qsystem_remove_player', function()
+        local ent = net.ReadEntity()
+        local ply = net.ReadEntity()
+
+        ent:RemovePlayer(ply)
     end)
 end

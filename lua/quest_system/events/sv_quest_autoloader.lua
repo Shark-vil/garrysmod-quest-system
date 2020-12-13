@@ -1,5 +1,14 @@
 hook.Add('PlayerSpawn', 'QSystem.QuestsAutoLoader', function(ply)
     if not ply.quest_auto_loader then
+        local delay = QuestSystem:GetConfig('DelayBetweenQuests')
+        if delay > 0 then
+            local file_path = 'quest_system/players_data/' .. ply:PlayerId() .. '/delay.json'
+            if file.Exists(file_path, 'DATA') then
+                local current_delay = file.Read(file_path, "DATA")
+                ply:SetNWFloat('quest_delay', current_delay)
+            end
+        end
+
         timer.Simple(3, function()
             if IsValid(ply) then
                 ply:EnableAllQuest()

@@ -3,12 +3,18 @@ AddCSLuaFile( "shared.lua" )
 include('shared.lua')
 
 function ENT:SetQuest(quest_id, ply)
-	self:SetNWEntity('player', ply)
+	if ply ~= nil then
+		timer.Simple(0.5, function()
+			if IsValid(self) then
+				self:AddPlayer(ply)
+			end
+		end)
+	end
 	self:SetNWString('quest_id', quest_id)
 end
 
 function ENT:SetStep(step)
-	local delay = 0.5
+	local delay = 1
 	
 	self:SetNWBool('StopThink', true)
 	self:SetNWFloat('ThinkDelay', RealTime() + 1)
@@ -25,7 +31,11 @@ function ENT:SetStep(step)
 				net.WriteEntity(self)
 				net.WriteString(self:GetQuestId())
 				net.WriteString(step)
-				net.Send(ply)
+				if quest.isEvent then
+					net.Broadcast()
+				else
+					net.Send(ply)
+				end
 			end
 		end)
 
@@ -49,7 +59,11 @@ function ENT:SetStep(step)
 				net.Start('cl_qsystem_entity_step_triggers')
 				net.WriteEntity(self)
 				net.WriteTable(triggers)
-				net.Send(ply)
+				if quest.isEvent then
+					net.Broadcast()
+				else
+					net.Send(ply)
+				end
 			end
 		end)
 
@@ -73,31 +87,103 @@ function ENT:SetStep(step)
 				net.Start('cl_qsystem_entity_step_points')
 				net.WriteEntity(self)
 				net.WriteTable(points)
-				net.Send(ply)
+				if quest.isEvent then
+					net.Broadcast()
+				else
+					net.Send(ply)
+				end
 			end
 		end)
 	end
 
-	if quest.steps[step].construct ~= nil then
-		quest.steps[step].construct(self)
+	if step == 'start' then
+		if quest.isEvent then
+			quest.title = '[Событие] ' .. quest.title
+
+			if quest.timeToNextStep ~= nil and quest.nextStep ~= nil then
+				quest.description = quest.description .. '\nДо начала: ' .. quest.timeToNextStep .. ' сек.'
+			end
+
+			if quest.timeQuest ~= nil then
+				quest.description = quest.description .. '\nВремя выполнения: ' .. quest.timeQuest .. ' сек.'
+			end
+		end
 	end
-	
+
 	self:OnNextStep(step)
+
+	local start_result = nil
+	if quest.steps[step].construct ~= nil then
+		start_result = quest.steps[step].construct(self)
+	end
 
 	timer.Simple(delay, function()
 		if IsValid(self) then
 			net.Start('cl_qsystem_entity_step_done')
 			net.WriteEntity(self)
 			net.WriteString(step)
-			net.Send(ply)
+			if quest.isEvent then
+				net.Broadcast()
+			else
+				net.Send(ply)
+			end
 		end
 	end)
+
+	if step == 'start' then
+		if quest.isEvent then
+			quest.title = '[Событие] ' .. quest.title
+		end
+
+		if quest.timeToNextStep ~= nil and quest.nextStep ~= nil then
+			quest.description = quest.description .. ' (До начала: ' .. quest.timeToNextStep .. ' сек.)'
+
+			timer.Simple(quest.timeToNextStep, function()
+				if IsValid(self) then
+					if quest.nextStepCheck ~= nil then
+						if quest.nextStepCheck(self) then
+							self:NextStep(quest.nextStep)
+						else
+							self:Failed()
+						end
+					end
+				end
+			end)
+		end
+
+		if quest.timeQuest ~= nil then
+			local time = quest.timeQuest
+
+			if quest.timeToNextStep ~= nil then
+				time = time + quest.timeToNextStep
+			end
+
+			timer.Simple(time, function()
+				if IsValid(self) then
+					local failedText = quest.failedText or {
+						title = 'Quest failed',
+						text = 'The execution time has expired.'
+					}
+
+					self:NotifyOnlyRegistred(failedText.title, failedText.text)
+					self:Failed()
+				end
+			end)
+		end
+	end
+
+	return start_result
 end
 
 function ENT:NextStep(step)
-	local ply = self:GetPlayer()
-	if IsValid(ply) then
-		ply:SetQuestStep(self:GetQuestId(), step)
+	local quest = self:GetQuest()
+	if quest.isEvent then
+		self:SetStep(step)
+	else
+		local ply = self:GetPlayer()
+		if IsValid(ply) then
+			ply:SetQuestStep(self:GetQuestId(), step)
+		end
 	end
 end
 
@@ -107,12 +193,15 @@ end
 function ENT:Reward(customPayment)
 	if engine.ActiveGamemode() ~= 'darkrp' then return end
 
-	local ply = self:GetPlayer()
-	if ply.addMoney ~= nil then
-		local payment = customPayment or self:GetQuest().payment
-		if payment ~= nil then
-			ply:addMoney(payment)
-			DarkRP.notify(ply, 4, 4, 'Ваша награда за выполнение квеста - ' .. DarkRP.formatMoney(payment))
+	local players = self:GetAllPlayers()
+	for _, ply in pairs(players) do
+		if ply.addMoney ~= nil then
+			local payment = customPayment or self:GetQuest().payment
+			if payment ~= nil then
+				ply:addMoney(payment)
+				DarkRP.notify(ply, 4, 4, 'Ваша награда за выполнение квеста - ' 
+					.. DarkRP.formatMoney(payment))
+			end
 		end
 	end
 end
@@ -179,6 +268,11 @@ function ENT:RemoveAllQuestWeapon()
 end
 
 function ENT:Complete()
+	if self:GetQuest().isEvent then
+		if SERVER then self:Remove() end
+		return
+	end
+
 	local ply = self:GetPlayer()
 	local quest_id = self:GetQuestId()
 	ply:DisableQuest(quest_id)
@@ -187,9 +281,33 @@ function ENT:Complete()
 end
 
 function ENT:Failed()
+	if self:GetQuest().isEvent then
+		if SERVER then self:Remove() end
+		return
+	end
+
 	local ply = self:GetPlayer()
 	local quest_id = self:GetQuestId()
 	ply:DisableQuest(quest_id)
 	ply:RemoveQuest(quest_id)
 	ply:SendLua([[surface.PlaySound('vo/k_lab/ba_getoutofsight01.wav')]])
+end
+
+function ENT:MoveEnemyToRandomPlayer()
+	local players = self:GetAllPlayers()
+
+	if #players ~= 0 then
+		local ply = table.Random(players)
+
+		if IsValid(ply) then
+			local player_pos = ply:GetPos()
+
+			for _, data in pairs(self.npcs) do
+				if IsValid(data.npc) then
+					data.npc:SetSaveValue("m_vecLastPosition", player_pos)
+					data.npc:SetSchedule(SCHED_FORCED_GO)
+				end
+			end
+		end
+	end
 end
