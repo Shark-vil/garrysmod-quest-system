@@ -25,7 +25,7 @@ local quest = {
             construct = function(eQuest)
                 if SERVER then
                     local quest = eQuest:GetQuest()
-                    eQuest:NotifyAll(quest.title, quest.description)
+                    eQuest:NotifyAll(quest.title, quest.description, 6)
                 end
             end,
             triggers = {

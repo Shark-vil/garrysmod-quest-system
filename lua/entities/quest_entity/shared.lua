@@ -349,19 +349,19 @@ function ENT:OnNextStep(step)
 	end
 end
 
-function ENT:Notify(title, desc, image, bgcolor)
-	self:GetPlayer():QuestNotify(title, desc, image, bgcolor)
+function ENT:Notify(title, desc, lifetime, image, bgcolor)
+	self:GetPlayer():QuestNotify(title, desc, lifetime, image, bgcolor)
 end
 
-function ENT:NotifyOnlyRegistred(title, desc, image, bgcolor)
+function ENT:NotifyOnlyRegistred(title, desc, lifetime, image, bgcolor)
 	for _, ply in pairs(self.players) do
-		ply:QuestNotify(title, desc, image, bgcolor)
+		ply:QuestNotify(title, desc, lifetime, image, bgcolor)
 	end
 end
 
-function ENT:NotifyAll(title, desc, image, bgcolor)
+function ENT:NotifyAll(title, desc, lifetime, image, bgcolor)
 	for _, ply in pairs(player.GetHumans()) do
-		ply:QuestNotify(title, desc, image, bgcolor)
+		ply:QuestNotify(title, desc, lifetime, image, bgcolor)
 	end
 end
 

@@ -5,7 +5,7 @@ hook.Add('PlayerSpawn', 'QSystem.QuestsAutoLoader', function(ply)
             local file_path = 'quest_system/players_data/' .. ply:PlayerId() .. '/delay.json'
             if file.Exists(file_path, 'DATA') then
                 local current_delay = file.Read(file_path, "DATA")
-                ply:SetNWFloat('quest_delay', current_delay)
+                ply:SetNWFloat('quest_delay', tonumber(current_delay, 10))
             end
         end
 

@@ -1,13 +1,13 @@
 local quest = {
     id = 'kill_drug_dealer',
     title = 'Убить наркоторговца',
-    description = 'Поступил заказ на убийство наркоторговца. Используйте для этого выданную вам монтировку, если её у вас нет.',
+    description = 'Поступил заказ на убийство наркоторговца. Используйте для этого выданный вам нож, если его у вас нет.',
     payment = 500,
     steps = {
         start = {
             construct = function(eQuest)
                 if SERVER then 
-                    eQuest:GiveQuestWeapon('weapon_crowbar')
+                    eQuest:GiveQuestWeapon('tfa_ins2_kabar')
                 else            
                     local quest = eQuest:GetQuest()
                     eQuest:Notify(quest.title, quest.description)
