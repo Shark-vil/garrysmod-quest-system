@@ -9,16 +9,24 @@ local function network_callback(len, ply)
     end
 
     local name = net.ReadString()
-    local networkData = util.JSONToTable(util.Decompress(net.ReadData(send_size)))
 
     if storage[name] ~= nil then
         local data = storage[name]
+
         if data.adminOnly then
             if ply:IsAdmin() or ply:IsSuperAdmin() then
-                data.execute(ply, networkData, category, name)
+                local net_data = net.ReadData(send_size)
+                if net_data ~= nil and #net_data ~= 0 then
+                    local networkData = util.JSONToTable(util.Decompress(net_data))
+                    data.execute(ply, networkData, category, name)
+                end
             end
         else
-            data.execute(ply, networkData, category, name)
+            local net_data = net.ReadData(send_size)
+            if net_data ~= nil and #net_data ~= 0 then
+                local networkData = util.JSONToTable(util.Decompress(net_data))
+                data.execute(ply, networkData, category, name)
+            end
         end
 
         net.RemoveCallback(name)
