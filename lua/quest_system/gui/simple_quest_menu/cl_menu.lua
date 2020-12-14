@@ -14,7 +14,7 @@ local function OpenMenu()
     local quests = QuestSystem:GetAllQuest()
 
     for id, quest in pairs(quests) do
-        if not quest.isEvent then        
+        if not quest.isEvent and not quest.hide then        
             if quest.timeQuest ~= nil then
                 quest.description = quest.description .. '\nВремя на выполнение: ' .. quest.timeQuest .. ' сек.'
             end

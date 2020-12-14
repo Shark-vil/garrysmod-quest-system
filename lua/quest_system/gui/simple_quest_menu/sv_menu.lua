@@ -12,6 +12,10 @@ net.Receive('sv_qsystem_startquest', function(len, ply)
     if delay > 0 then
         local quest = QuestSystem:GetQuest(id)
 
+        if quest.hide or quest.isEvent then
+            return
+        end
+
         if quest.condition ~= nil then
             if not quest.condition(ply) then
                 return
