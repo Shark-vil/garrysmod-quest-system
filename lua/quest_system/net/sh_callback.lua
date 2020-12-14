@@ -1,7 +1,7 @@
 local storage = {}
 local send_size = 10000
 
-netCallback = netCallback or {}
+net = net or {}
 
 local function network_callback(len, ply)
     if CLIENT then
@@ -21,7 +21,7 @@ local function network_callback(len, ply)
             data.execute(ply, networkData, category, name)
         end
 
-        netCallback.remove(name)
+        net.RemoveCallback(name)
     end
 end
 
@@ -34,7 +34,7 @@ else
     net.Receive('cl_qsystem_callback', network_callback)
 end
 
-netCallback.invoke = function(name, ply, data)
+net.Invoke = function(name, ply, data)
     data = data or {}
     if not istable(data) then
         data = {}
@@ -58,7 +58,7 @@ netCallback.invoke = function(name, ply, data)
     end
 end
 
-netCallback.register = function(name, func, adminOnly)
+net.RegisterCallback = function(name, func, adminOnly)
     adminOnly = adminOnly or true
     storage[name] = {
         adminOnly = adminOnly,
@@ -66,6 +66,6 @@ netCallback.register = function(name, func, adminOnly)
     }
 end
 
-netCallback.remove = function(name)
+net.RemoveCallback = function(name)
     storage[name] = nil
 end
