@@ -129,6 +129,8 @@ function ENT:StartDialogue(ignore_npc_text)
 end
 
 function ENT:VoiceSay(sound_path, soundLevel, pitchPercent, volume, channel, soundFlags, dsp)
+    if not IsValid(self) or not IsValid(self:GetNPC()) then return end
+    
     soundLevel = soundLevel or 75
     pitchPercent = pitchPercent or 100
     volume = volume or 1

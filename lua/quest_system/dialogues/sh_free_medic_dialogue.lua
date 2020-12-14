@@ -2,7 +2,7 @@ local conversation = {
     id = 'free_medic',
     name = 'Вольный медик',
     isRandomNpc = true,
-    randomNumber = 5,
+    randomNumber = 2,
     npc_class = {
         'npc_leather_jacket_male_01_f',
         'npc_leather_jacket_male_02_f',
