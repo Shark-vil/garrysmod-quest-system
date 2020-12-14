@@ -2,7 +2,7 @@ QuestSystem.cfg = {}
 
 QuestSystem.cfg.NoDrawNPC_WhenCompletingQuest = false
 QuestSystem.cfg.EnableEvents = true
-QuestSystem.cfg.EventsTimeDelay = 60
+QuestSystem.cfg.EventsTimeDelay = 30
 -- The higher the number, the lower the chance of activating the event
 -- 0 - disable restiction
 QuestSystem.cfg.EventsRandomActivate = 10
@@ -11,4 +11,4 @@ QuestSystem.cfg.MaxActiveEvents = 2
 -- 0 - disable restiction
 QuestSystem.cfg.MaxActiveQuestsForOnePlayer = 4
 -- 0 - disable restiction
-QuestSystem.cfg.DelayBetweenQuests = 120
+QuestSystem.cfg.DelayBetweenQuests = 15

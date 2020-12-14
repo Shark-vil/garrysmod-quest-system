@@ -79,6 +79,7 @@ function meta:EnableQuest(quest_id)
         
         local ent = ents.Create('quest_entity')
         ent:SetQuest(quest_id, self)
+        ent:SetPos(self:GetPos())
         ent:Spawn()
         timer.Simple(1, function()
             if not IsValid(ent) then return end
@@ -93,6 +94,7 @@ function meta:EnableAllQuest()
         if quest_data ~= nil then
             local ent = ents.Create('quest_entity')
             ent:SetQuest(quest_data.id, self)
+            ent:SetPos(self:GetPos())
             ent:Spawn()
             timer.Simple(1, function()
                 if not IsValid(ent) then return end

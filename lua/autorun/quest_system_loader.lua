@@ -81,6 +81,8 @@ using('storage/sv_compile_quests.lua')
 
 using('gui/simple_quest_menu/sv_menu.lua')
 using('gui/simple_quest_menu/cl_menu.lua')
+using('gui/npc_dialogue_menu/sv_menu.lua')
+using('gui/npc_dialogue_menu/cl_menu.lua')
 
 using('quests/sh_kill_zombie.lua')
 using('quests/sh_search_box.lua')
@@ -88,3 +90,6 @@ using('quests/sh_kill_drug_dealer.lua')
 using('quests/sh_player_killer.lua')
 
 using('quests_events/sh_kill_combine.lua')
+
+using('classes/sh_dialogue.lua')
+using('dialogues/sh_example_dialogue.lua')
