@@ -10,6 +10,8 @@ ENT.Spawnable = false
 ENT.AdminSpawnable = false
 ENT.conversation = nil
 ENT.isStarted = false
+ENT.isFirst = true
+ENT.isFirstAnswer = false
 
 function ENT:Initialize()
     self:SetModel('models/props_junk/PopCan01a.mdl')
@@ -30,6 +32,10 @@ function ENT:Think()
 end
 
 function ENT:OnRemove()
+    if not self:AlreadySaid() then
+        self:SavePlayerValue('already_said', true, true)
+    end
+
     self:GetPlayer():Freeze(false)
 end
 
@@ -59,12 +65,43 @@ function ENT:GetNPC()
     return self:GetNWEntity('npc')
 end
 
+function ENT:AlreadySaid()
+    local value = self:GetPlayerValue('already_said')
+    if value == nil then value = false end
+    return tobool(value)
+end
+
+function ENT:GetPlayerValue(value_name)
+    local value = self:GetNWString('var_' .. value_name)
+
+    if value ~= nil and #value ~= 0 then
+        return value
+    else
+        local ply = self:GetPlayer()
+        if IsValid(ply) then
+            local file_path = 'quest_system/dialogue/'.. ply:PlayerId()
+            file_path = file_path .. '/' .. self:GetDialogueID()
+            file_path = file_path .. '/' .. value_name .. '.txt'
+
+            if file.Exists(file_path, 'DATA') then
+                local value = file.Read(file_path, "DATA")
+                self:SetNWString('var_' .. value_name, value)
+                return value
+            end
+        end
+    end
+    
+    return nil
+end
+
 function ENT:StartDialogue(ignore_npc_text)
     ignore_npc_text = ignore_npc_text or false
 
     if SERVER then
         local ply = self:GetPlayer()
         ply:Freeze(true)
+
+        self:LoadPlayerValues()
 
         net.Start('cl_qsystem_set_dialogue_id')
         net.WriteEntity(self)
@@ -88,6 +125,7 @@ function ENT:StartDialogue(ignore_npc_text)
     -- end
 
     self.isStarted = true
+    self.isFirst = false
 end
 
 function ENT:VoiceSay(sound_path, soundLevel, pitchPercent, volume, channel, soundFlags, dsp)

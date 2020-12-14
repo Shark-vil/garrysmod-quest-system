@@ -8,6 +8,7 @@ file.CreateDir('quest_system/events')
 file.CreateDir('quest_system/players_data')
 file.CreateDir('quest_system/save_npc')
 file.CreateDir('quest_system/compile')
+file.CreateDir('quest_system/dialogue')
 
 local Category = "Quest"
 local NPC = {
@@ -92,4 +93,4 @@ using('quests/sh_player_killer.lua')
 using('quests_events/sh_kill_combine.lua')
 
 using('classes/sh_dialogue.lua')
-using('dialogues/sh_example_dialogue.lua')
+using('dialogues/sh_free_medic_dialogue.lua')

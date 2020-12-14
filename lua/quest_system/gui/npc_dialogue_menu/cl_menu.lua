@@ -16,7 +16,7 @@ hook.Add("CalcView", "QSystem.NpcDialogueCamera", function(ply, pos, angles, fov
         }
 
         if cam_anim < 1 then
-            cam_anim = cam_anim + 0.010
+            cam_anim = cam_anim + 0.015
         else
             cam_anim = 1
         end
@@ -55,17 +55,26 @@ OpenDialoguNpc = function(ignore_npc_text)
             text = table.Random(step.text)
         end
 
+        text = utf8.force(text)
+
         local width =  ScrW() / 2
-        local maxLineSize = math.floor(width / 7.5)
+        local maxLineSize = math.floor(width * 0.14)
         local startPos = 1
         local endPos = maxLineSize
         local lines = {}
-        for i = 1, string.len(text) do
-            if endPos == i then
-                local line = string.sub(text, startPos,endPos) .. '\n'
-                table.insert(lines, line)
-                startPos = i + 1
-                endPos = endPos + maxLineSize
+        local str_len = utf8.len(text)
+        if str_len >= maxLineSize then
+            for i = 1, str_len do
+                if endPos == i then
+                    local line = utf8.sub(text, startPos, endPos) -- Чистая магия
+                    table.insert(lines, line .. '\n')
+                    
+                    startPos = i
+                    endPos = endPos + maxLineSize
+                    if endPos > str_len then
+                        endPos = str_len
+                    end
+                end
             end
         end
 
@@ -134,66 +143,78 @@ OpenDialogueMenu = function()
         AnswerOptions:DockMargin(5, 5, 5, 5)
 
         for id, data in pairs(step.answers) do
-            local AnswerOptionItem = AnswerOptions:Add("DPanel")
-            AnswerOptionItem:SetHeight(80)
-            AnswerOptionItem:Dock(TOP)
-            AnswerOptionItem:DockMargin(0, 0, 5, 5)
-            AnswerOptionItem.OnCursorEntered = function(self)
-                self.onCursor = true
+            local skip = false
+            local condition = step.answers[id].condition
+            if condition ~= nil then
+                if not condition(npcDialogue) then skip = true end
             end
-            AnswerOptionItem.OnCursorExited = function(self)
-                self.onCursor = false
-            end
-            AnswerOptionItem.DragMouseRelease = function(self, mouseCode)
-                if step.answers[id] ~= nil then
-                    local func = step.answers[id].event
-                    func(LocalPlayer(), npcDialogue, currentDialogue)
-                    
-                    dont_send = true
-                    MainPanel:Close()
 
-                    net.Start('sv_qsystem_dialogue_answer_select')
-                    net.WriteInt(id, 10)
-                    net.SendToServer()
+            if not skip then
+                local AnswerOptionItem = AnswerOptions:Add("DPanel")
+                AnswerOptionItem:SetHeight(80)
+                AnswerOptionItem:Dock(TOP)
+                AnswerOptionItem:DockMargin(0, 0, 5, 5)
+                AnswerOptionItem.OnCursorEntered = function(self)
+                    self.onCursor = true
                 end
-            end
-            
-            local hoverColor = Color(184, 211, 217, 200)
-            local defaultColor = Color(255, 255, 255, 200)
-            local currentColor = defaultColor
-            AnswerOptionItem.Paint = function(self, width, height)
-                if self.onCursor then
-                    local vec_color = currentColor:ToVector()
-                    local vec_new_color = hoverColor:ToVector()
-                    local new_vec =  LerpVector(0.5, vec_color, vec_new_color)
-                    currentColor = new_vec:ToColor()
-                else
-                    local vec_color = currentColor:ToVector()
-                    local vec_new_color = defaultColor:ToVector()
-                    local new_vec =  LerpVector(0.5, vec_color, vec_new_color)
-                    currentColor = new_vec:ToColor()
+                AnswerOptionItem.OnCursorExited = function(self)
+                    self.onCursor = false
+                end
+                AnswerOptionItem.DragMouseRelease = function(self, mouseCode)
+                    if step.answers[id] ~= nil then
+                        local func = step.answers[id].event
+                        func(LocalPlayer(), npcDialogue, currentDialogue)
+
+                        npcDialogue.isFirstAnswer = true
+                        
+                        dont_send = true
+                        MainPanel:Close()
+
+                        net.Start('sv_qsystem_dialogue_answer_select')
+                        net.WriteInt(id, 10)
+                        net.SendToServer()
+                    end
+                end
+                
+                local hoverColor = Color(184, 211, 217)
+                local defaultColor = Color(255, 255, 255)
+                local currentColor = defaultColor
+                AnswerOptionItem.Paint = function(self, width, height)
+                    if self.onCursor then
+                        local vec_color = currentColor:ToVector()
+                        local vec_new_color = hoverColor:ToVector()
+                        local new_vec =  LerpVector(0.5, vec_color, vec_new_color)
+                        currentColor = new_vec:ToColor()
+                    else
+                        local vec_color = currentColor:ToVector()
+                        local vec_new_color = defaultColor:ToVector()
+                        local new_vec =  LerpVector(0.5, vec_color, vec_new_color)
+                        currentColor = new_vec:ToColor()
+                    end
+
+                    currentColor = ColorAlpha(currentColor, 200)
+
+                    draw.RoundedBox(8, 0, 0, width, height, currentColor)
                 end
 
-                draw.RoundedBox(8, 0, 0, width, height, currentColor)
-            end
+                local TextAnswer = vgui.Create("DLabel", AnswerOptionItem)
+                TextAnswer:SetFont('QuestSystemDialogueText')
+                TextAnswer:SetPos(5, 5)
+                local text = ''
 
-            local TextAnswer = vgui.Create("DLabel", AnswerOptionItem)
-            TextAnswer:SetFont('QuestSystemDialogueText')
-            TextAnswer:SetPos(5, 5)
-            local text = ''
+                if isstring(data.text) then
+                    text = data.text
+                end
+        
+                if istable(data.text) then
+                    text = table.Random(data.text)
+                end
 
-            if isstring(data.text) then
-                text = data.text
+                TextAnswer:SetText(text)
+                TextAnswer:SetDark(true)
+                TextAnswer:SizeToContents()
+                TextAnswer:SetWrap(true)
             end
-    
-            if istable(data.text) then
-                text = table.Random(data.text)
-            end
-
-            TextAnswer:SetText(text)
-            TextAnswer:SetDark(true)
-            TextAnswer:SizeToContents()
-            TextAnswer:SetWrap(true)
         end
     end
 end
@@ -203,6 +224,5 @@ net.Receive('cl_qsystem_set_dialogue_id', function()
     local ignore_npc_text = net.ReadBool()
     npcDialogue = ent
     npcDialogue:StartDialogue(ignore_npc_text)
-
     OpenDialoguNpc(ignore_npc_text)
 end)

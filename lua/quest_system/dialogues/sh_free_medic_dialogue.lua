@@ -1,9 +1,28 @@
 local conversation = {
-    id = 'example_dialogue',
-    name = 'Неизвестный гражданин',
-    isRandomNpc = false,
+    id = 'free_medic',
+    name = 'Вольный медик',
+    isRandomNpc = true,
     randomNumber = 5,
-    npc_class = 'npc_barney',
+    npc_class = {
+        'npc_leather_jacket_male_01_f',
+        'npc_leather_jacket_male_02_f',
+        'npc_leather_jacket_male_03_f',
+        'npc_leather_jacket_male_04_f',
+        'npc_leather_jacket_male_05_f',
+        'npc_leather_jacket_male_06_f',
+        'npc_leather_jacket_male_07_f',
+        'npc_leather_jacket_male_08_f',
+        'npc_leather_jacket_male_09_f',
+        'npc_citizen'
+    },
+    condition = function(ply, npc)
+        if npc:GetClass() == 'npc_citizen' then
+            local validModel = string.find(npc:GetModel():lower(), ('/male'))
+            if validModel then return true end
+            return false
+        end
+        return true
+    end,
     steps = {
         start = {
             text = {
@@ -11,11 +30,12 @@ local conversation = {
                 'А?..',
                 'Чего надо?',
                 'Да-да?',
-                'Ммм...'
+                'Я слушаю.',
+                'Чего хотели?'
             },
             delay = 3,
             event = function(eDialogue)
-                if CLIENT then
+                if CLIENT and eDialogue.isFirst then
                     eDialogue:VoiceSay('vo/canals/matt_go_nag01.wav')
                 end
             end,
@@ -25,20 +45,32 @@ local conversation = {
                         'Ничего, простите.',
                         'Обознался.'
                     },
+                    condition = function(eDialogue)
+                        local lock_health = eDialogue:GetPlayerValue('lock_health')
+                        return (lock_health == nil)
+                    end,
                     event = function(eDialogue)
                         if SERVER then eDialogue:Next('exit') end
                     end
                 },
                 {
-                    text = 'Продай мне немного аптечек',
+                    text = 'Больше ничего не нужно, пока.',
+                    condition = function(eDialogue)
+                        local lock_health = eDialogue:GetPlayerValue('lock_health')
+                        return (lock_health ~= nil)
+                    end,
+                    event = function(eDialogue)
+                        if SERVER then eDialogue:Next('exit_2') end
+                    end
+                },
+                {
+                    text = 'Вылечи меня пожалуйста',
                     event = function(eDialogue)
                         if SERVER then
                             local ply = eDialogue:GetPlayer()
-                            if ply:Health() < 100 then
-                                local npc = eDialogue:GetNPC()
-                                npc.lock_health = npc.lock_health or {}
-
-                                if table.HasValue(npc.lock_health, ply) then
+                            if ply:Health() < 90 then
+                                local lock_health = eDialogue:GetPlayerValue('lock_health')
+                                if lock_health ~= nil and tonumber(lock_health) > os.time() then
                                     eDialogue:Next('rejection_health')
                                 else
                                     eDialogue:Next('get_health')
@@ -52,8 +84,8 @@ local conversation = {
             },
         },
         rejection_health = {
-            text = 'Я тебя уже подлатал, больше аптечек не дам.',
-            delay = 3,
+            text = 'Я тебя уже подлатал, у меня и другие клиенты есть. Можешь зайти позднее.',
+            delay = 5,
             eventDelay = function(eDialogue)
                 if SERVER then
                     eDialogue:Next('start', true)
@@ -61,8 +93,8 @@ local conversation = {
             end
         },
         get_health = {
-            text = 'Ладно. Вот, держи немного.',
-            delay = 3,
+            text = 'Ладно. Сейчас мы тебя починим. Вот так... И тут... Готово!',
+            delay = 4,
             eventDelay = function(eDialogue)
                 if SERVER then
                     local ply = eDialogue:GetPlayer()
@@ -74,20 +106,9 @@ local conversation = {
                         ply:SetHealth(100)
                     end
 
-                    local npc = eDialogue:GetNPC()
-                    npc.lock_health = npc.lock_health or {}
-                    table.insert(npc.lock_health, ply)
-
+                    eDialogue:SavePlayerValue('lock_health', os.time() + 60)
                     eDialogue:Next('start', true)
                 end
-
-                local dialogue = eDialogue:GetDialogue()
-                table.insert(dialogue.steps.start.answers, {
-                    text = 'Больше ничего не нужно, прощай.',
-                    event = function(eDialogue)
-                        if SERVER then print('stop') eDialogue:Stop() end
-                    end
-                })
             end
         },
         failed_health = {
@@ -113,6 +134,20 @@ local conversation = {
                 if CLIENT then
                     eDialogue:VoiceSay('vo/canals/gunboat_dam.wav')
                 else
+                    eDialogue:Stop()
+                end
+            end
+        },
+        exit_2 = {
+            text = {
+                'Ладно.',
+                'Ладно. Всего доброго',
+                'Всего доброго',
+                'Ну бывай'
+            },
+            delay = 3,
+            eventDelay = function(eDialogue)
+                if SERVER then
                     eDialogue:Stop()
                 end
             end
