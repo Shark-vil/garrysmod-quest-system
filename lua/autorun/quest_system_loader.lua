@@ -28,7 +28,7 @@ end
 
 local function p_include(file_path)
     include(file_path)
-    MsgN('QSystem file load - ' .. file_path)
+    MsgN('[QuestSystem] script load - ' .. file_path)
 end
 
 local function using(local_file_path, network_type, not_root_directory)
@@ -48,11 +48,16 @@ local function using(local_file_path, network_type, not_root_directory)
     end
 end
 
-using('sh_main.lua')
+MsgN('[QuestSystem] Loading scripts...')
+
+using('classes/sh_quest_system.lua')
+using('classes/sh_dialogue.lua')
 
 using('resources/cl_fonts.lua')
 
 using('cfg/sh_main_config.lua')
+
+using('sh_main.lua')
 
 using('net/sh_callback.lua')
 
@@ -63,10 +68,8 @@ using('extension/player_quest/cl_extension.lua')
 
 using('tools/trigger_editor/sv_trigger_editor.lua')
 using('tools/trigger_editor/cl_trigger_editor.lua')
-
 using('tools/points_editor/sv_points_editor.lua')
 using('tools/points_editor/cl_points_editor.lua')
-
 using('tools/structure_editor/sv_structure_editor.lua')
 using('tools/structure_editor/cl_strucutre_editor.lua')
 
@@ -92,5 +95,6 @@ using('quests/sh_player_killer.lua')
 
 using('quests_events/sh_kill_combine.lua')
 
-using('classes/sh_dialogue.lua')
 using('dialogues/sh_free_medic_dialogue.lua')
+
+MsgN('[QuestSystem] Loading scripts completed!')
