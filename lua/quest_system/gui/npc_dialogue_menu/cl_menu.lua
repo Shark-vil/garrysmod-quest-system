@@ -68,62 +68,47 @@ OpenDialoguNpc = function(ignore_npc_text)
             text = table.Random(step.text)
         end
 
-        text = utf8.force(text)
+        local width = ScrW() / 2
+        local height = 150
+        local pos_x = (ScrW() - width) / 2
+        local pos_y = ScrH() - 200
 
-        local width =  ScrW() / 2
-        local maxLineSize = math.floor(width * 0.107)
-        local startPos = 1
-        local endPos = maxLineSize
-        local lines = {}
-        local str_len = utf8.len(text)
-        if str_len >= maxLineSize then
-            for i = 1, str_len do
-                if endPos == i then
-                    local line = utf8.sub(text, startPos, endPos) -- Чистая магия
-                    table.insert(lines, string.Trim(line) .. '\n')
-                    
-                    startPos = i
-                    endPos = endPos + maxLineSize
-                    if endPos > str_len then
-                        endPos = str_len
-                    end
-                end
-            end
-        end
-
-        if #lines ~= 0 then
-            text = table.concat(lines)
-        end
-
-        hook.Add("HUDPaint", "QSystem.DialogueNpcText", function() 
-            if not IsValid(npcDialogue) then return end
-
-            local width =  ScrW() / 2
-            local height = 150
-            local pos_x = (ScrW() - width) / 2
-            local pos_y = ScrH() - 200
+        local MainPanel = vgui.Create('DFrame')
+        MainPanel:ShowCloseButton(false)
+        MainPanel:SetDraggable(false)
+        MainPanel:SetSize(width, height)
+        MainPanel:SetPos(pos_x, pos_y) 
+        MainPanel:SetTitle('')
+        MainPanel:MakePopup()
+        MainPanel.Paint = function(self, width, height)
+            if not IsValid(npcDialogue) then self:Close() return end
 
             if background_texture ~= nil then
                 surface.SetDrawColor(255, 255, 255, 255)
                 surface.SetMaterial(background_texture)
-                surface.DrawTexturedRect(pos_x, pos_y , width, height)
+                surface.DrawTexturedRect(0, 0 , width, height)
             else
-                draw.RoundedBox(2, pos_x, pos_y, width, height, background_color)
+                draw.RoundedBox(2, 0, 0, width, height, background_color)
             end
 
-            draw.DrawText(name, "QuestSystemDialogueNpcName", 
-                pos_x + 30, pos_y + 10, Color(255, 255, 255, 255))
+            draw.DrawText(name, "QuestSystemDialogueNpcName", 30, 10, Color(255, 255, 255, 255))
 
             surface.SetDrawColor(rectline_color)
-            surface.DrawLine(pos_x + 20, pos_y + 30, pos_x + 20 + (width - 40), pos_y + 30)
+            surface.DrawLine(20, 30, 20 + (width - 40), 30)
+        end
 
-            draw.DrawText(text, "QuestSystemDialogueText", 
-                pos_x + 30, pos_y + 30, Color(255, 255, 255, 255))
-        end)
+        local TextAnswer = vgui.Create("DLabel", MainPanel)
+        TextAnswer:SetFont('QuestSystemDialogueText')
+        TextAnswer:SetTextColor(Color(255, 255, 255))
+        TextAnswer:SetWidth(width - 35)
+        TextAnswer:SetPos(30, 30)
+        TextAnswer:SetText(text)
+        TextAnswer:SetWrap(true)
+        TextAnswer:SetAutoStretchVertical(true)
 
         timer.Simple(step.delay, function()
             if IsValid(npcDialogue) then
-                hook.Remove("HUDPaint", "QSystem.DialogueNpcText")
+                MainPanel:Close()
                 OpenDialogueMenu(name)
             end
         end)
