@@ -9,7 +9,7 @@ local rectline_color = Color(87, 255, 118)
 
 local cam_anim = 0
 hook.Add("CalcView", "QSystem.NpcDialogueCamera", function(ply, pos, angles, fov)
-    if IsValid(npcDialogue) and IsValid(npcDialogue:GetNPC()) then
+    if IsValid(npcDialogue) and IsValid(npcDialogue:GetNPC()) and not npcDialogue:GetDialogue().isBackground then
         local npc = npcDialogue:GetNPC()
         local n_origin = npc:EyePos() - (npc:GetAngles():Forward() * -35) - Vector(0, 0, 10)
         local n_angles = npc:EyeAngles() - Angle(0, 180, 0)
@@ -34,13 +34,13 @@ hook.Add("CalcView", "QSystem.NpcDialogueCamera", function(ply, pos, angles, fov
 end)
 
 hook.Add('PreDrawPlayerHands', 'QSystem.NpcDialogueCamera', function()
-    if IsValid(npcDialogue) then
+    if IsValid(npcDialogue) and not npcDialogue:GetDialogue().isBackground then
         return true
     end
 end)
 
 hook.Add('PreDrawViewModel', 'QSystem.NpcDialogueCamera', function()
-    if IsValid(npcDialogue) then
+    if IsValid(npcDialogue) and not npcDialogue:GetDialogue().isBackground then
         return true
     end
 end)
@@ -274,5 +274,8 @@ net.Receive('cl_qsystem_set_dialogue_id', function()
     local ignore_npc_text = net.ReadBool()
     npcDialogue = ent
     npcDialogue:StartDialogue(ignore_npc_text)
-    OpenDialoguNpc(ignore_npc_text)
+
+    if not ent:GetDialogue().isBackground then
+        OpenDialoguNpc(ignore_npc_text)
+    end
 end)

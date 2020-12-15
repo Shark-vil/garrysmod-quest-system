@@ -4,17 +4,26 @@ util.AddNetworkString('cl_qsystem_set_dialogue_id')
 
 hook.Add('PlayerSpawnedNPC', 'QSystem.SetNpcDialogue', function(ply, ent)
     if IsValid(ent) and ent:IsNPC() then
-        QuestDialogue:ParentToNPC(ent, ply)
+        QuestDialogue:AutoParentToNPC(ent, ply)
     end
 end)
 
-hook.Add('PlayerUse', 'QSystem.OpenNpcDialogueMenu', function(ply, ent)
-    if IsValid(ent) and ent:IsNPC() then
+hook.Add('PlayerUse', 'QSystem.OpenNpcDialogueMenu', function(ply, npc)
+    if IsValid(npc) and npc:IsNPC() then
         for _, ent in pairs(ents.FindByClass('quest_dialogue')) do
-            if IsValid(ent) and ent:GetPlayer() == ply then return end
+            if IsValid(ent) and ent:GetPlayer() == ply then
+                local dialogue = ent:GetDialogue()
+                if dialogue.isBackground then
+                    if ent:GetNPC() == npc then
+                        return
+                    end
+                else
+                    return
+                end
+            end
         end
         
-        local id = ent.npc_dialogue_id
+        local id = npc.npc_dialogue_id
         if id ~= nil then
             local dialogue_ent = ents.Create('quest_dialogue')
             dialogue_ent:SetPos(ply:GetPos())
@@ -22,11 +31,13 @@ hook.Add('PlayerUse', 'QSystem.OpenNpcDialogueMenu', function(ply, ent)
             dialogue_ent:SetDialogueID(id)
             dialogue_ent:SetStep('start')
             dialogue_ent:SetPlayer(ply)
-            dialogue_ent:SetNPC(ent)
+            dialogue_ent:SetNPC(npc)
 
             timer.Simple(0.6, function()
                 dialogue_ent:StartDialogue()
             end)
+
+            ply.npc_dialogue_delay = RealTime() + 1
         end
     end
 end)

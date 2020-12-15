@@ -98,5 +98,6 @@ using('quests/sh_player_killer.lua')
 using('quests_events/sh_kill_combine.lua')
 
 using('dialogues/sh_free_medic_dialogue.lua')
+using('dialogues/sh_random_background_replics.lua')
 
 MsgN('[QuestSystem] Loading scripts completed!')

@@ -19,6 +19,84 @@ function ENT:Initialize()
 	self:SetMoveType(MOVETYPE_NONE)
     self:SetSolid(SOLID_NONE)
     self:SetNoDraw(true)
+
+    if CLIENT then
+        local lines = nil
+        hook.Add('PostDrawOpaqueRenderables', self, function()
+            local npc = self:GetNPC()
+    
+            if IsValid(npc) then
+                local dialogue = self:GetDialogue()
+                
+                if dialogue ~= nil then
+                    if not dialogue.isBackground then
+                        hook.Remove('PostDrawOpaqueRenderables', self)
+                        return
+                    end
+
+                    if npc:GetPos():Distance(LocalPlayer():GetPos()) < 800 then
+                        local playerAngle = LocalPlayer():GetAngles()
+                        local textAngle = Angle(0, playerAngle.y - 180, 0)
+    
+                        if lines == nil then
+                            lines = {}
+                            local step = self:GetStep()
+                            local text = ''
+                            if step.text ~= nil then
+                                if isstring(step.text) then
+                                    text = step.text
+                                elseif istable(step.text) then
+                                    text = table.Random(step.text)
+                                end
+                            end
+    
+                            text = utf8.force(text)
+                            local maxLineSize = 50
+                            local startPos = 1
+                            local endPos = maxLineSize
+                            local str_len = utf8.len(text)
+                            if str_len >= maxLineSize then
+                                for i = 1, str_len do
+                                    if endPos == i then
+                                        local line = utf8.sub(text, startPos, endPos)
+                                        table.insert(lines, string.Trim(line))
+    
+                                        startPos = i
+                                        endPos = endPos + maxLineSize
+                                        if endPos > str_len then
+                                            endPos = str_len
+                                        end
+                                    end
+                                end
+                            end
+    
+                            if #lines == 0 then
+                                table.insert(lines, text)
+                            end
+                        end
+            
+                        textAngle:RotateAroundAxis(textAngle:Forward(), 90)
+                        textAngle:RotateAroundAxis(textAngle:Right(), -90)
+                        
+                        local lengthLines = #lines
+                        if lengthLines ~= 0 then
+                            cam.Start3D2D(npc:GetPos() + npc:GetForward() + npc:GetUp() * 78, textAngle, 0.25)
+                                local ypos = -15
+                                for i = 1, lengthLines do
+                                    local text = lines[i]
+                                    draw.SimpleTextOutlined(text, 
+                                        "QuestSystemDialogueBackgroundText", 0, ypos, Color(255, 255, 255), 
+                                        TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color(0, 0, 0))
+                                    
+                                    ypos = ypos + 15
+                                end
+                            cam.End3D2D()
+                        end
+                    end
+                end
+            end
+        end)
+    end
 end
 
 function ENT:Think()
@@ -36,7 +114,9 @@ function ENT:OnRemove()
         self:SavePlayerValue('already_said', true, true)
     end
 
-    self:GetPlayer():Freeze(false)
+    if not self:GetDialogue().isBackground then
+        self:GetPlayer():Freeze(false)
+    end
 end
 
 function ENT:GetDialogue()
@@ -53,8 +133,13 @@ function ENT:GetStepID()
 end
 
 function ENT:GetStep()
-    local step_id = self:GetStepID()
-    return self:GetDialogue().steps[step_id]
+    local dialogue = self:GetDialogue()
+    if dialogue.isBackground then
+        return dialogue.start
+    else
+        local step_id = self:GetStepID()
+        return dialogue.steps[step_id]
+    end
 end
 
 function ENT:GetPlayer()
@@ -99,7 +184,10 @@ function ENT:StartDialogue(ignore_npc_text)
 
     if SERVER then
         local ply = self:GetPlayer()
-        ply:Freeze(true)
+        
+        if not self:GetDialogue().isBackground then
+            ply:Freeze(true)
+        end
 
         self:LoadPlayerValues()
 
@@ -111,11 +199,18 @@ function ENT:StartDialogue(ignore_npc_text)
 
     -- if not ignore_npc_text then
         local step = self:GetStep()
+        local delay = step.delay or 0
         if step.eventDelay ~= nil then
-            local delay = step.delay or 0
             timer.Simple(delay, function()
                 if not IsValid(self) then return end
                 step.eventDelay(self)
+            end)
+        end
+
+        if SERVER and self:GetDialogue().isBackground then
+            timer.Simple(delay + 1, function()
+                if not IsValid(self) then return end
+                self:Remove()
             end)
         end
 

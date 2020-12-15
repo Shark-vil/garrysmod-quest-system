@@ -69,3 +69,21 @@ surface.CreateFont('QuestSystemDialogueText', {
     additive = false,
     outline = false,
 })
+
+surface.CreateFont('QuestSystemDialogueBackgroundText', {
+    font = 'qsystem_dialogue',
+    extended = false,
+    size = 14,
+    weight = 100,
+    blursize = 0,
+    scanlines = 0,
+    antialias = false,
+    underline = false,
+    italic = false,
+    strikeout = false,
+    symbol = false,
+    rotary = false,
+    shadow = true,
+    additive = false,
+    outline = false,
+})
