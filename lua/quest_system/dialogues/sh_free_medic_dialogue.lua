@@ -3,21 +3,11 @@ local conversation = {
     name = 'Вольный медик',
     isRandomNpc = true,
     randomNumber = 2,
-    npc_class = {
-        'npc_leather_jacket_male_01_f',
-        'npc_leather_jacket_male_02_f',
-        'npc_leather_jacket_male_03_f',
-        'npc_leather_jacket_male_04_f',
-        'npc_leather_jacket_male_05_f',
-        'npc_leather_jacket_male_06_f',
-        'npc_leather_jacket_male_07_f',
-        'npc_leather_jacket_male_08_f',
-        'npc_leather_jacket_male_09_f',
-        'npc_citizen'
-    },
+    npc_class = 'npc_citizen',
     condition = function(ply, npc)
         if npc:GetClass() == 'npc_citizen' then
-            local validModel = string.find(npc:GetModel():lower(), ('/male'))
+            -- Only male citizen model
+            local validModel = string.find(npc:GetModel():lower(), ('/male_'))
             if validModel then return true end
             return false
         end
