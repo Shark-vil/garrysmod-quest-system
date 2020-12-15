@@ -80,7 +80,7 @@ OpenDialoguNpc = function(ignore_npc_text)
             for i = 1, str_len do
                 if endPos == i then
                     local line = utf8.sub(text, startPos, endPos) -- Чистая магия
-                    table.insert(lines, line .. '\n')
+                    table.insert(lines, string.Trim(line) .. '\n')
                     
                     startPos = i
                     endPos = endPos + maxLineSize

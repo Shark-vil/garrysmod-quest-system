@@ -55,11 +55,20 @@ local conversation = {
                     event = function(eDialogue)
                         if SERVER then
                             local ply = eDialogue:GetPlayer()
+                            
                             if ply:Health() < 90 then
                                 local lock_health = eDialogue:GetPlayerValue('lock_health')
                                 if lock_health ~= nil and tonumber(lock_health) > os.time() then
                                     eDialogue:Next('rejection_health')
                                 else
+                                    if engine.ActiveGamemode() == 'darkrp' then
+                                        local money = ply:getDarkRPVar("money")
+                                        if money < 100 then
+                                            eDialogue:Next('few_money')
+                                            return
+                                        end
+                                    end
+
                                     eDialogue:Next('get_health')
                                 end
                             else
@@ -69,6 +78,15 @@ local conversation = {
                     end
                 },
             },
+        },
+        few_money = {
+            text = 'Ага, а деньги то есть?... Чего, и всего? Этого мало. Зайди когда на руках будет хотяб сотня...',
+            delay = 6,
+            eventDelay = function(eDialogue)
+                if SERVER then
+                    eDialogue:Next('start', true)
+                end
+            end
         },
         rejection_health = {
             text = 'Я тебя уже подлатал, у меня и другие клиенты есть. Можешь зайти позднее.',
@@ -92,6 +110,10 @@ local conversation = {
                         ply:SetHealth(new_health)
                     else
                         ply:SetHealth(100)
+                    end
+
+                    if engine.ActiveGamemode() == 'darkrp' then
+                        ply:addMoney(-100)
                     end
 
                     eDialogue:SavePlayerValue('lock_health', os.time() + 60)
