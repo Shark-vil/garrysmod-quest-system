@@ -1,0 +1,5 @@
+"LightmappedGeneric"
+{
+	"$basetexture" "quest_system/vgui/dialogue_panel_background"
+	"$translucent" "1"
+}

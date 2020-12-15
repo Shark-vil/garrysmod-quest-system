@@ -10,6 +10,8 @@ file.CreateDir('quest_system/save_npc')
 file.CreateDir('quest_system/compile')
 file.CreateDir('quest_system/dialogue')
 
+resource.AddFile('quest_system/vgui/dialogue_panel_background')
+
 local Category = "Quest"
 local NPC = {
 	Name = "Quest NPC", 
