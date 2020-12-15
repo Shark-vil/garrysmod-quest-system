@@ -86,9 +86,10 @@ local conversation = {
                 if SERVER then
                     local ply = eDialogue:GetPlayer()
                     local health = ply:Health()
+                    local new_health = health + math.random(10, 50)
 
-                    if health + 10 < 100 then
-                        ply:SetHealth(health + 10)
+                    if new_health < 100 then
+                        ply:SetHealth(new_health)
                     else
                         ply:SetHealth(100)
                     end
