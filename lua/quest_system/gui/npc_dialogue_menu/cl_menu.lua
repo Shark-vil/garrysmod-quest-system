@@ -47,6 +47,13 @@ end)
 
 OpenDialoguNpc = function(ignore_npc_text)
     local step = npcDialogue:GetStep()
+
+    local name = tostring(npcDialogue:GetNPC())
+    if isstring(npcDialogue:GetDialogue().name) then
+        name = npcDialogue:GetDialogue().name
+    elseif istable(npcDialogue:GetDialogue().name) then
+        name = table.Random(npcDialogue:GetDialogue().name)
+    end
     
     if step.text ~= nil and not ignore_npc_text then
         step.delay = step.delay or 3
@@ -64,7 +71,7 @@ OpenDialoguNpc = function(ignore_npc_text)
         text = utf8.force(text)
 
         local width =  ScrW() / 2
-        local maxLineSize = math.floor(width * 0.14)
+        local maxLineSize = math.floor(width * 0.107)
         local startPos = 1
         local endPos = maxLineSize
         local lines = {}
@@ -104,22 +111,28 @@ OpenDialoguNpc = function(ignore_npc_text)
                 draw.RoundedBox(2, pos_x, pos_y, width, height, background_color)
             end
 
-            draw.DrawText(text, "TargetID", 
+            draw.DrawText(name, "QuestSystemDialogueNpcName", 
+                pos_x + 30, pos_y + 10, Color(255, 255, 255, 255))
+
+            surface.SetDrawColor(rectline_color)
+            surface.DrawLine(pos_x + 20, pos_y + 30, pos_x + 20 + (width - 40), pos_y + 30)
+
+            draw.DrawText(text, "QuestSystemDialogueText", 
                 pos_x + 30, pos_y + 30, Color(255, 255, 255, 255))
         end)
 
         timer.Simple(step.delay, function()
             if IsValid(npcDialogue) then
                 hook.Remove("HUDPaint", "QSystem.DialogueNpcText")
-                OpenDialogueMenu()
+                OpenDialogueMenu(name)
             end
         end)
     else
-        OpenDialogueMenu()
+        OpenDialogueMenu(name)
     end
 end
 
-OpenDialogueMenu = function()    
+OpenDialogueMenu = function(npc_name)    
     local step = npcDialogue:GetStep()
     if step.answers ~= nil and #step.answers ~= 0 then
         local dont_send = false
@@ -128,16 +141,8 @@ OpenDialogueMenu = function()
         MainPanel:ShowCloseButton(false)
         MainPanel:SetDraggable(false)
         MainPanel:SetSize(mpx, mpy)
-        MainPanel:SetPos((ScrW() - mpx) / 2, ScrH() - 10 - mpy)
-        
-        local name = tostring(npcDialogue:GetNPC())
-        if isstring(npcDialogue:GetDialogue().name) then
-            name = npcDialogue:GetDialogue().name
-        elseif istable(npcDialogue:GetDialogue().name) then
-            name = table.Random(npcDialogue:GetDialogue().name)
-        end
-        
-        MainPanel:SetTitle(name)
+        MainPanel:SetPos((ScrW() - mpx) / 2, ScrH() - 10 - mpy) 
+        MainPanel:SetTitle(npc_name)
         MainPanel:MakePopup()
         MainPanel.OnClose = function(self)
             if not dont_send then
@@ -268,6 +273,7 @@ OpenDialogueMenu = function()
 
                 local TextAnswer = vgui.Create("DLabel", AnswerOptionItem)
                 TextAnswer:SetFont('QuestSystemDialogueText')
+                TextAnswer:SetTextColor(Color(255, 255, 255))
                 TextAnswer:SetWidth(mpx - 25)
                 TextAnswer:SetPos(5, 5)
                 TextAnswer:SetText(text)

@@ -5,13 +5,10 @@ local conversation = {
     randomNumber = 2,
     npc_class = 'npc_citizen',
     condition = function(ply, npc)
-        if npc:GetClass() == 'npc_citizen' then
-            -- Only male citizen model
-            local validModel = string.find(npc:GetModel():lower(), ('/male_'))
-            if validModel then return true end
-            return false
-        end
-        return true
+        -- Only male citizen model
+        local validModel = string.find(npc:GetModel():lower(), ('/male_'))
+        if validModel ~= nil then return true end
+        return false
     end,
     steps = {
         start = {
