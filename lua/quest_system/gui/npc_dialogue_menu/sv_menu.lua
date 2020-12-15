@@ -3,13 +3,15 @@ util.AddNetworkString('sv_qsystem_dialogue_answer_select')
 util.AddNetworkString('cl_qsystem_set_dialogue_id')
 
 hook.Add('PlayerSpawnedNPC', 'QSystem.SetNpcDialogue', function(ply, ent)
-    if IsValid(ent) and ent:IsNPC() then
-        QuestDialogue:AutoParentToNPC(ent, ply)
-    end
+    QuestDialogue:AutoParentToNPC(ent, ply)
+end)
+
+hook.Add('PlayerSpawnedProp', 'QSystem.PlayerSpawnedProp', function(ply, model, ent)
+    QuestDialogue:AutoParentToNPC(ent, ply)
 end)
 
 hook.Add('PlayerUse', 'QSystem.OpenNpcDialogueMenu', function(ply, npc)
-    if IsValid(npc) and npc:IsNPC() then
+    if IsValid(npc) then
         for _, ent in pairs(ents.FindByClass('quest_dialogue')) do
             if IsValid(ent) and ent:GetPlayer() == ply then
                 local dialogue = ent:GetDialogue()

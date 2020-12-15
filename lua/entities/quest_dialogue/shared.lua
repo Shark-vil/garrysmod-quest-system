@@ -33,7 +33,7 @@ function ENT:Initialize()
                         hook.Remove('PostDrawOpaqueRenderables', self)
                         return
                     end
-
+                    
                     if npc:GetPos():Distance(LocalPlayer():GetPos()) < 800 then
                         local playerAngle = LocalPlayer():GetAngles()
                         local textAngle = Angle(0, playerAngle.y - 180, 0)
@@ -80,7 +80,8 @@ function ENT:Initialize()
                         
                         local lengthLines = #lines
                         if lengthLines ~= 0 then
-                            cam.Start3D2D(npc:GetPos() + npc:GetForward() + npc:GetUp() * 78, textAngle, 0.25)
+                            local vec = npc:OBBMaxs()
+                            cam.Start3D2D(npc:GetPos() + npc:GetForward() + npc:GetUp() * vec.z, textAngle, 0.25)
                                 local ypos = -15
                                 for i = 1, lengthLines do
                                     local text = lines[i]

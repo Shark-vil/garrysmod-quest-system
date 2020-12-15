@@ -3,7 +3,10 @@ local conversation = {
     name = 'Гражданин',
     isBackground = true,
     isRandomNpc = true,
-    npc_class = 'npc_citizen',
+    class = 'npc_citizen',
+    model = {
+        'models/props_junk/PopCan01a.mdl'
+    },
     start = {
         text = {
             'Тебе чего надо?',

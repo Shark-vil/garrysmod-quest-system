@@ -3,7 +3,7 @@ local conversation = {
     name = 'Вольный медик',
     isRandomNpc = true,
     randomNumber = 2,
-    npc_class = 'npc_citizen',
+    class = 'npc_citizen',
     condition = function(ply, npc)
         -- Only male citizen model
         local validModel = string.find(npc:GetModel():lower(), ('/male_'))

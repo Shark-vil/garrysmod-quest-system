@@ -3,13 +3,43 @@ QuestDialogue = {}
 function QuestDialogue:IsValidParentNPCDialogue(npc, ply, data)
     local nice = true
 
-    if data.npc_class ~= nil then
-        if isstring(data.npc_class) then
-            if data.npc_class ~= npc:GetClass() then nice = false end
+    if data.class ~= nil then
+        if isstring(data.class) then
+            if data.class ~= npc:GetClass() then nice = false end
         end
 
-        if istable(data.npc_class) then
-            if not table.HasValue(data.npc_class, npc:GetClass()) then nice = false end
+        if istable(data.class) then
+            for _, v in pairs(data.class) do
+                if v:lower() == npc:GetClass():lower() then
+                    nice = true
+                    break
+                else
+                    nice = false
+                    break
+                end
+            end
+        end
+    end
+
+    if not nice and data.model ~= nil then
+        if isstring(data.model) then
+            if data.model ~= npc:GetModel() then
+                nice = false
+            else
+                nice = true
+            end
+        end
+
+        if istable(data.model) then
+            for _, v in pairs(data.model) do
+                if v:lower() == npc:GetModel():lower() then
+                    nice = true
+                    break
+                else
+                    nice = false
+                    break
+                end
+            end
         end
     end
 
