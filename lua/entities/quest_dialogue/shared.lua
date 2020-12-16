@@ -204,10 +204,10 @@ function ENT:StartDialogue(ignore_npc_text, is_next)
         if not is_next then
             if not self:GetDialogue().isBackground then
                 ply:Freeze(true)
+                QuestService:WaitingNPCWalk(self:GetNPC(), true)
             end
 
             self:LoadPlayerValues()
-            QuestService:WaitingNPCWalk(self:GetNPC(), true)
         end
 
         net.Start('cl_qsystem_set_dialogue_id')
