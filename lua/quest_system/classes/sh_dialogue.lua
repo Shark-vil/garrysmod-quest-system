@@ -5,7 +5,7 @@ function QuestDialogue:IsValidParentNPCDialogue(npc, ply, data)
 
     if data.class ~= nil then
         if isstring(data.class) then
-            if data.class ~= npc:GetClass() then nice = false end
+            if data.class:lower() ~= npc:GetClass():lower() then nice = false end
         end
 
         if istable(data.class) then
@@ -21,9 +21,9 @@ function QuestDialogue:IsValidParentNPCDialogue(npc, ply, data)
         end
     end
 
-    if not nice and data.model ~= nil then
+    if data.model ~= nil then
         if isstring(data.model) then
-            if data.model ~= npc:GetModel() then
+            if data.model:lower() ~= npc:GetModel():lower() then
                 nice = false
             else
                 nice = true
@@ -45,7 +45,7 @@ function QuestDialogue:IsValidParentNPCDialogue(npc, ply, data)
 
     if data.condition ~= nil then
         local result = data.condition(ply, npc)
-        if result ~= nil and not result then nice = false end
+        if result ~= nil and result == false then nice = false end
     end
 
     return nice
