@@ -4,13 +4,11 @@ function ENT:Draw()
    self:DrawModel()
 
 	if self:GetPos():Distance(LocalPlayer():GetPos()) < 800 then
-		local playerAngle = LocalPlayer():GetAngles()
-		local textAngle = Angle(0, playerAngle.y - 180, 0)
+		local angle = LocalPlayer():EyeAngles()
+		angle:RotateAroundAxis(angle:Forward(), 90)
+		angle:RotateAroundAxis(angle:Right(), 90)
 
-		textAngle:RotateAroundAxis(textAngle:Forward(), 90)
-		textAngle:RotateAroundAxis(textAngle:Right(), -90)
-
-		cam.Start3D2D(self:GetPos() + self:GetForward() + self:GetUp() * 78, textAngle, 0.25)
+		cam.Start3D2D(self:GetPos() + self:GetForward() + self:GetUp() * 78, angle, 0.25)
 			draw.SimpleTextOutlined('Guild representative', 
 				"DermaLarge", 0, -15, Color(255, 255, 0), 
 				TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color(0, 0, 0))

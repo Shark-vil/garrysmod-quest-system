@@ -275,13 +275,16 @@ net.Receive('cl_qsystem_set_dialogue_id', function()
     local ent = net.ReadEntity()
     local ignore_npc_text = net.ReadBool()
     local is_next = net.ReadBool()
-    npcDialogue = ent
-    npcDialogue:StartDialogue(ignore_npc_text)
 
-    if not ent:GetDialogue().isBackground then
-        if not is_next then
-            cam_delay = CurTime() + 1
+    if IsValid(ent) then
+        npcDialogue = ent
+        npcDialogue:StartDialogue(ignore_npc_text)
+
+        if not ent:GetDialogue().isBackground then
+            if not is_next then
+                cam_delay = CurTime() + 1
+            end
+            OpenDialoguNpc(ignore_npc_text)
         end
-        OpenDialoguNpc(ignore_npc_text)
     end
 end)

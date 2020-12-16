@@ -34,10 +34,7 @@ function ENT:Initialize()
                         return
                     end
                     
-                    if npc:GetPos():Distance(LocalPlayer():GetPos()) < 800 then
-                        local playerAngle = LocalPlayer():GetAngles()
-                        local textAngle = Angle(0, playerAngle.y - 180, 0)
-    
+                    if npc:GetPos():Distance(LocalPlayer():GetPos()) < 800 then    
                         if lines == nil then
                             lines = {}
                             local step = self:GetStep()
@@ -75,13 +72,14 @@ function ENT:Initialize()
                             end
                         end
             
-                        textAngle:RotateAroundAxis(textAngle:Forward(), 90)
-                        textAngle:RotateAroundAxis(textAngle:Right(), -90)
+                        local angle = LocalPlayer():EyeAngles()
+                        angle:RotateAroundAxis(angle:Forward(), 90)
+                        angle:RotateAroundAxis(angle:Right(), 90)
                         
                         local lengthLines = #lines
                         if lengthLines ~= 0 then
                             local vec = npc:OBBMaxs()
-                            cam.Start3D2D(npc:GetPos() + npc:GetForward() + npc:GetUp() * vec.z, textAngle, 0.25)
+                            cam.Start3D2D(npc:GetPos() + npc:GetForward() + npc:GetUp() * vec.z, angle, 0.25)
                                 local ypos = -15
                                 for i = 1, lengthLines do
                                     local text = lines[i]
