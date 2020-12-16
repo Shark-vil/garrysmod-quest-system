@@ -54,6 +54,7 @@ MsgN('[QuestSystem] Loading scripts...')
 
 using('classes/sh_quest_system.lua')
 using('classes/sh_dialogue.lua')
+using('classes/sh_quest_npc_service.lua')
 
 using('resources/cl_fonts.lua')
 

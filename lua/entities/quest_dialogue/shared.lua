@@ -111,12 +111,16 @@ function ENT:Think()
 end
 
 function ENT:OnRemove()
-    if not self:AlreadySaid() then
-        self:SavePlayerValue('already_said', true, true)
-    end
+    if SERVER then
+        QuestService:WaitingNPCWalk(self:GetNPC(), false)
 
-    if not self:GetDialogue().isBackground then
-        self:GetPlayer():Freeze(false)
+        if not self:AlreadySaid() then
+            self:SavePlayerValue('already_said', true, true)
+        end
+    
+        if not self:GetDialogue().isBackground then
+            self:GetPlayer():Freeze(false)
+        end
     end
 end
 
@@ -180,21 +184,26 @@ function ENT:GetPlayerValue(value_name)
     return nil
 end
 
-function ENT:StartDialogue(ignore_npc_text)
+function ENT:StartDialogue(ignore_npc_text, is_next)
     ignore_npc_text = ignore_npc_text or false
+    is_next = is_next or false
 
     if SERVER then
         local ply = self:GetPlayer()
         
-        if not self:GetDialogue().isBackground then
-            ply:Freeze(true)
-        end
+        if not is_next then
+            if not self:GetDialogue().isBackground then
+                ply:Freeze(true)
+            end
 
-        self:LoadPlayerValues()
+            self:LoadPlayerValues()
+            QuestService:WaitingNPCWalk(self:GetNPC(), true)
+        end
 
         net.Start('cl_qsystem_set_dialogue_id')
         net.WriteEntity(self)
         net.WriteBool(ignore_npc_text)
+        net.WriteBool(is_next)
         net.Send(ply)
     end
 

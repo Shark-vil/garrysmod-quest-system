@@ -22,7 +22,7 @@ function ENT:Next(step_id, ignore_npc_text)
     ignore_npc_text = ignore_npc_text or false
     self:SetStep(step_id)
     timer.Simple(0.5, function()
-        self:StartDialogue(ignore_npc_text)
+        self:StartDialogue(ignore_npc_text, true)
     end)
 end
 

@@ -8,8 +8,11 @@ local nopick_color = Color(0, 0, 0, 0)
 local rectline_color = Color(87, 255, 118)
 
 local cam_anim = 0
+local cam_delay = 0
 hook.Add("CalcView", "QSystem.NpcDialogueCamera", function(ply, pos, angles, fov)
-    if IsValid(npcDialogue) and IsValid(npcDialogue:GetNPC()) and not npcDialogue:GetDialogue().isBackground then
+    if IsValid(npcDialogue) and IsValid(npcDialogue:GetNPC()) 
+        and not npcDialogue:GetDialogue().isBackground and cam_delay < CurTime()
+    then
         local npc = npcDialogue:GetNPC()
         local n_origin = npc:EyePos() - (npc:GetAngles():Forward() * -35) - Vector(0, 0, 10)
         local n_angles = npc:EyeAngles() - Angle(0, 180, 0)
@@ -22,7 +25,7 @@ hook.Add("CalcView", "QSystem.NpcDialogueCamera", function(ply, pos, angles, fov
         }
 
         if cam_anim < 1 then
-            cam_anim = cam_anim + 0.015
+            cam_anim = cam_anim + 0.020
         else
             cam_anim = 1
         end
@@ -272,10 +275,14 @@ end
 net.Receive('cl_qsystem_set_dialogue_id', function()
     local ent = net.ReadEntity()
     local ignore_npc_text = net.ReadBool()
+    local is_next = net.ReadBool()
     npcDialogue = ent
     npcDialogue:StartDialogue(ignore_npc_text)
 
     if not ent:GetDialogue().isBackground then
+        if not is_next then
+            cam_delay = CurTime() + 1
+        end
         OpenDialoguNpc(ignore_npc_text)
     end
 end)
