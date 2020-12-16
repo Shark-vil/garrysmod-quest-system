@@ -181,7 +181,6 @@ OpenDialogueMenu = function(npc_name)
 
             if not skip then
                 local AnswerOptionItem = AnswerOptions:Add("DPanel")
-                -- AnswerOptionItem:SetHeight(80)
                 AnswerOptionItem:Dock(TOP)
                 AnswerOptionItem:DockMargin(0, 0, 5, 5)
                 AnswerOptionItem.OnCursorEntered = function(self)
