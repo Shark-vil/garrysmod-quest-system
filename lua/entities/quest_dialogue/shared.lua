@@ -100,11 +100,16 @@ function ENT:Initialize()
     end
 end
 
+function ENT:OnTakeDamage(damage)
+    self:Remove()
+end
+
 function ENT:Think()
     if self.isStarted then
         if SERVER then
-            if not IsValid(self:GetNPC()) or not IsValid(self:GetPlayer()) then
+            if not IsValid(self:GetNPC()) or not IsValid(self:GetPlayer()) or self:NpcIsFear() then
                 self:Remove()
+                return
             end
         end
     end
@@ -189,6 +194,11 @@ function ENT:StartDialogue(ignore_npc_text, is_next)
     is_next = is_next or false
 
     if SERVER then
+        if self:NpcIsFear() then
+            self:Remove()
+            return
+        end
+
         local ply = self:GetPlayer()
         
         if not is_next then

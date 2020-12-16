@@ -103,3 +103,18 @@ end
 function ENT:Stop()
     self:Remove()
 end
+
+
+function ENT:NpcIsFear()
+    local npc = self:GetNPC()
+    if IsValid(npc) then
+        local schedule = npc:GetCurrentSchedule()
+        if npc:IsCurrentSchedule(SCHED_RUN_FROM_ENEMY) 
+            or npc:IsCurrentSchedule(SCHED_WAKE_ANGRY)
+            or schedule == 159
+        then
+            return true
+        end
+    end
+    return false
+end

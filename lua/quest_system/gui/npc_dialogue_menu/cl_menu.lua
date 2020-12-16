@@ -110,7 +110,7 @@ OpenDialoguNpc = function(ignore_npc_text)
         TextAnswer:SetAutoStretchVertical(true)
 
         timer.Simple(step.delay, function()
-            if IsValid(npcDialogue) then
+            if IsValid(npcDialogue) and IsValid(MainPanel) then
                 MainPanel:Close()
                 OpenDialogueMenu(name)
             end
