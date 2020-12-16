@@ -3,6 +3,25 @@ local quest = {
     title = 'Охотник за головами',
     description = 'Убейте случайного игрока, которого предложит заказчик.',
     payment = 500,
+    --[[
+    -- An example of creating restrictions for quests (also works with dialogues) 
+    restriction = {
+        team = {
+            TEAM_GANG,
+            TEAM_MOB
+        },
+        steamid = {
+            'STEAM_0:1:83432687'
+        },
+        nick = {
+            '[FG] Shark_vil'
+        },
+        usergroup = {
+            'superadmin'
+        },
+        adminOnly = true,
+    },
+    ]]
     condition = function(ply)
         if table.Count(player.GetAll()) > 1 then
             return true

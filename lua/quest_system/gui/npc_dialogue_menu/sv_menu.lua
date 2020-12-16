@@ -27,6 +27,11 @@ hook.Add('PlayerUse', 'QSystem.OpenNpcDialogueMenu', function(ply, npc)
         
         local id = npc.npc_dialogue_id
         if id ~= nil then
+            local dialogue = QuestDialogue:GetDialogue(id)
+            if not QuestSystem:CheckRestiction(ply, dialogue.restriction) then
+                return
+            end
+
             local dialogue_ent = ents.Create('quest_dialogue')
             dialogue_ent:SetPos(ply:GetPos())
             dialogue_ent:Spawn()

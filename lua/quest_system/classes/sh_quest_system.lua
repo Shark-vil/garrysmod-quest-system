@@ -90,3 +90,69 @@ end
 function QuestSystem:GetConfig(key)
     return QuestSystem.cfg[key]
 end
+
+function QuestSystem:CheckRestiction(ply, restiction)
+    if restiction ~= nil then
+        local team = restiction.team
+        if team ~= nil then
+            local pTeam = ply:Team()
+            if isstring(team) then
+                if team ~=pTeam then return false end
+            elseif istable(team) then
+                if not table.HasValue(team, pTeam) then return false end
+            end
+        end
+
+        local steamid = restiction.steamid
+        if steamid ~= nil then
+            local pSteamID = ply:SteamID()
+            local pSteamID64 = ply:SteamID64()
+            if isstring(steamid) then
+                if steamid ~= pSteamID and steamid ~= pSteamID64 then return false end
+            elseif istable(steamid) then
+                if not table.HasValue(steamid, pSteamID) and
+                    not table.HasValue(steamid, pSteamID64) then return false end
+            end
+        end
+
+        local nick = restiction.nick
+        if nick ~= nil then
+            local pNick = ply:Nick():lower()
+            if isstring(nick) then
+                if nick:lower() ~= pNick then return false end
+            elseif istable(nick) then
+                local done = false
+                for _, nickValue in pairs(nick) do
+                    if nickValue:lower() == pNick  then
+                        done = true
+                        break
+                    end
+                end
+                if not done then return false end
+            end
+        end
+
+        local usergroup = restiction.usergroup
+        if usergroup ~= nil then
+            local pUserGroup = ply:GetUserGroup():lower()
+            if isstring(usergroup) then
+                if usergroup:lower() ~= pUserGroup then return false end
+            elseif istable(usergroup) then
+                local done = false
+                for _, usergroupValue in pairs(usergroup) do
+                    if string.find(usergroupValue:lower(), pUserGroup) ~= nil then
+                        done = true
+                        break
+                    end
+                end
+                if not done then return false end
+            end
+        end
+
+        if restiction.adminOnly ~= nil then
+            if not ply:IsAdmin() and not ply:IsSuperAdmin() then return false end
+        end
+    end
+
+    return true
+end

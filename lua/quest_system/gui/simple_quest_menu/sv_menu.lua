@@ -16,6 +16,10 @@ net.Receive('sv_qsystem_startquest', function(len, ply)
             return
         end
 
+        if not QuestSystem:CheckRestiction(ply, quest.restriction) then
+            return
+        end
+
         if quest.condition ~= nil then
             if not quest.condition(ply) then
                 return
