@@ -23,6 +23,10 @@ function ENT:SetStep(step)
 	local ply = self:GetPlayer()
 
 	if quest ~= nil and quest.steps[step] ~= nil then
+		local old_step = self:GetQuestStep()
+		if old_step ~= nil and #old_step ~= 0 then
+			self:SetNWString('old_step', old_step)
+		end
 		self:SetNWString('step', step)
 
 		self.triggers = {}

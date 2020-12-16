@@ -27,24 +27,26 @@ local quest = {
             end,
         },
         kill_player = {
-            playerDeath = function(eQuest, victim, inflictor, attacker)
-                local target = eQuest:GetNWEntity('playerTarget')
-                if target == victim then
-                    if eQuest:GetPlayer() == attacker then
-                        eQuest:NextStep('complete')
-                    else
-                        eQuest:Notify('Провалено', 'К сожалению, игрок умер до того, как его прикончили вы.')
+            hooks = {
+                PlayerDeath = function(eQuest, victim, inflictor, attacker)
+                    local target = eQuest:GetNWEntity('playerTarget')
+                    if target == victim then
+                        if eQuest:GetPlayer() == attacker then
+                            eQuest:NextStep('complete')
+                        else
+                            eQuest:Notify('Провалено', 'К сожалению, игрок умер до того, как его прикончили вы.')
+                            eQuest:Failed()
+                        end
+                    end
+                end,
+                PlayerDisconnected = function(eQuest, ply)
+                    local target = eQuest:GetNWEntity('playerTarget')
+                    if target == ply then
+                        eQuest:Notify('Провалено', 'К сожалению, игрок покинул этот мир до того, как вы настигли его.')
                         eQuest:Failed()
                     end
-                end
-            end,
-            playerDisconnected = function(eQuest, ply)
-                local target = eQuest:GetNWEntity('playerTarget')
-                if target == ply then
-                    eQuest:Notify('Провалено', 'К сожалению, игрок покинул этот мир до того, как вы настигли его.')
-                    eQuest:Failed()
-                end
-            end,
+                end,
+            }
         },
         complete = {
             construct = function(eQuest)

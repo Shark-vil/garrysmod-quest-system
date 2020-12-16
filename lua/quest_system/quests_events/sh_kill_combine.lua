@@ -86,18 +86,20 @@ local quest = {
                     eQuest:MoveEnemyToRandomPlayer()
                 end,
             },
-            onNPCKilled = function(eQuest, npc, attacker, inflictor)
-                if CLIENT then return end
+            hooks = {
+                OnNPCKilled = function(eQuest, npc, attacker, inflictor)
+                    if CLIENT then return end
 
-                local combines = eQuest:GetQuestNpc('enemy')
-                for _, npc in pairs(combines) do
-                    if IsValid(npc) and npc:Health() > 0 then
-                        return
+                    local combines = eQuest:GetQuestNpc('enemy')
+                    for _, npc in pairs(combines) do
+                        if IsValid(npc) and npc:Health() > 0 then
+                            return
+                        end
                     end
-                end
 
-                eQuest:NextStep('complete')
-            end
+                    eQuest:NextStep('complete')
+                end
+            }
         },
         complete = {
             construct = function(eQuest)

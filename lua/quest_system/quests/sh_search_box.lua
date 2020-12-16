@@ -53,10 +53,12 @@ local quest = {
             end,
             triggers = {
                 spawn_npc_trigger = function(eQuest, entities)
-                    eQuest:GetQuest().functions.spawn_npc_on_trigger(eQuest, entities)
+                    local func = eQuest:GetQuestFunction('spawn_npc_on_trigger')
+                    func(eQuest, entities)
                 end,
                 spawn_npc_trigger_2 = function(eQuest, entities)
-                    eQuest:GetQuest().functions.spawn_npc_on_trigger(eQuest, entities)
+                    local func = eQuest:GetQuestFunction('spawn_npc_on_trigger')
+                    func(eQuest, entities)
                 end,
             }
         },

@@ -35,33 +35,6 @@ function ENT:Initialize()
 			end)
 		end
 
-		if self:IsExistStepArg('onNPCKilled') then
-			hook.Add("OnNPCKilled", self, function(_self, npc, attacker, inflictor)
-				local step = self:GetQuestStepTable()
-				if step ~= nil and step.onNPCKilled ~= nil then
-					step.onNPCKilled(self, npc, attacker, inflictor)
-				end
-			end)
-		end
-
-		if self:IsExistStepArg('playerDeath') then
-			hook.Add("PlayerDeath", self, function(_self, victim, inflictor, attacker)
-				local step = self:GetQuestStepTable()
-				if step ~= nil and step.playerDeath ~= nil then
-					step.playerDeath(self, victim, inflictor, attacker)
-				end
-			end)
-		end
-
-		if self:IsExistStepArg('playerDisconnected') then
-			hook.Add("PlayerDisconnected", self, function(_self, ply)
-				local step = self:GetQuestStepTable()
-				if step ~= nil and step.playerDisconnected ~= nil then
-					step.playerDisconnected(self, ply)
-				end
-			end)
-		end
-
 		self:SetNWBool('StopThink', true)
 		self:SetNWFloat('ThinkDelay', 0)
 	end
@@ -106,8 +79,20 @@ function ENT:GetQuestStep()
 	return self:GetNWString('step')
 end
 
+function ENT:GetQuestOldStep()
+	return self:GetNWString('old_step')
+end
+
 function ENT:GetPlayer()
 	return self.players[1]
+end
+
+function ENT:GetQuestFunction(id)
+	local quest = self:GetQuest()
+	if quest ~= nil and quest.functions ~= nil then
+		return quest.functions[id]
+	end
+	return nil
 end
 
 function ENT:GetAllPlayers()
@@ -278,16 +263,24 @@ end
 
 function ENT:OnNextStep(step)
 	local quest = self:GetQuest()
-	
-	if #self.points ~= 0 then
-		local step = self:GetQuestStep()
-			
+	local step = self:GetQuestStep()
+	local old_step = self:GetQuestOldStep()
+
+	if #self.points ~= 0 then			
 		if quest.steps[step].points ~= nil then
 			for _, data in pairs(self.points) do
 				local func = quest.steps[step].points[data.name]
 				if func ~= nil then
 					func(self, data.points)
 				end
+			end
+		end
+	end
+
+	if old_step ~= nil and #old_step ~= 0 then
+		if quest.steps[old_step].hooks ~= nil then
+			for hook_type, _ in pairs(quest.steps[old_step].hooks) do
+				hook.Remove(hook_type, self)
 			end
 		end
 	end
@@ -340,6 +333,12 @@ function ENT:OnNextStep(step)
 	if SERVER then
 		self:SetNWBool('StopThink', false)
 		self:SetNWFloat('ThinkDelay', RealTime() + 1)
+	end
+
+	if quest.steps[step].hooks ~= nil then
+		for hook_type, func in pairs(quest.steps[step].hooks) do
+			hook.Add(hook_type, self, func)
+		end
 	end
 
 	if quest.isEvent then
