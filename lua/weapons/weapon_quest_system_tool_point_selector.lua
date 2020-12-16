@@ -37,8 +37,34 @@ function SWEP:Initialize()
     hook.Add('PostDrawOpaqueRenderables', self, function()
 		if #self.Points ~= 0 then
 			render.SetColorMaterial()
-            for _, pos in pairs(self.Points) do
-                render.DrawSphere(pos, 10, 30, 30, Color(58, 23, 255, 100))
+			local old_pos, old_color
+			for index, pos in pairs(self.Points) do
+				local color
+
+				if index % 2 == 0 then
+					color = Color(58, 23, 255, 100)
+				else
+					color = Color(255, 23, 23, 100)
+				end
+
+				if old_pos ~= nil then
+					render.DrawLine(old_pos, pos, old_color)
+				end
+
+				render.DrawSphere(pos, 10, 30, 30, color)
+
+				local angle = LocalPlayer():EyeAngles()
+				angle:RotateAroundAxis(angle:Forward(), 90)
+				angle:RotateAroundAxis(angle:Right(), 90)
+
+				cam.Start3D2D(pos + Vector(0, 0, 20), angle, 0.9)
+					draw.SimpleTextOutlined(tostring(index), 
+						"TargetID", 0, 0, Color(255, 255, 255), 
+						TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 0.5, Color(0, 0, 0))
+				cam.End3D2D()
+
+				old_color = color
+				old_pos = pos
             end
         end
 	end)
