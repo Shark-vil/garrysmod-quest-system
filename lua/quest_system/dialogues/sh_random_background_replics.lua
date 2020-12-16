@@ -4,9 +4,6 @@ local conversation = {
     isBackground = true,
     isRandomNpc = true,
     class = 'npc_citizen',
-    model = {
-        'models/props_junk/PopCan01a.mdl'
-    },
     condition = function(ply, ent)
         if ent:GetModel():lower() == ('models/props_junk/PopCan01a.mdl'):lower() then
             if math.random(0, 10) ~= 1 then
