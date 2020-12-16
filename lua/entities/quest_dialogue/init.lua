@@ -107,7 +107,7 @@ end
 
 function ENT:NpcIsFear()
     local npc = self:GetNPC()
-    if IsValid(npc) then
+    if IsValid(npc) and npc:IsNPC() then
         local schedule = npc:GetCurrentSchedule()
         if npc:IsCurrentSchedule(SCHED_RUN_FROM_ENEMY) 
             or npc:IsCurrentSchedule(SCHED_WAKE_ANGRY)

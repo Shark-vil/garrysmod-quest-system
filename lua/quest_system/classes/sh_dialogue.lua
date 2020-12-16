@@ -44,7 +44,8 @@ function QuestDialogue:IsValidParentNPCDialogue(npc, ply, data)
     end
 
     if data.condition ~= nil then
-        if not data.condition(ply, npc) then nice = false end
+        local result = data.condition(ply, npc)
+        if result ~= nil and not result then nice = false end
     end
 
     return nice
