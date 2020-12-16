@@ -63,7 +63,7 @@ if SERVER then
         local fileData = storage:Read(id, name)
 
         if fileData ~= nil then
-            nt.Invoke('triggers_read', ply, fileData)
+            net.Invoke('triggers_read', ply, fileData)
         end
     end)
 end
