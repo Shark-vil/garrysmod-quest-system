@@ -1,5 +1,15 @@
+-- Global table for working with dialogs
 QuestDialogue = {}
 
+-------------------------------------
+-- Checks for the correctness of the entity class and model, as well as the condition for issuing a dialog.
+-------------------------------------
+-- @param npc - any entity, not necessarily an NPC
+-- @param ply - player entity
+-- @param data - dialogue data
+-------------------------------------
+-- @return bool - true if the entity matches validation, else false
+-------------------------------------
 function QuestDialogue:IsValidParentNPCDialogue(npc, ply, data)
     local nice = true
 
@@ -51,14 +61,31 @@ function QuestDialogue:IsValidParentNPCDialogue(npc, ply, data)
     return nice
 end
 
+-------------------------------------
+-- Get dialog data from the global list using an identifier.
+-------------------------------------
+-- @param id - dialogue id
+-------------------------------------
+-- @return table - dialog data table or nil if dialog doesn't exist
+-------------------------------------
 function QuestDialogue:GetDialogue(id)
     return list.Get('QuestSystemDialogue')[id]
 end
 
+-------------------------------------
+-- Get a list of all registered dialogs.
+-------------------------------------
+-- @return table - list of all dialogs with IDs as keys
+-------------------------------------
 function QuestDialogue:GetAllDialogues()
     return list.Get('QuestSystemDialogue')
 end
 
+-------------------------------------
+-- Get a list of all registered dialogs of type "isRandomNpc".
+-------------------------------------
+-- @return table - list of all dialogs with IDs as keys
+-------------------------------------
 function QuestDialogue:GetAllRandom()
     local data = {}
     for key, value in pairs(list.Get('QuestSystemDialogue')) do
@@ -69,6 +96,11 @@ function QuestDialogue:GetAllRandom()
     return data
 end
 
+-------------------------------------
+-- Get a list of all registered dialogs of type "isBackground".
+-------------------------------------
+-- @return table - list of all dialogs with IDs as keys
+-------------------------------------
 function QuestDialogue:GetAllBackground()
     local data = {}
     for key, value in pairs(list.Get('QuestSystemDialogue')) do
@@ -79,6 +111,12 @@ function QuestDialogue:GetAllBackground()
     return data
 end
 
+-------------------------------------
+-- Automatic assignment of a dialogue ID for NPCs. Will not assign anything if checks fail.
+-------------------------------------
+-- @param npc - any entity, not necessarily an NPC
+-- @param ply - player entity
+-------------------------------------
 function QuestDialogue:AutoParentToNPC(npc, ply)
     local dialogues = QuestDialogue:GetAllDialogues()
 
@@ -98,6 +136,15 @@ function QuestDialogue:AutoParentToNPC(npc, ply)
     end
 end
 
+-------------------------------------
+-- Assigning a specific dialogue ID for the NPC. Will not assign anything if checks fail.
+-------------------------------------
+-- @param id - dialogue id
+-- @param npc - any entity, not necessarily an NPC
+-- @param ply - player entity
+-- @param ignore_valid - pass true, if you want to ignore the validation check
+-- @param ignore_random - pass true, if you want to ignore the randomness of the dialog assignment
+-------------------------------------
 function QuestDialogue:ParentToNPC(id, npc, ply, ignore_valid, ignore_random)
     local dialogue = QuestDialogue:GetDialogue(id)
 
