@@ -32,10 +32,13 @@ if SERVER then
                         npc:SetSaveValue("m_vecLastPosition", ply:GetPos())
                         npc:SetSchedule(SCHED_FORCED_GO)
                         npc.npc_wait_walk_move_target = false
+                        npc.npc_wait_walk_delay = CurTime() + 1
                     else
-                        npc:SetEyeTarget(ply:EyePos())
-                        npc:StopMoving()
-                        npc:SetMovementActivity(ACT_IDLE)
+                        if npc.npc_wait_walk_delay < CurTime() then
+                            npc:SetEyeTarget(ply:EyePos())
+                            npc:StopMoving()
+                            npc:SetMovementActivity(ACT_IDLE)
+                        end
                     end
                 end
             end
