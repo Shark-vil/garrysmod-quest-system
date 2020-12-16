@@ -20,7 +20,7 @@ if SERVER then
         end
     end)
 
-    timer.Create('QSystem.QuestService.NpcWaitWalk', 1, 0, function()
+    timer.Create('QSystem.QuestService.NpcWaitWalk', 0.5, 0, function()
         for _, eDialogue in pairs(ents.FindByClass('quest_dialogue')) do
             local npc = eDialogue:GetNPC()
             if IsValid(npc) and npc:IsNPC() then
