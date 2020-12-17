@@ -91,15 +91,17 @@ using('gui/simple_quest_menu/cl_menu.lua')
 using('gui/npc_dialogue_menu/sv_menu.lua')
 using('gui/npc_dialogue_menu/cl_menu.lua')
 
-using('quests/sh_kill_zombie.lua')
-using('quests/sh_search_box.lua')
-using('quests/sh_kill_drug_dealer.lua')
-using('quests/sh_player_killer.lua')
+if not QuestSystem.cfg.DisableDefaultQuests then
+    using('quests/sh_kill_zombie.lua')
+    using('quests/sh_search_box.lua')
+    using('quests/sh_kill_drug_dealer.lua')
+    using('quests/sh_player_killer.lua')
 
-using('quests_events/sh_kill_combine.lua')
+    using('quests_events/sh_kill_combine.lua')
 
-using('dialogues/sh_free_medic_dialogue.lua')
-using('dialogues/sh_random_background_replics.lua')
-using('dialogues/sh_talking_bank_background.lua')
+    using('dialogues/sh_free_medic_dialogue.lua')
+    using('dialogues/sh_random_background_replics.lua')
+    using('dialogues/sh_talking_bank_background.lua')
+end
 
 MsgN('[QuestSystem] Loading scripts completed!')
