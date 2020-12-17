@@ -6,9 +6,8 @@ end
 
 net.Receive('qsystem_quest_entity_set_value', function()
    local ent = net.ReadEntity()
-   local type = net.ReadUInt(8)
    local key = net.ReadString()
-   local data = net.ReadTable(type)
+   local data = net.ReadTable()
    
    ent.values[key] = data
 end)

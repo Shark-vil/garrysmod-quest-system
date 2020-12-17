@@ -505,7 +505,6 @@ function ENT:SetStepValue(key, value)
 	if SERVER then
 		net.Start('qsystem_quest_entity_set_value')
 		net.WriteEntity(self)
-		net.WriteUInt(TypeID(value), 8)
 		net.WriteString(key)
 		net.WriteType(value)
 		net.Broadcast()
