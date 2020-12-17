@@ -3,7 +3,7 @@ if SERVER then
         local events = QuestSystem:GetAllEvents()
         local event = table.Random(events)
 
-        if QuestSystem.activeEvents[event.id] == nil then
+        if event ~= nil and QuestSystem.activeEvents[event.id] == nil then
             QuestSystem:EnableEvent(event.id)
         end
     end

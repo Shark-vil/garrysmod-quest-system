@@ -1,6 +1,6 @@
 local function OpenMenu()
     local Frame = vgui.Create('DFrame')
-    Frame:SetTitle('Доска заданий')
+    Frame:SetTitle('Список активных заданий')
     Frame:SetSize(500, 450)
     Frame:MakePopup()
     Frame:Center()
@@ -11,13 +11,13 @@ local function OpenMenu()
     local ScrollPanel = vgui.Create("DScrollPanel", Frame)
     ScrollPanel:Dock(FILL)
 
-    local quests = QuestSystem:GetAllQuest()
+    local quests = ents.FindByClass('quest_entity')
 
     local isZero = true
-    for id, quest in pairs(quests) do
-        if not quest.isEvent and not quest.hide 
-            and QuestSystem:CheckRestiction(LocalPlayer(), quest.restriction)
-        then        
+    for _, ent in pairs(quests) do
+        local quest = ent:GetQuest()
+
+        if quest.isEvent or ent:GetPlayer() == LocalPlayer() then       
             if quest.timeQuest ~= nil then
                 quest.description = quest.description .. '\nВремя на выполнение: ' .. quest.timeQuest .. ' сек.'
             end
@@ -59,31 +59,9 @@ local function OpenMenu()
             LabelDescription:SetText(quest.description)
             LabelDescription:SetDark(1)
             LabelDescription:SetWrap(true)
-
-            if LocalPlayer():QuestIsActive(id) then
-                local ButtonQuestDisable = vgui.Create('DButton', PanelItem)
-                ButtonQuestDisable:SetText('Отозвать задание')
-                ButtonQuestDisable:Dock(BOTTOM)
-                ButtonQuestDisable.DoClick = function()
-                    net.Start('sv_qsystem_stopquest')
-                    net.WriteString(quest.id)
-                    net.SendToServer()
-                    Frame:Close()
-                end
-            else
-                local ButtonQuestEnable = vgui.Create('DButton', PanelItem)
-                ButtonQuestEnable:SetText('Взять задание')
-                ButtonQuestEnable:Dock(BOTTOM)
-                ButtonQuestEnable.DoClick = function()
-                    net.Start('sv_qsystem_startquest')
-                    net.WriteString(quest.id)
-                    net.SendToServer()
-                    Frame:Close()
-                end
-            end
         end
     end
-    
+
     if isZero then
         local LabelDescription = vgui.Create("DLabel", Frame)
         LabelDescription:SetFont('DermaLarge')
@@ -92,4 +70,4 @@ local function OpenMenu()
         LabelDescription:Center()
     end
 end
-concommand.Add('qsystem_open_simple_quest_menu', OpenMenu)
+concommand.Add('qsystem_active_quests_menu', OpenMenu)

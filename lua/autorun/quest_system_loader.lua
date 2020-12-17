@@ -88,6 +88,7 @@ using('storage/sv_compile_quests.lua')
 
 using('gui/simple_quest_menu/sv_menu.lua')
 using('gui/simple_quest_menu/cl_menu.lua')
+using('gui/simple_quest_menu/cl_active_quests.lua')
 using('gui/npc_dialogue_menu/sv_menu.lua')
 using('gui/npc_dialogue_menu/cl_menu.lua')
 
