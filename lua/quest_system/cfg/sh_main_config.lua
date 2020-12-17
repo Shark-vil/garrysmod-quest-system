@@ -1,8 +1,6 @@
 QuestSystem.cfg = {}
 
 QuestSystem.cfg.HideQuestsOfOtherPlayers = true
-QuestSystem.cfg.DisableCollisionWithNPCs = true
-QuestSystem.cfg.DisableCollisionWithItems = true
 QuestSystem.cfg.EnableEvents = false
 QuestSystem.cfg.EventsTimeDelay = 30
 -- The higher the number, the lower the chance of activating the event

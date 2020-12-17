@@ -55,6 +55,20 @@ function ENT:Initialize()
 						return false
 					end
 				end
+
+				for _, data in pairs(self.items) do
+					local item = data.item
+					if IsValid(item) and ent1 == item and ent2 ~= self:GetPlayer() then
+						return false
+					end
+				end
+
+				for _, data in pairs(self.npcs) do
+					local npc = data.npc
+					if IsValid(npc) and ent1 == npc and ent2 ~= self:GetPlayer() then
+						return false
+					end
+				end
 			end)
 
 			hook.Add('EntityTakeDamage', globalHookName, function(target, dmginfo)
@@ -69,6 +83,30 @@ function ENT:Initialize()
 					if IsValid(npc) and IsValid(attaker) and attaker:IsPlayer() then
 						if attaker == self:GetPlayer() then
 							return true
+						end
+					end
+				end
+			end)
+
+			hook.Add('EntityTakeDamage', globalHookName, function(target, dmginfo)
+				if not IsValid(self) then hook.Remove("EntityTakeDamage", globalHookName) return end
+
+				local quest = self:GetQuest()
+				if quest.isEvent then return end
+
+				local attaker = dmginfo:GetAttacker()
+
+				if attaker:IsWeapon() then
+					attaker = attaker.Owner
+				end
+
+				if attaker ~= nil and attaker:IsPlayer() then
+					for _, data in pairs(self.npcs) do
+						local npc = data.npc
+						if IsValid(npc) and IsValid(attaker) then
+							if attaker ~= self:GetPlayer() then
+								return true
+							end
 						end
 					end
 				end
@@ -353,6 +391,20 @@ function ENT:OnNextStep(step)
 					end
 				end
 			end
+
+			for _, ent in pairs(ents.FindByClass('quest_entity')) do
+				if ent ~= self then
+					local otherQuestsNpc = ent.npcs
+					for _, anotherData in pairs(otherQuestsNpc) do
+						for _, data in pairs(self.npcs) do
+							if IsValid(anotherData.npc) and IsValid(data.npc) then
+								data.npc:AddEntityRelationship(anotherData.npc, D_NU, 99)
+								anotherData.npc:AddEntityRelationship(data.npc, D_NU, 99)
+							end
+						end
+					end
+				end
+			end
 		end
 
 		if QuestSystem:GetConfig('HideQuestsOfOtherPlayers') and not quest.isEvent then				
@@ -477,8 +529,8 @@ function ENT:AddQuestItem(item , item_id)
 
 	local quest = self:GetQuest()
 	if SERVER then
-		if QuestSystem:GetConfig('DisableCollisionWithItems') then
-			item:SetCollisionGroup( COLLISION_GROUP_PASSABLE_DOOR )
+		if QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then
+			item:SetCustomCollisionCheck(true)
 		end
 
 		timer.Simple(1, function()
@@ -504,8 +556,8 @@ function ENT:AddQuestNPC(npc, type, tag)
 
 	local quest = self:GetQuest()
 	if SERVER then
-		if QuestSystem:GetConfig('DisableCollisionWithNPCs') then
-			npc:SetCollisionGroup( COLLISION_GROUP_PASSABLE_DOOR )
+		if QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then
+			npc:SetCustomCollisionCheck(true)
 		end
 
 		timer.Simple(1, function()
