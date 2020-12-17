@@ -15,6 +15,12 @@ function ENT:Initialize()
 	self:SetUseType(SIMPLE_USE)
 	self:SetMaxYawSpeed(90)
 	self:DropToFloor()
+
+	hook.Add("OnEntityCreated", self, function(this, ent)
+		if ent:IsNPC() then
+			ent:AddEntityRelationship(self, D_NU, 99)
+		end
+	end)
 end
 
 function ENT:Use(activator, caller, useType, value)
