@@ -35,7 +35,12 @@ OpenQuestSelectPanel = function()
     QuestList:AddColumn("Title")
 
     for _, quest in pairs(allQuests) do
-        QuestList:AddLine(quest.id, quest.title)
+        for _, step in pairs(quest.steps) do
+            if step.structures ~= nil then
+                QuestList:AddLine(quest.id, quest.title)
+                break
+            end
+        end
     end
 
     QuestList.OnRowSelected = function(lst, index, pnl)
