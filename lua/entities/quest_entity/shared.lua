@@ -15,6 +15,7 @@ ENT.npcs = {}
 ENT.items = {}
 ENT.weapons = {}
 ENT.players = {}
+ENT.values = {}
 
 function ENT:Initialize()
     self:SetModel('models/props_junk/PopCan01a.mdl')
@@ -468,4 +469,64 @@ function ENT:AddQuestNPC(npc, type, tag)
 			end
 		end)
 	end
+end
+
+function ENT:DoorLocker(ent, lockState)
+	lockState = lockState or 'lock'
+	lockState = lockState:lower()
+	local doors
+	if istable(ent) then
+		doors = ent
+	else
+		doors = { ent }
+	end
+
+	for _, door in pairs(doors) do
+		if lockState == 'lock' and door.qsystemDoorIsLock ~= true 
+			or lockState == 'unlock' and door.qsystemDoorIsLock ~= false
+		then
+			local doorsValidClass = {
+				"func_door",
+				"func_door_rotating",
+				"prop_door_rotating",
+				"func_movelinear",
+				"prop_dynamic",
+			}
+		
+			if table.HasValue(doorsValidClass, door:GetClass()) then
+				door:Fire(lockState)
+				print(lockState)
+		
+				if lockState == 'lock' then
+					door.qsystemDoorIsLock = true
+				else
+					door.qsystemDoorIsLock = false
+				end
+			end
+		end
+	end
+end
+
+function ENT:SetStepValue(key, value)
+	self.values[key] = value
+	
+	if SERVER then
+		net.Start('qsystem_quest_entity_set_value')
+		net.WriteEntity(self)
+		net.WriteUInt(TypeID(value), 8)
+		net.WriteString(key)
+		net.WriteType(value)
+		net.Broadcast()
+	end
+end
+
+function ENT:GetStepValue(key)
+	return self.values[key]
+end
+
+function ENT:ResetStepValues()
+	self.values = {}
+	net.Start('qsystem_quest_entity_reset_values')
+	net.WriteEntity(self)
+	net.Broadcast()
 end

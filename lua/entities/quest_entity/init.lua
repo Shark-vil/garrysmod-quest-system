@@ -2,6 +2,9 @@ AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "shared.lua" )
 include('shared.lua')
 
+util.AddNetworkString('qsystem_quest_entity_set_value')
+util.AddNetworkString('qsystem_quest_entity_reset_values')
+
 function ENT:SetQuest(quest_id, ply)
 	if ply ~= nil then
 		timer.Simple(0.5, function()
