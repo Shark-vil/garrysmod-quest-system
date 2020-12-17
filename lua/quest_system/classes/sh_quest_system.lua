@@ -1,6 +1,7 @@
 QuestSystem = QuestSystem or {}
 QuestSystem.storage = QuestSystem.storage or {}
 QuestSystem.activeEvents = QuestSystem.activeEvents or {}
+QuestSystem.structures = QuestSystem.structures or {}
 
 function QuestSystem:EnableEvent(event_id, step)
     local allQuests = ents.FindByClass('quest_entity')
@@ -155,4 +156,50 @@ function QuestSystem:CheckRestiction(ply, restiction)
     end
 
     return true
+end
+
+if SERVER then
+    function QuestSystem:SpawnStructure(quest_id, structure_name)
+        local data = QuestSystem:GetStorage('structure'):Read(quest_id, structure_name)
+        if data ~= nil then
+            local spawn_id = quest_id .. '_' .. string.Replace(SysTime(), '.', '')
+            QuestSystem.structures[spawn_id] = {}
+            for id, prop in pairs(data.Props) do
+                local ent = ents.Create(prop.class)
+                ent:SetModel(prop.model)
+                ent:SetPos(prop.pos)
+                ent:SetAngles(prop.ang)
+                ent:Spawn()
+                local phys = ent:GetPhysicsObject()
+                if IsValid(phys) then
+                    phys:EnableMotion(false)
+                end
+                table.insert(QuestSystem.structures[spawn_id], ent)
+            end
+            return spawn_id
+        end
+        return nil
+    end
+
+    function QuestSystem:RemoveStructure(spawn_id)
+        if QuestSystem.structures[spawn_id] ~= nil then
+            for _, ent in pairs(QuestSystem.structures[spawn_id]) do
+                if IsValid(ent) then
+                    ent:Remove()
+                end
+            end
+            
+            QuestSystem.structures[spawn_id] = nil
+        end
+    end
+
+    function QuestSystem:RemoveAllStructure()
+        for key, data in pairs(QuestSystem.structures) do
+            for _, ent in pairs(data) do
+                if IsValid(ent) then
+                    ent:Remove()
+                end
+            end
+        end
+    end
 end

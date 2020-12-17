@@ -63,6 +63,11 @@ local quest = {
             }
         },
         safe_employer = {
+            structures = {
+                stuct_1 = function(eQuest, entities)
+                    PrintTable(entities)
+                end
+            },
             points = {
                 enemy = function(eQuest, positions)
                     if CLIENT then return end

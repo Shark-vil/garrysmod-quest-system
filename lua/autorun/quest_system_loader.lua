@@ -9,6 +9,7 @@ file.CreateDir('quest_system/players_data')
 file.CreateDir('quest_system/save_npc')
 file.CreateDir('quest_system/compile')
 file.CreateDir('quest_system/dialogue')
+file.CreateDir('quest_system/structure')
 
 resource.AddFile('quest_system/vgui/dialogue_panel_background')
 
@@ -84,6 +85,7 @@ using('events/sv_npc_autoloader.lua')
 
 using('storage/trigger/sh_storage.lua')
 using('storage/points/sh_storage.lua')
+using('storage/structure/sh_storage.lua')
 using('storage/sv_compile_quests.lua')
 
 using('gui/simple_quest_menu/sv_menu.lua')

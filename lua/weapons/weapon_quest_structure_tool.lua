@@ -68,10 +68,30 @@ function SWEP:Initialize()
                 Angle(0, 0, 0), 
                 center - vec1, 
                 center - vec2, 
-                Color(135, 135, 135, 100)
+                Color(135, 135, 135, 30)
             )
         end
 	end)
+end
+
+function SWEP:GetPropsOnZone()
+    local vec1 = self.StructureZone.vec1
+    local vec2 = self.StructureZone.vec2
+
+    if vec1 ~= nil and vec2 ~= nil then
+        local entities = ents.FindInBox(vec1, vec2)
+        local props = {}
+
+        for _, ent in pairs(entities) do
+            if not ent:IsPlayer() then
+                table.insert(props, ent)
+            end
+        end
+
+        return props
+    end
+
+    return {}
 end
 
 function SWEP:SetZonePosition(value)

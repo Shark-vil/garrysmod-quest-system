@@ -1,9 +1,9 @@
 local weapon_class = 'weapon_quest_structure_tool'
 
--- concommand.Add("qsystem_open_structure_editor", function(ply)
---     net.Start('sv_qsystem_open_points_editor')
---     net.SendToServer()
--- end)
+concommand.Add("qsystem_open_structure_editor", function(ply)
+    net.Start('sv_qsystem_open_structure_editor')
+    net.SendToServer()
+end)
 
 local OpenPointsPanelEditor, OpenQuestSelectPanel, OpenPointsSelectPanel
 
@@ -22,7 +22,7 @@ OpenQuestSelectPanel = function()
     frame:Center()
     frame.OnClose = function()
         if notsend then return end
-        net.Start('sv_qsystem_close_points_editor')
+        net.Start('sv_qsystem_close_structure_editor')
         net.SendToServer()
     end
 
@@ -64,8 +64,8 @@ OpenPointsSelectPanel = function(quest)
     QuestList:AddColumn("Id")
 
     for _, step in pairs(quest.steps) do
-        if step.points ~= nil then
-            for name, _ in pairs(step.points) do
+        if step.structures ~= nil then
+            for name, _ in pairs(step.structures) do
                 QuestList:AddLine(name)
             end
         end
@@ -80,28 +80,32 @@ OpenPointsSelectPanel = function(quest)
     end
 end
 
-OpenPointsPanelEditor = function(quest, points_name)
+OpenPointsPanelEditor = function(quest, structure_name)
     local weapon = LocalPlayer():GetWeapon(weapon_class)
 
-    QuestSystem:GetStorage('points'):Read(quest.id, points_name, function(ply, data)
+    QuestSystem:GetStorage('structure'):Read(quest.id, structure_name, function(ply, data)
         if IsValid(weapon) then
-            weapon.Points = data
+            if data ~= nil then
+                weapon.StructureZone = data.Zone
+            end
         end
     end)
 
-    local points = nil
+    
+    local spawn_id = nil
+    local zone = nil
     local delay = 0
 
-    local PanelManager = DFCL:New( "qsystem_points_editor" )
+    local PanelManager = DFCL:New( "qsystem_structure_editor" )
     PanelManager:AddMouseClickListener()
     PanelManager:AddContextMenuListener()
     PanelManager:AddFocusName( "DTextEntry" )
 
     local InfoPanel = vgui.Create( "DFrame" )
     InfoPanel:MakePopup()
-    InfoPanel:SetSize( 230, 180 )
+    InfoPanel:SetSize( 230, 260 )
     InfoPanel:SetPos( 100, ScrH()/2 - 10 )
-    InfoPanel:SetTitle( "Points editor" )
+    InfoPanel:SetTitle( "Structure editor" )
     InfoPanel:SetSizable( false )
     InfoPanel:SetDraggable( true )
     InfoPanel:ShowCloseButton( false )
@@ -110,36 +114,105 @@ OpenPointsPanelEditor = function(quest, points_name)
     InfoPanel:SetVisible( true )
     InfoPanel.Paint = function( self, width, height )
         draw.RoundedBox( 0, 0, 0, width, height, Color(33,29,46,255) )
-        if points ~= nil then
+        if zone ~= nil then
             surface.SetFont( "Trebuchet18" )
             surface.SetTextColor( 255, 255, 255, 255 )
             surface.SetTextPos( 15, 25 )
-            surface.DrawText( "Points:" )
+            surface.DrawText( "Zone:" )
             surface.SetTextPos( 15, 40 )
-            surface.DrawText( #points )
+            surface.SetTextColor( 94, 220, 255, 255 )
+            surface.SetFont( "Default" )
+            if zone.vec1 ~= nil then
+                surface.SetTextPos( 15, 55 )
+                surface.DrawText( tostring(zone.vec1) )
+            end
+            if zone.vec2 ~= nil then
+                surface.SetTextPos( 15, 65 )
+                surface.DrawText( tostring(zone.vec2) )
+            end
         end
 
         if IsValid(weapon) then
-            points = weapon.Points
+            zone = weapon.StructureZone
         else
             self:Close()
         end
     end
     InfoPanel.OnClose = function()
-        weapon:ClearPoints()
+        if spawn_id ~= nil then
+            net.Start('sv_qsystem_structure_remove')
+            net.WriteString(spawn_id)
+            net.SendToServer()
+        end
+
+        weapon:ClearZonePositions()
         OpenPointsSelectPanel(quest)
         PanelManager:Destruct()
     end
     PanelManager:AddPanel( InfoPanel, true )
 
+    local CreatePropsButton = vgui.Create( "DButton" )
+    CreatePropsButton:SetParent( InfoPanel )
+    CreatePropsButton:SetText( "Create props" )
+    CreatePropsButton:SetPos( 15, 100 )
+    CreatePropsButton:SetSize( 200, 30 )
+    CreatePropsButton.DoClick = function()
+        if spawn_id ~= nil then
+            surface.PlaySound('Resource/warning.wav')
+        else
+            net.RegisterCallback('spawn_structure_editor', function(ply, id)
+                spawn_id = id
+            end)
+            
+            net.Start('sv_qsystem_structure_spawn')
+            net.WriteString(quest.id)
+            net.WriteString(structure_name)
+            net.SendToServer()
+        end
+    end
+    PanelManager:AddPanel( CreatePropsButton )
+
+    local RemovePropsButton = vgui.Create( "DButton" )
+    RemovePropsButton:SetParent( InfoPanel )
+    RemovePropsButton:SetText( "Remove props" )
+    RemovePropsButton:SetPos( 15, 140 )
+    RemovePropsButton:SetSize( 200, 30 )
+    RemovePropsButton.DoClick = function()
+        if spawn_id ~= nil then
+            net.Start('sv_qsystem_structure_remove')
+            net.WriteString(spawn_id)
+            net.SendToServer()
+
+            spawn_id = nil
+        end
+    end
+    PanelManager:AddPanel( RemovePropsButton )
+
     local InfoButtonYes = vgui.Create( "DButton" )
     InfoButtonYes:SetParent( InfoPanel )
     InfoButtonYes:SetText( "Save" )
-    InfoButtonYes:SetPos( 15, 100 )
+    InfoButtonYes:SetPos( 15, 180 )
     InfoButtonYes:SetSize( 200, 30 )
     InfoButtonYes.DoClick = function ()
-        if points_name ~= nil and points ~= nil then
-            QuestSystem:GetStorage('points'):Save(quest.id, points_name, points)
+        local props = weapon:GetPropsOnZone()
+        local new_data = {
+            Zone = zone,
+            Props = {}
+        }
+
+        for _, ent in pairs(props) do
+            local prop_data = {
+                class = ent:GetClass(),
+                model = ent:GetModel(),
+                pos = ent:GetPos(),
+                ang = ent:GetAngles()
+            }
+
+            table.insert(new_data.Props, prop_data)
+        end
+
+        if structure_name ~= nil and new_data.Zone ~= nil and table.Count(new_data.Props) ~= 0 then
+            QuestSystem:GetStorage('structure'):Save(quest.id, structure_name, new_data)
             surface.PlaySound('buttons/blip1.wav')
         else
             surface.PlaySound('Resource/warning.wav')
@@ -150,7 +223,7 @@ OpenPointsPanelEditor = function(quest, points_name)
     local InfoButtonNo = vgui.Create( "DButton" )
     InfoButtonNo:SetParent( InfoPanel )
     InfoButtonNo:SetText( "Exit" )
-    InfoButtonNo:SetPos( 15, 140 )
+    InfoButtonNo:SetPos( 15, 220 )
     InfoButtonNo:SetSize( 200, 30 )
     InfoButtonNo.DoClick = function()
         InfoPanel:Close()
