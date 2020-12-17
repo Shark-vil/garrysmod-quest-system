@@ -1,7 +1,7 @@
 local OpenDialoguNpc, OpenDialogueMenu, LoadAnswerOptions
 local npcDialogue = NULL
 
-local background_texture = Material('quest_system/vgui/dialogue_panel_background')
+local background_texture = Material('quest_system/vgui/dialogue_panel_background.png')
 local background_color = Color(10, 69, 20, 200)
 local pick_color = Color(43, 181, 69, 150)
 local nopick_color = Color(0, 0, 0, 0)
@@ -11,51 +11,61 @@ local cam_anim = 0
 local cam_delay = 0
 hook.Add("CalcView", "QSystem.NpcDialogueCamera", function(ply, pos, angles, fov)
     if IsValid(npcDialogue) and IsValid(npcDialogue:GetNPC()) 
-        and not npcDialogue:GetDialogue().isBackground and cam_delay < CurTime()
+        and cam_delay < CurTime()
     then
-        local npc = npcDialogue:GetNPC()
-        local n_origin = npc:EyePos() - (npc:GetAngles():Forward() * -35) - Vector(0, 0, 10)
-        local n_angles = npc:EyeAngles() - Angle(0, 180, 0)
+        local dialogue = npcDialogue:GetDialogue()
 
-        local view = {
-            origin = LerpVector(cam_anim, pos, n_origin),
-            angles = LerpAngle(cam_anim, angles, n_angles),
-            fov = fov,
-            drawviewer = false
-        }
+        if not dialogue.isBackground and not dialogue.notLook then
+            local npc = npcDialogue:GetNPC()
+            local n_origin = npc:EyePos() - (npc:GetAngles():Forward() * -35) - Vector(0, 0, 10)
+            local n_angles = npc:EyeAngles() - Angle(0, 180, 0)
 
-        if cam_anim < 1 then
-            cam_anim = cam_anim + 0.020
-        else
-            cam_anim = 1
+            local view = {
+                origin = LerpVector(cam_anim, pos, n_origin),
+                angles = LerpAngle(cam_anim, angles, n_angles),
+                fov = fov,
+                drawviewer = false
+            }
+
+            if cam_anim < 1 then
+                cam_anim = cam_anim + 0.020
+            else
+                cam_anim = 1
+            end
+
+            return view
         end
-
-        return view
     end
 
     cam_anim = 0
 end)
 
 hook.Add('PreDrawPlayerHands', 'QSystem.NpcDialogueCamera', function()
-    if IsValid(npcDialogue) and not npcDialogue:GetDialogue().isBackground then
-        return true
+    if IsValid(npcDialogue) then
+        local dialogue = npcDialogue:GetDialogue()
+        if not dialogue.isBackground and not dialogue.notLook then
+            return true
+        end
     end
 end)
 
 hook.Add('PreDrawViewModel', 'QSystem.NpcDialogueCamera', function()
-    if IsValid(npcDialogue) and not npcDialogue:GetDialogue().isBackground then
-        return true
+    if IsValid(npcDialogue) then
+        local dialogue = npcDialogue:GetDialogue()
+        if not dialogue.isBackground and not dialogue.notLook then
+            return true
+        end
     end
 end)
 
 OpenDialoguNpc = function(ignore_npc_text)
     local step = npcDialogue:GetStep()
-
+    local dialogue = npcDialogue:GetDialogue()
     local name = tostring(npcDialogue:GetNPC())
-    if isstring(npcDialogue:GetDialogue().name) then
-        name = npcDialogue:GetDialogue().name
-    elseif istable(npcDialogue:GetDialogue().name) then
-        name = table.Random(npcDialogue:GetDialogue().name)
+    if isstring(dialogue.name) then
+        name = dialogue.name
+    elseif istable(dialogue.name) then
+        name = table.Random(dialogue.name)
     end
     
     if step.text ~= nil and not ignore_npc_text then
@@ -82,7 +92,9 @@ OpenDialoguNpc = function(ignore_npc_text)
         MainPanel:SetSize(width, height)
         MainPanel:SetPos(pos_x, pos_y) 
         MainPanel:SetTitle('')
-        MainPanel:MakePopup()
+        if not dialogue.notFreeze then
+            MainPanel:MakePopup()
+        end
         MainPanel.Paint = function(self, width, height)
             if not IsValid(npcDialogue) then self:Close() return end
 
@@ -280,8 +292,9 @@ net.Receive('cl_qsystem_set_dialogue_id', function()
         npcDialogue = ent
         npcDialogue:StartDialogue(ignore_npc_text)
 
-        if not ent:GetDialogue().isBackground then
-            if not is_next then
+        local dialogue = ent:GetDialogue()
+        if not dialogue.isBackground then
+            if not is_next and not dialogue.notLook then
                 cam_delay = CurTime() + 1
             end
             OpenDialoguNpc(ignore_npc_text)

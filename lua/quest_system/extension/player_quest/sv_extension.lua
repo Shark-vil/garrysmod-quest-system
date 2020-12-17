@@ -73,17 +73,27 @@ function meta:EnableQuest(quest_id)
         end
     end
 
-    local quest_data = self:ReadQuest(quest_id)
-    if quest_data ~= nil then
-        if self:QuestIsActive(quest_id) then return end
-        
+    if self:QuestIsActive(quest_id) then return end
+
+    local quest = QuestSystem:GetQuest(quest_id)
+    
+    if quest ~= nil and not quest.isEvent then 
+        local quest_data = self:ReadQuest(quest_id)
+        local step = 'start'
+
+        if quest_data == nil then 
+            self:SaveQuest(quest_id)
+        else
+            step = quest_data.step
+        end
+
         local ent = ents.Create('quest_entity')
         ent:SetQuest(quest_id, self)
         ent:SetPos(self:GetPos())
         ent:Spawn()
         timer.Simple(1, function()
             if not IsValid(ent) then return end
-            ent:SetStep(quest_data.step)
+            ent:SetStep(step)
         end)
     end
 end

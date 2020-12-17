@@ -121,7 +121,8 @@ function ENT:OnRemove()
             self:SavePlayerValue('already_said', true, true)
         end
     
-        if not self:GetDialogue().isBackground then
+        local dialogue = self:GetDialogue()
+        if not dialogue.isBackground and not dialogue.notFreeze then
             self:GetPlayer():Freeze(false)
         end
     end
@@ -200,7 +201,8 @@ function ENT:StartDialogue(ignore_npc_text, is_next)
         local ply = self:GetPlayer()
         
         if not is_next then
-            if not self:GetDialogue().isBackground then
+            local dialogue = self:GetDialogue()
+            if not dialogue.isBackground and not dialogue.notFreeze then
                 ply:Freeze(true)
                 QuestService:WaitingNPCWalk(self:GetNPC(), true)
             end
@@ -219,7 +221,7 @@ function ENT:StartDialogue(ignore_npc_text, is_next)
         local step = self:GetStep()
         local delay = step.delay or 0
         if step.eventDelay ~= nil then
-            timer.Simple(delay, function()
+            timer.Simple(delay + 0.5, function()
                 if not IsValid(self) then return end
                 step.eventDelay(self)
             end)

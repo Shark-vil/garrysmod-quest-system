@@ -26,9 +26,9 @@ function QuestSystem:EnableEvent(event_id, step)
 
         QuestSystem.activeEvents[event_id] = ent
 
-        return true
+        return ent
     end
-    return false
+    return NULL
 end
 
 function QuestSystem:DisableEvent(event_id)

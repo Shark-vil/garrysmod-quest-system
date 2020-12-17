@@ -162,3 +162,23 @@ function QuestDialogue:ParentToNPC(id, npc, ply, ignore_valid, ignore_random)
         npc.npc_dialogue_id = id
     end
 end
+
+function QuestDialogue:SetPlayerDialogue(id, ply, npc)
+    if QuestDialogue:GetDialogue(id) ~= nil then
+        local dialogue_ent = ents.Create('quest_dialogue')
+        dialogue_ent:SetPos(ply:GetPos())
+        dialogue_ent:Spawn()
+        dialogue_ent:SetDialogueID(id)
+        dialogue_ent:SetStep('start')
+        dialogue_ent:SetPlayer(ply)
+        dialogue_ent:SetNPC(npc)
+
+        timer.Simple(0.6, function()
+            dialogue_ent:StartDialogue()
+        end)
+
+        return dialogue_ent
+    end
+
+    return NULL
+end

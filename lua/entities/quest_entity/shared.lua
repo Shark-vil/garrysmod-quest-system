@@ -59,7 +59,7 @@ function ENT:IsExistStepArg(arg)
 end
 
 function ENT:GetQuest()
-    self.quest = self.quest or QuestSystem:GetQuest(self:GetQuestId())
+	self.quest = self.quest or QuestSystem:GetQuest(self:GetQuestId())
 	return self.quest
 end
 
