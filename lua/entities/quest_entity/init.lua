@@ -52,11 +52,7 @@ function ENT:SetStep(step)
 				net.Start('cl_qsystem_entity_step_triggers')
 				net.WriteEntity(self)
 				net.WriteTable(triggers)
-				if quest.isEvent then
-					net.Broadcast()
-				else
-					net.Send(ply)
-				end
+				net.Broadcast()
 			end
 		end)
 
@@ -84,19 +80,19 @@ function ENT:SetStep(step)
 			end
 		end
 
-		local points = self.points
-		timer.Simple(delay, function()
-			if IsValid(self) then
-				net.Start('cl_qsystem_entity_step_points')
-				net.WriteEntity(self)
-				net.WriteTable(points)
-				if quest.isEvent then
-					net.Broadcast()
-				else
-					net.Send(ply)
-				end
-			end
-		end)
+		-- local points = self.points
+		-- timer.Simple(delay, function()
+		-- 	if IsValid(self) then
+		-- 		net.Start('cl_qsystem_entity_step_points')
+		-- 		net.WriteEntity(self)
+		-- 		net.WriteTable(points)
+		-- 		if quest.isEvent then
+		-- 			net.Broadcast()
+		-- 		else
+		-- 			net.Send(ply)
+		-- 		end
+		-- 	end
+		-- end)
 	end
 
 	if step == 'start' then
@@ -130,11 +126,7 @@ function ENT:SetStep(step)
 				net.WriteString(utf8.force(quest.title))
 				net.WriteString(utf8.force(quest.description))
 			end
-			if quest.isEvent then
-				net.Broadcast()
-			else
-				net.Send(ply)
-			end
+			net.Broadcast()
 		end
 	end)
 
@@ -143,11 +135,7 @@ function ENT:SetStep(step)
 			net.Start('cl_qsystem_entity_step_done')
 			net.WriteEntity(self)
 			net.WriteString(step)
-			if quest.isEvent then
-				net.Broadcast()
-			else
-				net.Send(ply)
-			end
+			net.Broadcast()
 		end
 	end)
 

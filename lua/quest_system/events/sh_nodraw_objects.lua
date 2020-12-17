@@ -7,10 +7,10 @@ else
         if not QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then return end
 
         local ent = net.ReadEntity()
-        local quester = ent:GetPlayer()
         local npcs = ent.npcs
-    
-        if quester == LocalPlayer() then return end
+        
+        if not IsValid(ent) then return end
+        if table.HasValue(ent.players, LocalPlayer()) then return end
 
         for _, data in pairs(npcs) do
             local npc = data.npc
@@ -28,10 +28,10 @@ else
         if not QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then return end
 
         local ent = net.ReadEntity()
-        local quester = ent:GetPlayer()
         local items = ent.items
     
-        if quester == LocalPlayer() then return end
+        if not IsValid(ent) then return end
+        if table.HasValue(ent.players, LocalPlayer()) then return end
 
         for _, data in pairs(items) do
             local item = data.item
@@ -46,9 +46,9 @@ else
 
         local ent = net.ReadEntity()
         local structures = net.ReadTable()
-        local quester = ent:GetPlayer()
     
-        if quester == LocalPlayer() then return end
+        if not IsValid(ent) then return end
+        if table.HasValue(ent.players, LocalPlayer()) then return end
 
         for id, spawn_id in pairs(structures) do
             local props = QuestSystem:GetStructure(spawn_id)

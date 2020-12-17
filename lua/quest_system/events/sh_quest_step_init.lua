@@ -10,6 +10,9 @@ if SERVER then
 else
     net.Receive('cl_qsystem_entity_step_construct', function()
         local ent = net.ReadEntity()
+
+        if not IsValid(ent) or not table.HasValue(ent.players, LocalPlayer()) then return end
+
         local quest_id = net.ReadString()
         local step = net.ReadString()
         local title, description

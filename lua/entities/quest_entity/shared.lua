@@ -47,25 +47,24 @@ function ENT:Initialize()
 				if not IsValid(self) then hook.Remove("ShouldCollide", globalHookName) return end
 
 				local quest = self:GetQuest()
-				if quest.isEvent then return end
 
 				for id, spawn_id in pairs(self.structures) do
 					local props = QuestSystem:GetStructure(spawn_id)
-					if table.HasValue(props, ent1) and ent2 ~= self:GetPlayer() then
+					if table.HasValue(props, ent1) and not table.HasValue(self.players, ent2) then
 						return false
 					end
 				end
 
 				for _, data in pairs(self.items) do
 					local item = data.item
-					if IsValid(item) and ent1 == item and ent2 ~= self:GetPlayer() then
+					if IsValid(item) and ent1 == item and not table.HasValue(self.players, ent2) then
 						return false
 					end
 				end
 
 				for _, data in pairs(self.npcs) do
 					local npc = data.npc
-					if IsValid(npc) and ent1 == npc and ent2 ~= self:GetPlayer() then
+					if IsValid(npc) and ent1 == npc and not table.HasValue(self.players, ent2) then
 						return false
 					end
 				end
@@ -75,25 +74,6 @@ function ENT:Initialize()
 				if not IsValid(self) then hook.Remove("EntityTakeDamage", globalHookName) return end
 
 				local quest = self:GetQuest()
-				if quest.isEvent then return end
-
-				for _, data in pairs(self.npcs) do
-					local npc = data.npc
-					local attaker = dmginfo:GetInflictor()
-					if IsValid(npc) and IsValid(attaker) and attaker:IsPlayer() then
-						if attaker == self:GetPlayer() then
-							return true
-						end
-					end
-				end
-			end)
-
-			hook.Add('EntityTakeDamage', globalHookName, function(target, dmginfo)
-				if not IsValid(self) then hook.Remove("EntityTakeDamage", globalHookName) return end
-
-				local quest = self:GetQuest()
-				if quest.isEvent then return end
-
 				local attaker = dmginfo:GetAttacker()
 
 				if attaker:IsWeapon() then
@@ -104,7 +84,7 @@ function ENT:Initialize()
 					for _, data in pairs(self.npcs) do
 						local npc = data.npc
 						if IsValid(npc) and IsValid(attaker) then
-							if attaker ~= self:GetPlayer() then
+							if not table.HasValue(self.players, attaker) then
 								return true
 							end
 						end
@@ -346,6 +326,7 @@ function ENT:OnRemove()
 end
 
 function ENT:OnNextStep(step)
+	local delay = 1
 	local quest = self:GetQuest()
 	local step = self:GetQuestStep()
 	local old_step = self:GetQuestOldStep()
@@ -358,6 +339,18 @@ function ENT:OnNextStep(step)
 					func(self, data.points)
 				end
 			end
+		end
+
+		if SERVER then
+			local points = self.points
+			timer.Simple(delay, function()
+				if IsValid(self) then
+					net.Start('cl_qsystem_entity_step_points')
+					net.WriteEntity(self)
+					net.WriteTable(points)
+					net.Broadcast()
+				end
+			end)
 		end
 	end
 
@@ -407,7 +400,7 @@ function ENT:OnNextStep(step)
 			end
 		end
 
-		if QuestSystem:GetConfig('HideQuestsOfOtherPlayers') and not quest.isEvent then				
+		if QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then				
 			timer.Simple(1, function()
 				if IsValid(self) then
 					if table.Count(self.npcs) ~= 0 then
