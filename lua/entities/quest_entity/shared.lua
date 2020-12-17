@@ -16,6 +16,7 @@ ENT.items = {}
 ENT.weapons = {}
 ENT.players = {}
 ENT.values = {}
+ENT.structures = {}
 
 function ENT:Initialize()
     self:SetModel('models/props_junk/PopCan01a.mdl')
@@ -25,12 +26,50 @@ function ENT:Initialize()
     self:SetNoDraw(true)
 
 	if SERVER then
+		local globalHookName = 'QuestEntity_' .. tostring(self:EntIndex()) .. tostring(CurTime())
+		self:SetNWString('global_hook_name', globalHookName)
+
 		if self:IsExistStepArg('onUse') then
-			hook.Add("PlayerUse", self, function(_self, ply, ent)
+			hook.Add("PlayerUse", globalHookName, function(ply, ent)
+				if not IsValid(self) then hook.Remove("PlayerUse", globalHookName) return end
+				
 				local step = self:GetQuestStepTable()
 				if step ~= nil and step.onUse ~= nil then
 					if self:GetPlayer() == ply then
 						step.onUse(self, ent)
+					end
+				end
+			end)
+		end
+
+		if QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then
+			hook.Add('ShouldCollide', globalHookName, function(ent1, ent2)
+				if not IsValid(self) then hook.Remove("ShouldCollide", globalHookName) return end
+
+				local quest = self:GetQuest()
+				if quest.isEvent then return end
+
+				for id, spawn_id in pairs(self.structures) do
+					local props = QuestSystem:GetStructure(spawn_id)
+					if table.HasValue(props, ent1) and ent2 ~= self:GetPlayer() then
+						return false
+					end
+				end
+			end)
+
+			hook.Add('EntityTakeDamage', globalHookName, function(target, dmginfo)
+				if not IsValid(self) then hook.Remove("EntityTakeDamage", globalHookName) return end
+
+				local quest = self:GetQuest()
+				if quest.isEvent then return end
+
+				for _, data in pairs(self.npcs) do
+					local npc = data.npc
+					local attaker = dmginfo:GetInflictor()
+					if IsValid(npc) and IsValid(attaker) and attaker:IsPlayer() then
+						if attaker == self:GetPlayer() then
+							return true
+						end
 					end
 				end
 			end)
@@ -252,7 +291,13 @@ function ENT:OnRemove()
 	self:RemoveItems()
 	if SERVER then
 		self:RemoveAllQuestWeapon()
+		self:RemoveAllStructure()
 	end
+
+	local globalHookName = self:GetNWString('global_hook_name')
+	hook.Remove("PlayerUse", globalHookName)
+	hook.Remove("ShouldCollide", globalHookName)
+	hook.Remove("EntityTakeDamage", globalHookName)
 
 	local quest = self:GetQuest()
 	if quest.isEvent then
@@ -286,9 +331,9 @@ function ENT:OnNextStep(step)
 		end
 	end
 
-	if #self.npcs ~= 0 then
-		if SERVER then
-			local classes = {}
+	
+	if SERVER then
+		if table.Count(self.npcs) ~= 0 then
 			local notReaction = quest.npcNotReactionOtherPlayer or false
 
 			for _, ply in pairs(player.GetHumans()) do
@@ -308,26 +353,31 @@ function ENT:OnNextStep(step)
 					end
 				end
 			end
+		end
 
-			if QuestSystem:GetConfig('NoDrawNPC_WhenCompletingQuest') and not quest.isEvent then
-				local class = data.npc:GetClass()
-				local quester = self:GetPlayer()
-				for _, data in pairs(self.npcs) do
-					data.npc:SetNWEntity('quester', quester)
-					if not table.HasValue(classes, class) then
-						table.insert(classes, class)
-					end
-				end
-				
-				timer.Simple(1, function()
-					if IsValid(self) and IsValid(quester) then
+		if QuestSystem:GetConfig('HideQuestsOfOtherPlayers') and not quest.isEvent then				
+			timer.Simple(1, function()
+				if IsValid(self) then
+					if table.Count(self.npcs) ~= 0 then
 						net.Start('cl_qsystem_nodraw_npc')
-						net.WriteTable(classes)
-						net.WriteEntity(quester)
+						net.WriteEntity(self)
 						net.Broadcast()
 					end
-				end)
-			end
+
+					if table.Count(self.items) ~= 0 then
+						net.Start('cl_qsystem_nodraw_items')
+						net.WriteEntity(self)
+						net.Broadcast()
+					end
+
+					if table.Count(self.structures) ~= 0 then
+						net.Start('cl_qsystem_nodraw_structures')
+						net.WriteEntity(self)
+						net.WriteTable(self.structures)
+						net.Broadcast()
+					end
+				end
+			end)
 		end
 	end
 
@@ -427,6 +477,10 @@ function ENT:AddQuestItem(item , item_id)
 
 	local quest = self:GetQuest()
 	if SERVER then
+		if QuestSystem:GetConfig('DisableCollisionWithItems') then
+			item:SetCollisionGroup( COLLISION_GROUP_PASSABLE_DOOR )
+		end
+
 		timer.Simple(1, function()
 			if not IsValid(self) then return end
 
@@ -450,6 +504,10 @@ function ENT:AddQuestNPC(npc, type, tag)
 
 	local quest = self:GetQuest()
 	if SERVER then
+		if QuestSystem:GetConfig('DisableCollisionWithNPCs') then
+			npc:SetCollisionGroup( COLLISION_GROUP_PASSABLE_DOOR )
+		end
+
 		timer.Simple(1, function()
 			if not IsValid(self) then return end
 

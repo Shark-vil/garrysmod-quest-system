@@ -78,7 +78,7 @@ using('tools/structure_editor/sv_structure_editor.lua')
 using('tools/structure_editor/cl_strucutre_editor.lua')
 
 using('events/sh_quest_step_init.lua')
-using('events/sh_nodraw_npc.lua')
+using('events/sh_nodraw_objects.lua')
 using('events/sv_quest_autoloader.lua')
 using('events/sv_player_disconnected.lua')
 using('events/sv_npc_autoloader.lua')

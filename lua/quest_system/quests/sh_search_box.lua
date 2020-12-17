@@ -64,7 +64,8 @@ local quest = {
         },
         safe_employer = {
             structures = {
-                stuct_1 = function(eQuest, entities)
+                barricades = function(eQuest, entities, spawn_id)
+                    print(spawn_id)
                     PrintTable(entities)
                 end
             },

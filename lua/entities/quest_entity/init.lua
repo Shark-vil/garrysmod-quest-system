@@ -74,6 +74,16 @@ function ENT:SetStep(step)
 			end
 		end
 
+		if quest.steps[step].structures ~= nil then
+			for structure_id, func in pairs(quest.steps[step].structures) do
+				local spawn_id = QuestSystem:SpawnStructure(quest.id, structure_id)
+				if spawn_id ~= nil then
+					self.structures[structure_id] = spawn_id
+					func(eQuest, QuestSystem:GetStructure(spawn_id), spawn_id)
+				end
+			end
+		end
+
 		local points = self.points
 		timer.Simple(delay, function()
 			if IsValid(self) then
@@ -314,5 +324,18 @@ function ENT:MoveEnemyToRandomPlayer()
 				end
 			end
 		end
+	end
+end
+
+function ENT:RemoveStructure(id)
+	local spawn_id = self.structures[id]
+	if spawn_id ~= nil then
+		QuestSystem:RemoveStructure(spawn_id)
+	end
+end
+
+function ENT:RemoveAllStructure()
+	for id, spawn_id in pairs(self.structures) do
+		QuestSystem:RemoveStructure(spawn_id)
 	end
 end

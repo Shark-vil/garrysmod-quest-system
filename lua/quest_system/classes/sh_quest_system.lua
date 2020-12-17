@@ -1,3 +1,9 @@
+if SERVER then
+    util.AddNetworkString('qsystem_add_structure_from_client')
+    util.AddNetworkString('qsystem_remove_structure_from_client')
+    util.AddNetworkString('qsystem_remove_all_structure_from_client')
+end
+
 QuestSystem = QuestSystem or {}
 QuestSystem.storage = QuestSystem.storage or {}
 QuestSystem.activeEvents = QuestSystem.activeEvents or {}
@@ -170,12 +176,27 @@ if SERVER then
                 ent:SetPos(prop.pos)
                 ent:SetAngles(prop.ang)
                 ent:Spawn()
+                ent:SetCustomCollisionCheck(true)
                 local phys = ent:GetPhysicsObject()
                 if IsValid(phys) then
                     phys:EnableMotion(false)
                 end
                 table.insert(QuestSystem.structures[spawn_id], ent)
             end
+            timer.Simple(1, function()
+                if QuestSystem.structures[spawn_id] ~= nil then
+                    local ids = {}
+                    for _, ent in pairs(QuestSystem.structures[spawn_id]) do
+                        if IsValid(ent) then
+                            table.insert(ids, ent:EntIndex())
+                        end
+                    end
+                    net.Start('qsystem_add_structure_from_client')
+                    net.WriteString(spawn_id)
+                    net.WriteTable(ids)
+                    net.Broadcast()
+                end
+            end)
             return spawn_id
         end
         return nil
@@ -190,16 +211,54 @@ if SERVER then
             end
             
             QuestSystem.structures[spawn_id] = nil
+
+            net.Start('qsystem_remove_structure_from_client')
+            net.WriteString(spawn_id)
+            net.Broadcast()
         end
     end
 
     function QuestSystem:RemoveAllStructure()
-        for key, data in pairs(QuestSystem.structures) do
+        for spawn_id, data in pairs(QuestSystem.structures) do
             for _, ent in pairs(data) do
                 if IsValid(ent) then
                     ent:Remove()
                 end
             end
         end
+
+        net.Start('qsystem_remove_all_structure_from_client')
+        net.Broadcast()
     end
+else
+    net.Receive('qsystem_add_structure_from_client', function()
+        local spawn_id = net.ReadString()
+        local ids = net.ReadTable()
+
+        QuestSystem.structures[spawn_id] = {}
+
+        for _, id in pairs(ids) do
+            local ent = Entity(id)
+            if IsValid(ent) then
+                table.insert(QuestSystem.structures[spawn_id], ent)
+            end
+        end
+    end)
+
+    net.Receive('qsystem_remove_structure_from_client', function()
+        local spawn_id = net.ReadString()
+        QuestSystem.structures[spawn_id] = nil
+    end)
+
+    net.Receive('qsystem_remove_all_structure_from_client', function()
+        QuestSystem.structures = {}
+    end)
+end
+
+function QuestSystem:GetStructure(spawn_id)
+    return QuestSystem.structures[spawn_id]
+end
+
+function QuestSystem:GetAllStructure()
+    return QuestSystem.structures
 end
