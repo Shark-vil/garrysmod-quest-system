@@ -434,11 +434,7 @@ function ENT:AddQuestItem(item , item_id)
 			net.WriteEntity(self)
 			net.WriteEntity(item)
 			net.WriteString(item_id)
-			if quest.isEvent then
-				net.Broadcast()
-			else
-				net.Send(self:GetPlayer())
-			end
+			net.Broadcast()
 		end)
 	end
 end
@@ -462,11 +458,7 @@ function ENT:AddQuestNPC(npc, type, tag)
 			net.WriteEntity(npc)
 			net.WriteString(type)
 			net.WriteString(tag)
-			if quest.isEvent then
-				net.Broadcast()
-			else
-				net.Send(self:GetPlayer())
-			end
+			net.Broadcast()
 		end)
 	end
 end
