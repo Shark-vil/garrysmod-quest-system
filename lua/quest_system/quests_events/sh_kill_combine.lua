@@ -73,11 +73,6 @@ local quest = {
                         npc:Give(table.Random({
                             'weapon_ar2',
                             'weapon_shotgun',
-                            'tfa_ins2_acr',
-                            'tfa_ins2_rfb',
-                            'tfa_ins2_spas12',
-                            'tfa_ins2_minimi',
-                            'tfa_ins2_ak12'
                         }))
                         npc:Spawn()
                         eQuest:AddQuestNPC(npc, 'enemy')
