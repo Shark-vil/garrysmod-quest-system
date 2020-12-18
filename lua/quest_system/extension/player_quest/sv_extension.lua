@@ -63,6 +63,26 @@ function meta:RemoveQuest(quest_id)
     return false
 end
 
+function meta:QuestIsValid(quest_id)
+    local quest = QuestSystem:GetQuest(quest_id)
+
+    if quest.hide or quest.isEvent then
+        return false
+    end
+
+    if not QuestSystem:CheckRestiction(ply, quest.restriction) then
+        return false
+    end
+
+    if quest.condition ~= nil then
+        if not quest.condition(ply) then
+            return false
+        end
+    end
+
+    return true
+end
+
 function meta:EnableQuest(quest_id)
     local maxQuests = QuestSystem:GetConfig('MaxActiveQuestsForOnePlayer')
     if maxQuests > 0 then
@@ -74,10 +94,14 @@ function meta:EnableQuest(quest_id)
     end
 
     if self:QuestIsActive(quest_id) then return end
+    if not QuestSystem:QuestIsValid(self, quest_id) then
+        self:RemoveQuest(quest_id)
+        return
+    end
 
     local quest = QuestSystem:GetQuest(quest_id)
     
-    if quest ~= nil and not quest.isEvent then 
+    if quest ~= nil then 
         local quest_data = self:ReadQuest(quest_id)
         local step = 'start'
 
@@ -102,14 +126,18 @@ function meta:EnableAllQuest()
     local quests = self:ReadAllQuest()
     for _, quest_data in pairs(quests) do
         if quest_data ~= nil then
-            local ent = ents.Create('quest_entity')
-            ent:SetQuest(quest_data.id, self)
-            ent:SetPos(self:GetPos())
-            ent:Spawn()
-            timer.Simple(1, function()
-                if not IsValid(ent) then return end
-                ent:SetStep(quest_data.step)
-            end)
+            if QuestSystem:QuestIsValid(self, quest_data.id) then
+                local ent = ents.Create('quest_entity')
+                ent:SetQuest(quest_data.id, self)
+                ent:SetPos(self:GetPos())
+                ent:Spawn()
+                timer.Simple(1, function()
+                    if not IsValid(ent) then return end
+                    ent:SetStep(quest_data.step)
+                end)
+            else
+                self:RemoveQuest(quest_data.id)
+            end
         end
     end
 end

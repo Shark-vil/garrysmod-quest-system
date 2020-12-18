@@ -8,24 +8,11 @@ net.Receive('sv_qsystem_startquest', function(len, ply)
     end
     
     local id = net.ReadString()
+
+    if not QuestSystem:QuestIsValid(ply, id) then return end
+
     local delay = QuestSystem:GetConfig('DelayBetweenQuests')
     if delay > 0 then
-        local quest = QuestSystem:GetQuest(id)
-
-        if quest.hide or quest.isEvent then
-            return
-        end
-
-        if not QuestSystem:CheckRestiction(ply, quest.restriction) then
-            return
-        end
-
-        if quest.condition ~= nil then
-            if not quest.condition(ply) then
-                return
-            end
-        end
-
         local current_delay = ply:GetNWFloat('quest_delay')
         if current_delay > os.time() then
             local delay_math = current_delay - os.time()

@@ -262,3 +262,23 @@ end
 function QuestSystem:GetAllStructure()
     return QuestSystem.structures
 end
+
+function QuestSystem:QuestIsValid(ply, quest_id)
+    local quest = QuestSystem:GetQuest(quest_id)
+
+    if quest.hide or quest.isEvent then
+        return false
+    end
+
+    if not QuestSystem:CheckRestiction(ply, quest.restriction) then
+        return false
+    end
+
+    if quest.condition ~= nil then
+        if not quest.condition(ply) then
+            return false
+        end
+    end
+
+    return true
+end
