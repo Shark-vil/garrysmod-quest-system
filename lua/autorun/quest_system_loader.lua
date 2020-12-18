@@ -11,7 +11,8 @@ file.CreateDir('quest_system/compile')
 file.CreateDir('quest_system/dialogue')
 file.CreateDir('quest_system/structure')
 
-resource.AddFile('quest_system/vgui/dialogue_panel_background')
+resource.AddFile('materials/quest_system/vgui/dialogue_panel_background.png')
+resource.AddFile('resource/fonts/qsystem_dialogue.ttf')
 
 local Category = "Quest"
 local NPC = {
