@@ -26,7 +26,10 @@ function ENT:Initialize()
     self:SetNoDraw(true)
 
 	if SERVER then
-		local globalHookName = 'QuestEntity_' .. tostring(self:EntIndex()) .. tostring(CurTime())
+		local globalHookName = 'QuestEntity_' 
+			.. tostring(self:EntIndex()) 
+			.. tostring(string.Replace(CurTime(), '.', ''))
+
 		self:SetNWString('global_hook_name', globalHookName)
 
 		if self:IsExistStepArg('onUse') then
@@ -95,6 +98,34 @@ function ENT:Initialize()
 							end
 						end
 					end
+				end
+			end)
+
+			hook.Add('OnNPCKilled', globalHookName, function(npc, attacker, inflictor)
+				if not IsValid(self) then hook.Remove("OnNPCKilled", globalHookName) return end
+
+				if self:IsQuestNPC(npc) then
+					local g_ragdoll_fadespeed = GetConVar("g_ragdoll_fadespeed"):GetInt()
+					local g_ragdoll_important_maxcount = GetConVar("g_ragdoll_important_maxcount"):GetInt()
+					local g_ragdoll_lvfadespeed = GetConVar("g_ragdoll_lvfadespeed"):GetInt()
+					local g_ragdoll_maxcount = GetConVar("g_ragdoll_maxcount"):GetInt()
+					
+					RunConsoleCommand("g_ragdoll_fadespeed", "1")
+					RunConsoleCommand("g_ragdoll_important_maxcount", "0")
+					RunConsoleCommand("g_ragdoll_lvfadespeed", "1")
+					RunConsoleCommand("g_ragdoll_maxcount", "0")
+
+					local timerName = 'OnNPCKilled_' .. globalHookName
+					if timer.Exists(timerName) then
+						timer.Remove(timerName)
+					end
+
+					timer.Create(timerName, 0.5, 1, function()
+						RunConsoleCommand("g_ragdoll_fadespeed", g_ragdoll_fadespeed)
+						RunConsoleCommand("g_ragdoll_important_maxcount", g_ragdoll_important_maxcount)
+						RunConsoleCommand("g_ragdoll_lvfadespeed", g_ragdoll_lvfadespeed)
+						RunConsoleCommand("g_ragdoll_maxcount", g_ragdoll_maxcount)
+					end)
 				end
 			end)
 		end
@@ -225,6 +256,7 @@ function ENT:OnRemove()
 	hook.Remove("PlayerUse", globalHookName)
 	hook.Remove("ShouldCollide", globalHookName)
 	hook.Remove("EntityTakeDamage", globalHookName)
+	hook.Remove("OnNPCKilled", globalHookName)
 
 	local quest = self:GetQuest()
 	if quest.isEvent then
