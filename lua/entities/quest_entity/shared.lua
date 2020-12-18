@@ -33,6 +33,11 @@ function ENT:Initialize()
 		self:SetNWString('global_hook_name', globalHookName)
 
 		if self:IsExistStepArg('onUse') then
+			-------------------------------------
+			-- Calls a step function - onUse - when press E on any (almost) entity.
+			-------------------------------------
+			-- @params wiki - https://wiki.facepunch.com/gmod/GM:PlayerUse
+			-------------------------------------
 			hook.Add("PlayerUse", globalHookName, function(ply, ent)
 				if not IsValid(self) then hook.Remove("PlayerUse", globalHookName) return end
 				
@@ -46,6 +51,11 @@ function ENT:Initialize()
 		end
 
 		if QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then
+			-------------------------------------
+			-- Disable collision with quest objects for players not belonging to the quest.
+			-------------------------------------
+			-- @params wiki - https://wiki.facepunch.com/gmod/GM:ShouldCollide
+			-------------------------------------
 			hook.Add('ShouldCollide', globalHookName, function(ent1, ent2)
 				if not IsValid(self) then hook.Remove("ShouldCollide", globalHookName) return end
 
@@ -79,6 +89,11 @@ function ENT:Initialize()
 				end
 			end)
 
+			-------------------------------------
+			-- Disables player damage to NPCs if players do not belong to the quest, and vice versa.
+			-------------------------------------
+			-- @params wiki - https://wiki.facepunch.com/gmod/GM:EntityTakeDamage
+			-------------------------------------
 			hook.Add('EntityTakeDamage', globalHookName, function(target, dmginfo)
 				if not IsValid(self) then hook.Remove("EntityTakeDamage", globalHookName) return end
 
@@ -115,6 +130,11 @@ function ENT:Initialize()
 			end)
 		end
 
+		-------------------------------------
+		-- Forces the visibility of all quest entities. Otherwise, clients may receive an empty value.
+		-------------------------------------
+		-- @params wiki - https://wiki.facepunch.com/gmod/GM:SetupPlayerVisibility
+		-------------------------------------
 		hook.Add('SetupPlayerVisibility', globalHookName, function(pPlayer, pViewEntity)
 			if not IsValid(self) then hook.Remove("SetupPlayerVisibility", globalHookName) return end
 			AddOriginToPVS(self:GetPos())
@@ -146,6 +166,11 @@ function ENT:Initialize()
 			end
 		end)
 
+		-------------------------------------
+		-- Sets the smooth removal of a ragdoll NPC after a kill.
+		-------------------------------------
+		-- @params wiki - https://wiki.facepunch.com/gmod/GM:OnNPCKilled
+		-------------------------------------
 		hook.Add('OnNPCKilled', globalHookName, function(npc, attacker, inflictor)
 			if not IsValid(self) then hook.Remove("OnNPCKilled", globalHookName) return end
 
@@ -178,6 +203,14 @@ function ENT:Initialize()
 		self:SetNWFloat('ThinkDelay', 0)
 	else
 		local globalHookName = self:GetNWString('global_hook_name')
+
+		-------------------------------------
+		-- Removes NPCs sounds if players do not belong to the quest.
+		-- WARNING:
+		-- The effectiveness of the hook is questionable. May be removed in the future.
+		-------------------------------------
+		-- @params wiki - https://wiki.facepunch.com/gmod/GM:EntityEmitSound
+		-------------------------------------
 		hook.Add("EntityEmitSound", globalHookName, function(t)
 			if not IsValid(self) then hook.Remove("EntityEmitSound", globalHookName) return end
 			local ent = t.Entity
@@ -200,10 +233,22 @@ function ENT:Initialize()
 	end)
 end
 
+-------------------------------------
+-- Gets the delay time. Used to delay sending network requests to clients.
+-------------------------------------
+-- @return number - delay number
+-------------------------------------
 function ENT:GetSyncDelay()
 	return 0.5
 end
 
+-------------------------------------
+-- Checks for the existence of a nested steps value.
+-------------------------------------
+-- @params arg - value key
+-------------------------------------
+-- @return bool - will return true if the key exists, otherwise false
+-------------------------------------
 function ENT:IsExistStepArg(arg)
 	for step_name, step_data in pairs(self:GetQuest().steps) do
 		if step_data[arg] ~= nil then return true end
@@ -211,11 +256,21 @@ function ENT:IsExistStepArg(arg)
 	return false
 end
 
+-------------------------------------
+-- Get data for the current quest.
+-------------------------------------
+-- @return table - returns the quest configuration data table
+-------------------------------------
 function ENT:GetQuest()
 	self.quest = self.quest or QuestSystem:GetQuest(self:GetQuestId())
 	return self.quest
 end
 
+-------------------------------------
+-- Get the data of the current step of the quest.
+-------------------------------------
+-- @return table - returns the data table of the current step
+-------------------------------------
 function ENT:GetQuestStepTable()
 	local quest = self:GetQuest()
 	if quest == nil then return nil end
@@ -224,26 +279,59 @@ function ENT:GetQuestStepTable()
 	return quest.steps[step]
 end
 
+-------------------------------------
+-- Get the quest ID.
+-------------------------------------
+-- @return string - quest id
+-------------------------------------
 function ENT:GetQuestId()
 	return self:GetNWString('quest_id')
 end
 
+-------------------------------------
+-- Get the current quest step.
+-------------------------------------
+-- @return string - step id
+-------------------------------------
 function ENT:GetQuestStep()
 	return self:GetNWString('step')
 end
 
+-------------------------------------
+-- Get the old quest step.
+-------------------------------------
+-- @return string - step id or empty string
+-------------------------------------
 function ENT:GetQuestOldStep()
 	return self:GetNWString('old_step')
 end
 
+-------------------------------------
+-- Get the entity of the player. If there are several players, 
+-- this function will return only the first one in the table.
+-------------------------------------
+-- @return entity - step id or empty string
+-------------------------------------
 function ENT:GetPlayer()
 	return self.players[1]
 end
 
+-------------------------------------
+-- Check if step is first.
+-------------------------------------
+-- @return bool - if the current step is start, true will be returned, otherwise false
+-------------------------------------
 function ENT:IsFirstStart()
 	return self:GetNWBool('is_first_start', true)
 end
 
+-------------------------------------
+-- Get a global quest function.
+-------------------------------------
+-- @params id - function identifier
+-------------------------------------
+-- @return function - will return a function or nil
+-------------------------------------
 function ENT:GetQuestFunction(id)
 	local quest = self:GetQuest()
 	if quest ~= nil and quest.functions ~= nil then
@@ -252,10 +340,20 @@ function ENT:GetQuestFunction(id)
 	return nil
 end
 
+-------------------------------------
+-- Get a list of all registered players.
+-------------------------------------
+-- @return table - will return a list with player entities
+-------------------------------------
 function ENT:GetAllPlayers()
 	return self.players
 end
 
+-------------------------------------
+-- Calls an step think and triggers function if exists.
+-------------------------------------
+-- @params wiki - https://wiki.facepunch.com/gmod/ENTITY:Think
+-------------------------------------
 function ENT:Think()
 	local step = self:GetQuestStepTable()
 
@@ -290,6 +388,11 @@ function ENT:Think()
 	end
 end
 
+-------------------------------------
+-- Removes all dependencies when the entity is deleted, and also calls the step function - destruct.
+-------------------------------------
+-- @params wiki - https://wiki.facepunch.com/gmod/ENTITY:OnRemove
+-------------------------------------
 function ENT:OnRemove()
 	local step = self:GetQuestStepTable()
 
@@ -322,6 +425,9 @@ function ENT:OnRemove()
 	end
 end
 
+-------------------------------------
+-- Registers and synchronizes the remaining dependencies. This function is called after - SetStep.
+-------------------------------------
 function ENT:OnNextStep()
 	local delay = 1
 	local quest = self:GetQuest()
@@ -383,22 +489,46 @@ function ENT:OnNextStep()
 	end
 end
 
+-------------------------------------
+-- Sends a notification to the first player in the list of registered players.
+-------------------------------------
+-- @params player extension - lua/quest_system/extension/player_quest/sh_extension.lua
+-------------------------------------
 function ENT:Notify(title, desc, lifetime, image, bgcolor)
 	self:GetPlayer():QuestNotify(title, desc, lifetime, image, bgcolor)
 end
 
+-------------------------------------
+-- Sends notification to all registered players.
+-------------------------------------
+-- @params player extension - lua/quest_system/extension/player_quest/sh_extension.lua
+-------------------------------------
 function ENT:NotifyOnlyRegistred(title, desc, lifetime, image, bgcolor)
 	for _, ply in pairs(self.players) do
 		ply:QuestNotify(title, desc, lifetime, image, bgcolor)
 	end
 end
 
+-------------------------------------
+-- Sends a notification to all players on the server.
+-------------------------------------
+-- @params player extension - lua/quest_system/extension/player_quest/sh_extension.lua
+-------------------------------------
 function ENT:NotifyAll(title, desc, lifetime, image, bgcolor)
 	for _, ply in pairs(player.GetHumans()) do
 		ply:QuestNotify(title, desc, lifetime, image, bgcolor)
 	end
 end
 
+-------------------------------------
+-- Check if the NPC belongs to the quest or not.
+-------------------------------------
+-- @params npc - entity to check
+-- (Optional) @params type - npc type (if required)
+-- (Optional) @params tag - npc tag (if required)
+-------------------------------------
+-- @return bool - will return true if NPCs were found according to the conditions, otherwise false
+-------------------------------------
 function ENT:IsQuestNPC(npc, type, tag)
 	if IsValid(npc) then 
 		for _, data in pairs(self.npcs) do
@@ -412,6 +542,14 @@ function ENT:IsQuestNPC(npc, type, tag)
 	return false
 end
 
+-------------------------------------
+-- Get one or more registered NPCs.
+-------------------------------------
+-- @params type - npc type
+-- (Optional) @params tag extension - npc tag. 
+-------------------------------------
+-- @return entity - will return the found entity, otherwise NULL
+-------------------------------------
 function ENT:GetQuestNpc(type, tag)
 	if type ~= nil then
 		if tag ~= nil then
@@ -433,6 +571,13 @@ function ENT:GetQuestNpc(type, tag)
 	return NULL
 end
 
+-------------------------------------
+-- Check if the Entity belongs to the quest or not.
+-------------------------------------
+-- @params item - entity to check
+-------------------------------------
+-- @return bool - will return true if entity were found, otherwise false
+-------------------------------------
 function ENT:IsQuestItem(item)
 	for _, data in pairs(self.items) do
 		if data.item == item then return true end
@@ -440,6 +585,13 @@ function ENT:IsQuestItem(item)
 	return false
 end
 
+-------------------------------------
+-- Get registered item.
+-------------------------------------
+-- @params item_id - unique item identifier
+-------------------------------------
+-- @return entity - will return the found entity, otherwise NULL
+-------------------------------------
 function ENT:GetQuestItem(item_id)
 	for _, data in pairs(self.items) do
 		if data.id == item_id then
@@ -449,10 +601,24 @@ function ENT:GetQuestItem(item_id)
 	return NULL
 end
 
+-------------------------------------
+-- Get quest variable.
+-------------------------------------
+-- @params key - variable key
+-------------------------------------
+-- @return string - will return the value of a variable or nil
+-------------------------------------
 function ENT:GetStepValue(key)
 	return self.values[key]
 end
 
+-------------------------------------
+-- Check if the weapon is a quest one.
+-------------------------------------
+-- @params otherWeapon - weapon entity
+-------------------------------------
+-- @return bool - will return true if the weapon is a quest weapon, otherwise false
+-------------------------------------
 function ENT:IsQuestWeapon(otherWeapon)
 	for _, data in pairs(self.weapons) do
 		if IsValid(otherWeapon) and data.weapon_class == otherWeapon:GetClass() then
@@ -462,6 +628,14 @@ function ENT:IsQuestWeapon(otherWeapon)
 	return false
 end
 
+-------------------------------------
+-- timer.Simple wrapper. Creates a timer and automatically 
+-- checks the existence of the quest before executing the function.
+-------------------------------------
+-- @params func - executable function
+-- (Optional) @params delay - timer delay 
+-- (By default it takes a number from the function - self:GetSyncDelay())
+-------------------------------------
 function ENT:TimerCreate(func, delay)
 	delay = delay or self:GetSyncDelay()
 	timer.Simple(delay, function()

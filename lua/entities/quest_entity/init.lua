@@ -2,6 +2,12 @@ AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "shared.lua" )
 include('shared.lua')
 
+-------------------------------------
+-- Writes the quest identifier to the entity's network variable.
+-------------------------------------
+-- @param quest_id string - quest id
+-- @param ply entity - player entity (Optional)
+-------------------------------------
 function ENT:SetQuest(quest_id, ply)
 	if ply ~= nil then
 		timer.Simple(0.5, function()
@@ -13,7 +19,18 @@ function ENT:SetQuest(quest_id, ply)
 	self:SetNWString('quest_id', quest_id)
 end
 
+-------------------------------------
+-- Starts a quest step and performs all operations for execute constructors, triggers, points, etc.
+-------------------------------------
+-- @param step string - step id
+-------------------------------------
+-- @return any - will return the value returned by the quest step constructor or nil
+-------------------------------------
 function ENT:SetStep(step)
+	--[[
+		WARNING: Изменить на:
+		https://wiki.facepunch.com/gmod/Entity:NextThink
+	--]]
 	self:SetNWBool('StopThink', true)
 	self:SetNWFloat('ThinkDelay', RealTime() + 1)
 
@@ -154,6 +171,11 @@ function ENT:SetStep(step)
 	return start_result
 end
 
+-------------------------------------
+-- Starts the next step of the quest.
+-------------------------------------
+-- @param step string - step id
+-------------------------------------
 function ENT:NextStep(step)
 	local quest = self:GetQuest()
 	if quest.isEvent then
@@ -166,9 +188,14 @@ function ENT:NextStep(step)
 	end
 end
 
---[[
-	Darkrp mode only. Gives the player a reward and notifies him about it.
---]]
+-------------------------------------
+-- DarkRp Only
+-------------------------------------
+-- Gives registered players a reward, if it is in the quest configuration.
+-------------------------------------
+-- (Optional) @param customPayment number - set the amount of cash reward
+-- (By default, the number is taken from the quest configuration - quest.payment)
+-------------------------------------
 function ENT:Reward(customPayment)
 	if engine.ActiveGamemode() ~= 'darkrp' then return end
 
@@ -185,6 +212,14 @@ function ENT:Reward(customPayment)
 	end
 end
 
+-------------------------------------
+-- DarkRp Only
+-------------------------------------
+-- Provides compensation to the player if the quest was interrupted or not completed correctly.
+-------------------------------------
+-- (Optional) @param customPayment number - set the amount of cash reward
+-- (By default, the number from the quest configuration is taken (quest.payment) and divided by two)
+-------------------------------------
 function ENT:Reparation(customPayment)
 	local payment = customPayment or self:GetQuest().payment
 	if payment ~= nil then
@@ -192,6 +227,13 @@ function ENT:Reparation(customPayment)
 	end
 end
 
+-------------------------------------
+-- Gives the player a weapon for the duration of the quest.
+-- If the player has a similar weapon, then it will still be added to the database,
+-- but will not be removed after the quest is completed.
+-------------------------------------
+-- @param weapon_class string - weapon class
+-------------------------------------
 function ENT:GiveQuestWeapon(weapon_class)
 	local ply = self:GetPlayer()
 	local data = {
@@ -214,6 +256,11 @@ function ENT:GiveQuestWeapon(weapon_class)
 	return wep
 end
 
+-------------------------------------
+-- Removes the player's quest weapon if issued by the system.
+-------------------------------------
+-- @param weapon_class string - weapon class
+-------------------------------------
 function ENT:RemoveQuestWeapon(weapon_class)
 	local ply = self:GetPlayer()
 	local plyWep = ply:GetWeapon(weapon_class)
@@ -229,6 +276,9 @@ function ENT:RemoveQuestWeapon(weapon_class)
 	self:SyncWeapons()
 end
 
+-------------------------------------
+-- Removes all of the player's registered quest weapons if issued by the system.
+-------------------------------------
 function ENT:RemoveAllQuestWeapon()
 	local ply = self:GetPlayer()
 	for key, data in pairs(self.weapons) do
@@ -242,6 +292,9 @@ function ENT:RemoveAllQuestWeapon()
 	self.weapons = {}
 end
 
+-------------------------------------
+-- Called to complete a quest and play a sound on success.
+-------------------------------------
 function ENT:Complete()
 	if self:GetQuest().isEvent then
 		if SERVER then self:Remove() end
@@ -255,6 +308,9 @@ function ENT:Complete()
 	ply:SendLua([[surface.PlaySound('vo/NovaProspekt/al_done01.wav')]])
 end
 
+-------------------------------------
+-- Called to complete quest and play sound on failure
+-------------------------------------
 function ENT:Failed()
 	if self:GetQuest().isEvent then
 		if SERVER then self:Remove() end
@@ -268,6 +324,9 @@ function ENT:Failed()
 	ply:SendLua([[surface.PlaySound('vo/k_lab/ba_getoutofsight01.wav')]])
 end
 
+-------------------------------------
+-- Attempts to force registered NPCs to move to a random registered player.
+-------------------------------------
 function ENT:MoveEnemyToRandomPlayer()
 	local players = self:GetAllPlayers()
 
@@ -287,6 +346,11 @@ function ENT:MoveEnemyToRandomPlayer()
 	end
 end
 
+-------------------------------------
+-- Removes the quest structure if it exists.
+-------------------------------------
+-- @param id string - structure spawn id
+-------------------------------------
 function ENT:RemoveStructure(id)
 	local spawn_id = self.structures[id]
 	if spawn_id ~= nil then
@@ -294,13 +358,22 @@ function ENT:RemoveStructure(id)
 	end
 end
 
+-------------------------------------
+-- Removes all quest structures if they exist.
+-------------------------------------
 function ENT:RemoveAllStructure()
 	for id, spawn_id in pairs(self.structures) do
 		QuestSystem:RemoveStructure(spawn_id)
 	end
 end
 
-function ENT:AddQuestItem(item , item_id)
+-------------------------------------
+-- Registers an entity as a quest item. It is recommended to use the essence - quest_item as quest items.
+-------------------------------------
+-- @param item entity - any entity
+-- @param item_id string - custom item id (Must be unique!)
+-------------------------------------
+function ENT:AddQuestItem(item, item_id)
 
 	if IsValid(item) and item:GetClass() == 'quest_item' then
 		item:SetQuest(self)
@@ -321,6 +394,14 @@ function ENT:AddQuestItem(item , item_id)
 	end
 end
 
+-------------------------------------
+-- Registers the entity as a quest NPC.
+-------------------------------------
+-- @param npc entity - npc entity
+-- @param type string - type can be - friend or enemy
+-- (Optional) @param tag string - tag is a unique identifier for an NPC.
+-- Can be used to check the state of a specific entity. (Must be unique!)
+-------------------------------------
 function ENT:AddQuestNPC(npc, type, tag)
 	tag = tag or 'none'
 	
@@ -339,6 +420,13 @@ function ENT:AddQuestNPC(npc, type, tag)
 	end
 end
 
+-------------------------------------
+-- Establishes the rules of conduct for registered NPCs for other players or NPCs.
+-- If the config parameter - HideQuestsOfOtherPlayers - is not false,
+-- then the NPCs will ignore players that do not belong to the quest.
+-------------------------------------
+-- (Optional) @param ent entity - player or npc entity
+-------------------------------------
 function ENT:SetNPCsBehavior(ent)
 	if table.Count(self.npcs) == 0 then return end
 
@@ -408,6 +496,11 @@ function ENT:SetNPCsBehavior(ent)
 	end
 end
 
+-------------------------------------
+-- Registers a player for this quest and syncs some data.
+-------------------------------------
+-- @param ply entity - player entity
+-------------------------------------
 function ENT:AddPlayer(ply)
 	if IsValid(ply) and ply:IsPlayer() and not table.HasValue(self.players, ply) then
 		QuestSystem:Debug('AddPlayer - ' .. tostring(ply))
@@ -420,6 +513,11 @@ function ENT:AddPlayer(ply)
 	end
 end
 
+-------------------------------------
+-- Removes the player for the given quest and syncs some data.
+-------------------------------------
+-- @param ply entity - player entity
+-------------------------------------
 function ENT:RemovePlayer(ply)
 	if IsValid(ply) and ply:IsPlayer() and table.HasValue(self.players, ply) then
 		QuestSystem:Debug('RemovePlayer - ' .. tostring(ply))
@@ -432,6 +530,11 @@ function ENT:RemovePlayer(ply)
 	end
 end
 
+-------------------------------------
+-- Synchronizes the prohibition of drawing quest objects for other players.
+-------------------------------------
+-- (Optional) @param ply entity - player entity (Sent to all players by default)
+-------------------------------------
 function ENT:SyncNoDraw(ply)
 	self:TimerCreate(function()
 		if table.Count(self.npcs) ~= 0 then
@@ -465,6 +568,11 @@ function ENT:SyncNoDraw(ply)
 	end)
 end
 
+-------------------------------------
+-- Synchronizes data on quest items with clients.
+-------------------------------------
+-- (Optional) @param ply entity - player entity (Sent to all players by default)
+-------------------------------------
 function ENT:SyncItems(ply, delay)
 	self:TimerCreate(function()
 		QuestSystem:Debug('SyncItems (' .. table.Count(self.items) .. ') - ' .. table.ToString(self.items))
@@ -476,6 +584,11 @@ function ENT:SyncItems(ply, delay)
 	end, delay)
 end
 
+-------------------------------------
+-- Synchronizes data on quest NPCs with clients.
+-------------------------------------
+-- (Optional) @param ply entity - player entity (Sent to all players by default)
+-------------------------------------
 function ENT:SyncNPCs(ply, delay)
 	self:TimerCreate(function()
 		QuestSystem:Debug('SyncNPCs (' .. table.Count(self.npcs) .. ') - ' .. table.ToString(self.npcs))
@@ -487,6 +600,11 @@ function ENT:SyncNPCs(ply, delay)
 	end, delay)
 end
 
+-------------------------------------
+-- Synchronizes data about registered players with clients.
+-------------------------------------
+-- (Optional) @param ply entity - player entity (Sent to all players by default)
+-------------------------------------
 function ENT:SyncPlayers(ply, delay)
 	self:TimerCreate(function()
 		QuestSystem:Debug('SyncPlayers (' .. table.Count(self.players) .. ') - ' .. table.ToString(self.players))
@@ -498,6 +616,11 @@ function ENT:SyncPlayers(ply, delay)
 	end, delay)
 end
 
+-------------------------------------
+-- Synchronizes data about quest triggers with clients.
+-------------------------------------
+-- (Optional) @param ply entity - player entity (Sent to all players by default)
+-------------------------------------
 function ENT:SyncTriggers(ply, delay)
 	self:TimerCreate(function()
 		QuestSystem:Debug('SyncTriggers (' .. table.Count(self.triggers) .. ') - ' .. table.ToString(self.triggers))
@@ -509,6 +632,11 @@ function ENT:SyncTriggers(ply, delay)
 	end, delay)
 end
 
+-------------------------------------
+-- Synchronizes data about quest points with clients.
+-------------------------------------
+-- (Optional) @param ply entity - player entity (Sent to all players by default)
+-------------------------------------
 function ENT:SyncPoints(ply, delay)
 	self:TimerCreate(function()
 		QuestSystem:Debug('SyncPoints (' .. table.Count(self.points) .. ') - ' .. table.ToString(self.points))
@@ -520,6 +648,11 @@ function ENT:SyncPoints(ply, delay)
 	end, delay)
 end
 
+-------------------------------------
+-- Synchronizes data about quest variables with clients.
+-------------------------------------
+-- (Optional) @param ply entity - player entity (Sent to all players by default)
+-------------------------------------
 function ENT:SyncValues(ply, delay)
 	self:TimerCreate(function()
 		QuestSystem:Debug('SyncValues (' .. table.Count(self.values) .. ') - ' .. table.ToString(self.values))
@@ -531,6 +664,11 @@ function ENT:SyncValues(ply, delay)
 	end, delay)
 end
 
+-------------------------------------
+-- Synchronizes data on quest weapons with clients.
+-------------------------------------
+-- (Optional) @param ply entity - player entity (Sent to all players by default)
+-------------------------------------
 function ENT:SyncWeapons(ply, delay)
 	self:TimerCreate(function()
 		QuestSystem:Debug('SyncWeapons (' .. table.Count(self.weapons) .. ') - ' .. table.ToString(self.weapons))
@@ -542,6 +680,11 @@ function ENT:SyncWeapons(ply, delay)
 	end, delay)
 end
 
+-------------------------------------
+-- Calls all sync methods in order.
+-------------------------------------
+-- (Optional) @param ply entity - player entity (Sent to all players by default)
+-------------------------------------
 function ENT:SyncAll(ply)
 	QuestSystem:Debug('Start SyncAll <<<<<<')
 	self:SyncPlayers(ply)
@@ -554,16 +697,31 @@ function ENT:SyncAll(ply)
 	QuestSystem:Debug('>>>>>> Finish SyncAll')
 end
 
+-------------------------------------
+-- Sets the quest variable.
+-------------------------------------
+-- @param key string - variable key
+-- @param value any - variable value
+-------------------------------------
 function ENT:SetStepValue(key, value)
 	self.values[key] = value
 	self:SyncValues()
 end
 
+-------------------------------------
+-- Removes all existing quest variables.
+-------------------------------------
 function ENT:ResetStepValues()
 	self.values = {}
 	self:SyncValues()
 end
 
+-------------------------------------
+-- Lock or unlock the door entity.
+-------------------------------------
+-- @param ent entity|table - entity or list of entities
+-- (Optional) @param lockState string - door state - lock or unlock. (The default is always  - lock)
+-------------------------------------
 function ENT:DoorLocker(ent, lockState)
 	lockState = lockState or 'lock'
 	lockState = lockState:lower()
@@ -598,6 +756,13 @@ function ENT:DoorLocker(ent, lockState)
 	end
 end
 
+-------------------------------------
+-- Removes registered npc. If no arguments are passed, then all NPCs will be removed.
+-------------------------------------
+-- (Optional) @param type string - if not nil, then all NPCs of this type will be deleted
+-- (Optional) @param tag string - if not nil, then all NPCs for this tag will be deleted 
+-- (The type must not be nil)
+-------------------------------------
 function ENT:RemoveNPC(type, tag)
 	if #self.npcs ~= nil then
 		if type ~= nil then
@@ -631,7 +796,11 @@ function ENT:RemoveNPC(type, tag)
 	end
 end
 
-
+-------------------------------------
+-- Removes registered items. If no arguments are passed, then all items will be removed.
+-------------------------------------
+-- (Optional) @param item_id string - if not nil, then only the item with this identifier will be deleted
+-------------------------------------
 function ENT:RemoveItems(item_id)
 	if #self.items ~= nil then
 		if item_id ~= nil then
