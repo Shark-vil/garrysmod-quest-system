@@ -21,10 +21,8 @@ function QuestSystem:EnableEvent(event_id, step)
     local event = QuestSystem:GetQuest(event_id)
     step = step or 'start'
     if event ~= nil and event.steps[step] ~= nil then
-        local ply = table.Random(player.GetAll())
         local ent = ents.Create('quest_entity')
         ent:SetQuest(event_id)
-        ent:SetPos(ply:GetPos())
         ent:Spawn()
         timer.Simple(1, function()
             if not IsValid(ent) then return end
@@ -281,4 +279,12 @@ function QuestSystem:QuestIsValid(ply, quest_id)
     end
 
     return true
+end
+
+local debug_index = 0
+function QuestSystem:Debug(msg)
+    if self:GetConfig('Debug') then
+        MsgN('[QSystem Debug][' .. tostring(debug_index) .. '] ' .. tostring(msg))
+        debug_index = debug_index + 1
+    end
 end

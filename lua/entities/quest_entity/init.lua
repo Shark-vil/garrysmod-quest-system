@@ -44,10 +44,7 @@ function ENT:SetStep(step)
 			end
 		end
 
-		timer.Simple(self:GetSyncDelay(), function()
-			if not IsValid(self) then return end
-			self:SyncTriggers()
-		end)
+		self:SyncTriggers()
 
 		self.points = {}
 		if quest.steps[step].points ~= nil then
@@ -64,11 +61,15 @@ function ENT:SetStep(step)
 		end
 
 		if quest.steps[step].structures ~= nil then
-			for structure_id, func in pairs(quest.steps[step].structures) do
+			for structure_id, method in pairs(quest.steps[step].structures) do
 				local spawn_id = QuestSystem:SpawnStructure(quest.id, structure_id)
 				if spawn_id ~= nil then
-					self.structures[structure_id] = spawn_id
-					func(eQuest, QuestSystem:GetStructure(spawn_id), spawn_id)
+					if isfunction(method) then
+						self.structures[structure_id] = spawn_id
+						method(eQuest, QuestSystem:GetStructure(spawn_id), spawn_id)
+					elseif isbool(method) and method == true then
+						self.structures[structure_id] = spawn_id
+					end
 				end
 			end
 		end
@@ -95,27 +96,23 @@ function ENT:SetStep(step)
 		start_result = quest.steps[step].construct(self)
 	end
 
-	timer.Simple(self:GetSyncDelay(), function()
-		if IsValid(self) then
-			net.Start('cl_qsystem_on_construct')
-			net.WriteEntity(self)
-			net.WriteString(self:GetQuestId())
-			net.WriteString(step)
-			if step == 'start' then
-				net.WriteString(utf8.force(quest.title))
-				net.WriteString(utf8.force(quest.description))
-			end
-			net.Broadcast()
+	self:TimerCreate(function()
+		net.Start('cl_qsystem_on_construct')
+		net.WriteEntity(self)
+		net.WriteString(self:GetQuestId())
+		net.WriteString(step)
+		if step == 'start' then
+			net.WriteString(utf8.force(quest.title))
+			net.WriteString(utf8.force(quest.description))
 		end
+		net.Broadcast()
 	end)
 
-	timer.Simple(self:GetSyncDelay(), function()
-		if IsValid(self) then
-			net.Start('cl_qsystem_on_next_step')
-			net.WriteEntity(self)
-			net.WriteString(step)
-			net.Broadcast()
-		end
+	self:TimerCreate(function()
+		net.Start('cl_qsystem_on_next_step')
+		net.WriteEntity(self)
+		net.WriteString(step)
+		net.Broadcast()
 	end)
 
 	if step == 'start' then
@@ -212,10 +209,7 @@ function ENT:GiveQuestWeapon(weapon_class)
 
 	table.insert(self.weapons, data)
 
-	timer.Simple(self:GetSyncDelay(), function()
-		if not IsValid(self) then return end
-		self:SyncWeapons()
-	end)
+	self:SyncWeapons()
 
 	return wep
 end
@@ -232,10 +226,7 @@ function ENT:RemoveQuestWeapon(weapon_class)
 		end
 	end
 
-	timer.Simple(self:GetSyncDelay(), function()
-		if not IsValid(self) then return end
-		self:SyncWeapons()
-	end)
+	self:SyncWeapons()
 end
 
 function ENT:RemoveAllQuestWeapon()
@@ -325,10 +316,7 @@ function ENT:AddQuestItem(item , item_id)
 		item:SetCustomCollisionCheck(true)
 	end
 
-	timer.Simple(self:GetSyncDelay(), function()
-		if not IsValid(self) then return end
-		self:SyncItems()
-	end)
+	self:SyncItems()
 end
 
 function ENT:AddQuestNPC(npc, type, tag)
@@ -344,10 +332,7 @@ function ENT:AddQuestNPC(npc, type, tag)
 		npc:SetCustomCollisionCheck(true)
 	end
 
-	timer.Simple(self:GetSyncDelay(), function()
-		if not IsValid(self) then return end
-		self:SyncNPCs()
-	end)
+	self:SyncNPCs()
 end
 
 function ENT:SetNPCsBehavior(ent)
@@ -383,7 +368,7 @@ function ENT:SetNPCsBehavior(ent)
 			return
 		end
 	else
-		for _, ply in pairs(player.GetHumans()) do
+		for _, ply in pairs(player.GetAll()) do
 			restictionByPlayer(ply)
 		end
 	end
@@ -421,111 +406,140 @@ end
 
 function ENT:AddPlayer(ply)
 	if IsValid(ply) and ply:IsPlayer() and not table.HasValue(self.players, ply) then
+		QuestSystem:Debug('AddPlayer - ' .. tostring(ply))
+
 		table.insert(self.players, ply)
 
-		if self:IsFirstStart() then
-			timer.Simple(self:GetSyncDelay(), function()
-				if not IsValid(self) then return end
-				self:SyncPlayers()
-			end)
-		else
-			self:SyncPlayers()
-		end
-
+		self:SyncPlayers()
 		self:SyncNoDraw()
-		self:SetNPCsBehavior(ply)
+		self:SetNPCsBehavior()
 	end
 end
 
 function ENT:RemovePlayer(ply)
 	if IsValid(ply) and ply:IsPlayer() and table.HasValue(self.players, ply) then
+		QuestSystem:Debug('RemovePlayer - ' .. tostring(ply))
+
 		table.RemoveByValue(self.players, ply)
 
-		if self:IsFirstStart() then
-			timer.Simple(self:GetSyncDelay(), function()
-				if not IsValid(self) then return end
-				self:SyncPlayers()
-			end)
-		else
-			self:SyncPlayers()
-		end
-
+		self:SyncPlayers()
 		self:SyncNoDraw()
-		self:SetNPCsBehavior(ply)
+		self:SetNPCsBehavior()
 	end
 end
 
 function ENT:SyncNoDraw(ply)
-	if table.Count(self.npcs) ~= 0 then
-		net.Start('cl_qsystem_nodraw_npc')
+	self:TimerCreate(function()
+		if table.Count(self.npcs) ~= 0 then
+			QuestSystem:Debug('SyncNoDraw NPCs (' .. table.Count(self.npcs) .. ') - ' .. table.ToString(self.npcs))
+
+			net.Start('cl_qsystem_nodraw_npc')
+			net.WriteEntity(self)
+			if ply then net.Send(ply) else net.Broadcast() end
+		end
+	end)
+
+	self:TimerCreate(function()
+		if table.Count(self.items) ~= 0 then
+			QuestSystem:Debug('SyncNoDraw Items (' .. table.Count(self.items) .. ') - ' .. table.ToString(self.items))
+
+			net.Start('cl_qsystem_nodraw_items')
+			net.WriteEntity(self)
+			if ply then net.Send(ply) else net.Broadcast() end
+		end
+	end)
+
+	self:TimerCreate(function()
+		if table.Count(self.structures) ~= 0 then
+			QuestSystem:Debug('SyncNoDraw Structures (' .. table.Count(self.structures) .. ') - ' .. table.ToString(self.structures))
+
+			net.Start('cl_qsystem_nodraw_structures')
+			net.WriteEntity(self)
+			net.WriteTable(self.structures)
+			if ply then net.Send(ply) else net.Broadcast() end
+		end
+	end)
+end
+
+function ENT:SyncItems(ply, delay)
+	self:TimerCreate(function()
+		QuestSystem:Debug('SyncItems (' .. table.Count(self.items) .. ') - ' .. table.ToString(self.items))
+
+		net.Start('cl_qsystem_sync_items')
 		net.WriteEntity(self)
+		net.WriteTable(self.items)
 		if ply then net.Send(ply) else net.Broadcast() end
-	end
+	end, delay)
+end
 
-	if table.Count(self.items) ~= 0 then
-		net.Start('cl_qsystem_nodraw_items')
+function ENT:SyncNPCs(ply, delay)
+	self:TimerCreate(function()
+		QuestSystem:Debug('SyncNPCs (' .. table.Count(self.npcs) .. ') - ' .. table.ToString(self.npcs))
+
+		net.Start('cl_qsystem_sync_npcs')
 		net.WriteEntity(self)
+		net.WriteTable(self.npcs)
 		if ply then net.Send(ply) else net.Broadcast() end
-	end
+	end, delay)
+end
 
-	if table.Count(self.structures) ~= 0 then
-		net.Start('cl_qsystem_nodraw_structures')
+function ENT:SyncPlayers(ply, delay)
+	self:TimerCreate(function()
+		QuestSystem:Debug('SyncPlayers (' .. table.Count(self.players) .. ') - ' .. table.ToString(self.players))
+
+		net.Start('cl_qsystem_sync_players')
 		net.WriteEntity(self)
-		net.WriteTable(self.structures)
+		net.WriteTable(self.players)
 		if ply then net.Send(ply) else net.Broadcast() end
-	end
+	end, delay)
 end
 
-function ENT:SyncItems(ply)
-	net.Start('cl_qsystem_sync_items')
-	net.WriteEntity(self)
-	net.WriteTable(self.items)
-	if ply then net.Send(ply) else net.Broadcast() end
+function ENT:SyncTriggers(ply, delay)
+	self:TimerCreate(function()
+		QuestSystem:Debug('SyncTriggers (' .. table.Count(self.triggers) .. ') - ' .. table.ToString(self.triggers))
+
+		net.Start('cl_qsystem_sync_triggers')
+		net.WriteEntity(self)
+		net.WriteTable(self.triggers)
+		if ply then net.Send(ply) else net.Broadcast() end
+	end, delay)
 end
 
-function ENT:SyncNPCs(ply)
-	net.Start('cl_qsystem_sync_npcs')
-	net.WriteEntity(self)
-	net.WriteTable(self.npcs)
-	if ply then net.Send(ply) else net.Broadcast() end
+function ENT:SyncPoints(ply, delay)
+	self:TimerCreate(function()
+		QuestSystem:Debug('SyncPoints (' .. table.Count(self.points) .. ') - ' .. table.ToString(self.points))
+
+		net.Start('cl_qsystem_sync_points')
+		net.WriteEntity(self)
+		net.WriteTable(self.points)
+		if ply then net.Send(ply) else net.Broadcast() end
+	end, delay)
 end
 
-function ENT:SyncPlayers(ply)
-	net.Start('cl_qsystem_sync_players')
-	net.WriteEntity(self)
-	net.WriteTable(self.players)
-	if ply then net.Send(ply) else net.Broadcast() end
+function ENT:SyncValues(ply, delay)
+	self:TimerCreate(function()
+		QuestSystem:Debug('SyncValues (' .. table.Count(self.values) .. ') - ' .. table.ToString(self.values))
+
+		net.Start('cl_qsystem_sync_values')
+		net.WriteEntity(self)
+		net.WriteTable(self.values)
+		if ply then net.Send(ply) else net.Broadcast() end
+	end, delay)
 end
 
-function ENT:SyncTriggers(ply)
-	net.Start('cl_qsystem_sync_triggers')
-	net.WriteEntity(self)
-	net.WriteTable(self.triggers)
-	if ply then net.Send(ply) else net.Broadcast() end
-end
+function ENT:SyncWeapons(ply, delay)
+	self:TimerCreate(function()
+		QuestSystem:Debug('SyncWeapons (' .. table.Count(self.weapons) .. ') - ' .. table.ToString(self.weapons))
 
-function ENT:SyncPoints(ply)
-	net.Start('cl_qsystem_sync_points')
-	net.WriteEntity(self)
-	net.WriteTable(self.points)
-	if ply then net.Send(ply) else net.Broadcast() end
-end
-
-function ENT:SyncValues(ply)
-	net.Start('cl_qsystem_sync_values')
-	net.WriteEntity(self)
-	net.WriteTable(self.values)
-	if ply then net.Send(ply) else net.Broadcast() end
-end
-
-function ENT:SyncWeapons(ply)
-	net.Start('cl_qsystem_sync_weapons')
-	net.WriteEntity(self)
-	net.WriteTable(self.weapons)
-	if ply then net.Send(ply) else net.Broadcast() end
+		net.Start('cl_qsystem_sync_weapons')
+		net.WriteEntity(self)
+		net.WriteTable(self.weapons)
+		if ply then net.Send(ply) else net.Broadcast() end
+	end, delay)
 end
 
 function ENT:SyncAll(ply)
+	QuestSystem:Debug('Start SyncAll <<<<<<')
 	self:SyncPlayers(ply)
 	self:SyncTriggers(ply)
 	self:SyncPoints(ply)
@@ -533,6 +547,7 @@ function ENT:SyncAll(ply)
 	self:SyncItems(ply)
 	self:SyncValues(ply)
 	self:SyncNoDraw(ply)
+	QuestSystem:Debug('>>>>>> Finish SyncAll')
 end
 
 function ENT:SetStepValue(key, value)

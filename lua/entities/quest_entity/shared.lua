@@ -101,6 +101,37 @@ function ENT:Initialize()
 				end
 			end)
 
+			hook.Add('SetupPlayerVisibility', globalHookName, function(this, pPlayer, pViewEntity)
+				if not IsValid(self) then hook.Remove("SetupPlayerVisibility", globalHookName) return end
+				AddOriginToPVS(self:GetPos())
+
+				local entities = {}
+				for _, data in pairs(self.npcs) do
+					table.insert(entities, data.npc)
+				end
+
+				for _, data in pairs(self.items) do
+					table.insert(entities, data.item)
+				end
+
+				for _, spawn_id in pairs(self.structures) do
+					local props = QuestSystem:GetStructure(spawn_id)
+					for _, prop in pairs(props) do
+						table.insert(entities, prop)
+					end
+				end
+				
+				for _, data in pairs(self.weapons) do
+					table.insert(entities, data.weapon)
+				end
+
+				for _, ent in pairs(entities) do
+					if IsValid(ent) then
+						AddOriginToPVS(ent:GetPos())
+					end
+				end
+			end)
+
 			hook.Add('OnNPCKilled', globalHookName, function(npc, attacker, inflictor)
 				if not IsValid(self) then hook.Remove("OnNPCKilled", globalHookName) return end
 
@@ -268,6 +299,7 @@ function ENT:OnRemove()
 	hook.Remove("EntityTakeDamage", globalHookName)
 	hook.Remove("OnNPCKilled", globalHookName)
 	hook.Remove("EntityEmitSound", globalHookName)
+	hook.Remove("SetupPlayerVisibility", globalHookName)
 
 	local quest = self:GetQuest()
 	if quest.isEvent then
@@ -417,4 +449,12 @@ function ENT:IsQuestWeapon(otherWeapon)
 		end
 	end
 	return false
+end
+
+function ENT:TimerCreate(func, delay)
+	delay = delay or self:GetSyncDelay()
+	timer.Simple(delay, function()
+		if not IsValid(self) then return end
+		func()
+	end)
 end

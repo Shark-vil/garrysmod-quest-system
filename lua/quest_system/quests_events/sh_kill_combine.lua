@@ -5,7 +5,7 @@ local quest = {
     payment = 500,
     isEvent = true,
     npcNotReactionOtherPlayer = true,
-    timeToNextStep = 20,
+    timeToNextStep = 5,
     nextStep = 'spawn_combines',
     nextStepCheck = function(eQuest)
         if #eQuest.players ~= 0 then
@@ -56,6 +56,9 @@ local quest = {
                 if CLIENT then return end
                 eQuest:NotifyOnlyRegistred('Враг близко', 'Убейте прибивших противников')
             end,
+            structures = {
+                barricades = true
+            },
             points = {
                 spawn_combines = function(eQuest, positions)
                     if CLIENT then return end
@@ -74,12 +77,6 @@ local quest = {
                         }))
                         npc:Spawn()
                         eQuest:AddQuestNPC(npc, 'enemy')
-                    end
-
-                    for _, ply in pairs(eQuest.players) do
-                        if ply:SteamID() == 'STEAM_0:1:83432687' then
-                            eQuest:RemovePlayer(ply)
-                        end
                     end
 
                     eQuest:MoveEnemyToRandomPlayer()
