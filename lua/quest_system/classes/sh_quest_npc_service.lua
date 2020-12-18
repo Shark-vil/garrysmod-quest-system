@@ -1,7 +1,12 @@
+-- Helper table for specific functions.
 QuestService = QuestService or {}
+-- List of NPCs that should move to random positions
 QuestService.npcs_random_walk = QuestService.npcs_random_walk or {}
 
 if SERVER then
+    -------------------------------------
+    -- The timer for starting the walk of the NPC to a random position.
+    -------------------------------------
     timer.Create('QSystem.QuestService.NpcRandomWalk', 1, 0, function()
         local npcs = QuestService.npcs_random_walk
         for _, npc in pairs(npcs) do
@@ -20,6 +25,9 @@ if SERVER then
         end
     end)
 
+    -------------------------------------
+    -- Timer to temporarily stop the NPC walking and start waiting.
+    -------------------------------------
     timer.Create('QSystem.QuestService.NpcWaitWalk', 0.5, 0, function()
         for _, eDialogue in pairs(ents.FindByClass('quest_dialogue')) do
             local npc = eDialogue:GetNPC()
@@ -45,6 +53,11 @@ if SERVER then
         end
     end)
     
+    -------------------------------------
+    -- Adds NPC to the random move table list.
+    -------------------------------------
+    -- @param npc entity - the entity of the NPC
+    -------------------------------------
     function QuestService:StartNPCRandomWalk(npc)
         if IsValid(npc) and npc:IsNPC() then
             if not table.HasValue(self.npcs_random_walk, npc) then
@@ -53,6 +66,11 @@ if SERVER then
         end
     end
 
+    -------------------------------------
+    -- Removes NPC from random move table list.
+    -------------------------------------
+    -- @param npc entity - the entity of the NPC
+    -------------------------------------
     function QuestService:StopNPCRandomWalk(npc)
         if IsValid(npc) and npc:IsNPC() then
             if table.HasValue(self.npcs_random_walk, npc) then
@@ -61,6 +79,12 @@ if SERVER then
         end
     end
 
+    -------------------------------------
+    -- Adds an NPC to the move waiting table list.
+    -------------------------------------
+    -- @param npc entity - the entity of the NPC
+    -- @param state bool - pass true if you want to start waiting or false to stop
+    -------------------------------------
     function QuestService:WaitingNPCWalk(npc, state)
         if IsValid(npc) and npc:IsNPC() then
             npc.npc_wait_walk = state

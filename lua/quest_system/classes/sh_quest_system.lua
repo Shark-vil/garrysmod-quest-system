@@ -4,11 +4,24 @@ if SERVER then
     util.AddNetworkString('qsystem_remove_all_structure_from_client')
 end
 
+-- Main table for working with quests and events
 QuestSystem = QuestSystem or {}
+-- List of registered storages (Not to be confused with a pattern)
 QuestSystem.storage = QuestSystem.storage or {}
+-- List of currently active events
 QuestSystem.activeEvents = QuestSystem.activeEvents or {}
+-- List of currently active game structures
 QuestSystem.structures = QuestSystem.structures or {}
+QuestSystem.debug_index = 0
 
+-------------------------------------
+-- Creates an entity for a global game event.
+-------------------------------------
+-- @param event_id string - game event id
+-- @param step string - game event step (Default - start)
+-------------------------------------
+-- @return entity - will return the created entity or NULL on failure
+-------------------------------------
 function QuestSystem:EnableEvent(event_id, step)
     local allQuests = ents.FindByClass('quest_entity')
 
@@ -36,6 +49,11 @@ function QuestSystem:EnableEvent(event_id, step)
     return NULL
 end
 
+-------------------------------------
+-- Removes the game event entity, if it exists.
+-------------------------------------
+-- @param event_id string - game event id
+-------------------------------------
 function QuestSystem:DisableEvent(event_id)
     local allQuests = ents.FindByClass('quest_entity')
 
@@ -47,6 +65,11 @@ function QuestSystem:DisableEvent(event_id)
     end
 end
 
+-------------------------------------
+-- Get a list of all registered events.
+-------------------------------------
+-- @return table - list of registered game events
+-------------------------------------
 function QuestSystem:GetAllEvents()
     local all_events = {}
     for quest_id, quest in pairs(list.Get('QuestSystem')) do
@@ -57,26 +80,62 @@ function QuestSystem:GetAllEvents()
     return all_events
 end
 
+-------------------------------------
+-- Adds storage to the table list.
+-------------------------------------
+-- @param storage_id string - custom storage id
+-- @param data_table table - storage table
+-------------------------------------
 function QuestSystem:SetStorage(storage_id, data_table)
     self.storage[storage_id] = data_table
 end
 
+-------------------------------------
+-- Get the storage table.
+-------------------------------------
+-- @param storage_id string - storage id
+-------------------------------------
+-- @return table - will return the storage data table or nil
+-------------------------------------
 function QuestSystem:GetStorage(storage_id)
     return self.storage[storage_id]
 end
 
+-------------------------------------
+-- Get quest data from the list by identifier.
+-------------------------------------
+-- @param quest_id string - quest id
+-------------------------------------
+-- @return table - will return the quest data table or nil
+-------------------------------------
 function QuestSystem:GetQuest(quest_id)
     return list.Get('QuestSystem')[quest_id]
 end
 
+-------------------------------------
+-- Get a list of all registered quests.
+-------------------------------------
+-- @return table - list of registered quests
+-------------------------------------
 function QuestSystem:GetAllQuest()
     return list.Get('QuestSystem')
 end
 
+-------------------------------------
+-- Prints a stylized message to the console.
+-------------------------------------
+-- @param message any - custom message
+-------------------------------------
 function QuestSystem:ConsoleAlert(message)
     MsgN('[QSystem][ALER] ' .. tostring(message))
 end
 
+-------------------------------------
+-- Prints a stylized chat message for all administrators on the server, with an audio alert playing.
+-- Also calls - QuestSystem:ConsoleAlert(message).
+-------------------------------------
+-- @param message any - custom message
+-------------------------------------
 function QuestSystem:AdminAlert(message)
     self:ConsoleAlert(message)
 
@@ -92,10 +151,25 @@ function QuestSystem:AdminAlert(message)
     end
 end
 
+-------------------------------------
+-- Receives data from config by key.
+-------------------------------------
+-- @param key string - config value identifier
+-------------------------------------
+-- @return any - will return data from the config or nil
+-------------------------------------
 function QuestSystem:GetConfig(key)
     return QuestSystem.cfg[key]
 end
 
+-------------------------------------
+-- Receives data from config by key.
+-------------------------------------
+-- @param ply entity - player entity
+-- @param restiction table - quest restrictions table
+-------------------------------------
+-- @return any - will return true if all checks are successful, otherwise false
+-------------------------------------
 function QuestSystem:CheckRestiction(ply, restiction)
     if restiction ~= nil then
         local team = restiction.team
@@ -163,6 +237,15 @@ function QuestSystem:CheckRestiction(ply, restiction)
 end
 
 if SERVER then
+    -------------------------------------
+    -- Creates the game structure of the quest on the map.
+    -------------------------------------
+    -- @param quest_id string - quest id
+    -- @param structure_name string - structure id
+    -------------------------------------
+    -- Note: The spawn ID is used when deleting a structure.
+    -- @return string - will return the unique identifier of the created structure or nil
+    -------------------------------------
     function QuestSystem:SpawnStructure(quest_id, structure_name)
         local data = QuestSystem:GetStorage('structure'):Read(quest_id, structure_name)
         if data ~= nil then
@@ -200,6 +283,11 @@ if SERVER then
         return nil
     end
 
+    -------------------------------------
+    -- Removes quest structures from the map if they exist.
+    -------------------------------------
+    -- @param spawn_id string - unique identifier of the structure spawn
+    -------------------------------------
     function QuestSystem:RemoveStructure(spawn_id)
         if QuestSystem.structures[spawn_id] ~= nil then
             for _, ent in pairs(QuestSystem.structures[spawn_id]) do
@@ -216,6 +304,9 @@ if SERVER then
         end
     end
 
+    -------------------------------------
+    -- Removes all existing structures on the map.
+    -------------------------------------
     function QuestSystem:RemoveAllStructure()
         for spawn_id, data in pairs(QuestSystem.structures) do
             for _, ent in pairs(data) do
@@ -229,6 +320,10 @@ if SERVER then
         net.Broadcast()
     end
 else
+    -------------------------------------
+    -- Called on the client after being called - QuestSystem:SpawnStructure.
+    -- Adds the spawn identifier of the structure on the client and any entities that are created.
+    -------------------------------------
     net.Receive('qsystem_add_structure_from_client', function()
         local spawn_id = net.ReadString()
         local ids = net.ReadTable()
@@ -245,24 +340,52 @@ else
         end)
     end)
 
+    -------------------------------------
+    -- Called on the client after being called - QuestSystem:RemoveStructure.
+    -- Removes the spawn identifier of the structure on the client.
+    -------------------------------------
     net.Receive('qsystem_remove_structure_from_client', function()
         local spawn_id = net.ReadString()
         QuestSystem.structures[spawn_id] = nil
     end)
 
+     -------------------------------------
+    -- Called on the client after being called - QuestSystem:RemoveAllStructure.
+    -- Clears the spawn ID table of structures on the client.
+    -------------------------------------
     net.Receive('qsystem_remove_all_structure_from_client', function()
         QuestSystem.structures = {}
     end)
 end
 
+-------------------------------------
+-- Gets a list of created entities by structure spawn id.
+-------------------------------------
+-- @param spawn_id string - unique identifier of the structure spawn
+-------------------------------------
+-- @return table - will return a list of entities or nil
+-------------------------------------
 function QuestSystem:GetStructure(spawn_id)
     return QuestSystem.structures[spawn_id]
 end
 
+-------------------------------------
+-- Gets a list with all registered structures.
+-------------------------------------
+-- @return table - will return a list of entities
+-------------------------------------
 function QuestSystem:GetAllStructure()
     return QuestSystem.structures
 end
 
+-------------------------------------
+-- Checks the availability of the quest for the player.
+-------------------------------------
+-- @param ply entity - player entity
+-- @param quest_id string - quest id
+-------------------------------------
+-- @return bool - will return true if all checks succeed, otherwise false
+-------------------------------------
 function QuestSystem:QuestIsValid(ply, quest_id)
     local quest = QuestSystem:GetQuest(quest_id)
 
@@ -283,10 +406,14 @@ function QuestSystem:QuestIsValid(ply, quest_id)
     return true
 end
 
-local debug_index = 0
+-------------------------------------
+-- Prints a stylized message to the console if developer mode is active.
+-------------------------------------
+-- @param msg any - custom message
+-------------------------------------
 function QuestSystem:Debug(msg)
     if self:GetConfig('Debug') then
-        MsgN('[QSystem Debug][' .. tostring(debug_index) .. '] ' .. tostring(msg))
-        debug_index = debug_index + 1
+        MsgN('[QSystem Debug][' .. tostring(self.debug_index) .. '] ' .. tostring(msg))
+        self.debug_index = self.debug_index + 1
     end
 end

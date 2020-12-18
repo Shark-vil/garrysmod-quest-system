@@ -4,9 +4,9 @@ QuestDialogue = {}
 -------------------------------------
 -- Checks for the correctness of the entity class and model, as well as the condition for issuing a dialog.
 -------------------------------------
--- @param npc - any entity, not necessarily an NPC
--- @param ply - player entity
--- @param data - dialogue data
+-- @param npc entity - any entity, not necessarily an NPC
+-- @param ply entity - player entity
+-- @param data table - dialogue data
 -------------------------------------
 -- @return bool - true if the entity matches validation, else false
 -------------------------------------
@@ -64,7 +64,7 @@ end
 -------------------------------------
 -- Get dialog data from the global list using an identifier.
 -------------------------------------
--- @param id - dialogue id
+-- @param id string - dialogue id
 -------------------------------------
 -- @return table - dialog data table or nil if dialog doesn't exist
 -------------------------------------
@@ -114,8 +114,8 @@ end
 -------------------------------------
 -- Automatic assignment of a dialogue ID for NPCs. Will not assign anything if checks fail.
 -------------------------------------
--- @param npc - any entity, not necessarily an NPC
--- @param ply - player entity
+-- @param npc entity - any entity, not necessarily an NPC
+-- @param ply entity - player entity
 -------------------------------------
 function QuestDialogue:AutoParentToNPC(npc, ply)
     local dialogues = QuestDialogue:GetAllDialogues()
@@ -139,11 +139,11 @@ end
 -------------------------------------
 -- Assigning a specific dialogue ID for the NPC. Will not assign anything if checks fail.
 -------------------------------------
--- @param id - dialogue id
--- @param npc - any entity, not necessarily an NPC
--- @param ply - player entity
--- @param ignore_valid - pass true, if you want to ignore the validation check
--- @param ignore_random - pass true, if you want to ignore the randomness of the dialog assignment
+-- @param id string - dialogue id
+-- @param npc entity - any entity, not necessarily an NPC
+-- @param ply entity - player entity
+-- @param ignore_valid bool - pass true, if you want to ignore the validation check
+-- @param ignore_random bool - pass true, if you want to ignore the randomness of the dialog assignment
 -------------------------------------
 function QuestDialogue:ParentToNPC(id, npc, ply, ignore_valid, ignore_random)
     local dialogue = QuestDialogue:GetDialogue(id)
@@ -163,6 +163,13 @@ function QuestDialogue:ParentToNPC(id, npc, ply, ignore_valid, ignore_random)
     end
 end
 
+-------------------------------------
+-- Starts a dialogue with the NPC.
+-------------------------------------
+-- @param id string - dialogue id
+-- @param ply entity - player entity
+-- @param npc entity - any entity, not necessarily an NPC
+-------------------------------------
 function QuestDialogue:SetPlayerDialogue(id, ply, npc)
     if QuestDialogue:GetDialogue(id) ~= nil then
         local dialogue_ent = ents.Create('quest_dialogue')
