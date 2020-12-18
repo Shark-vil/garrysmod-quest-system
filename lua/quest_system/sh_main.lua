@@ -41,6 +41,17 @@ if SERVER then
 
         ActivateRandomEvent()
     end)
+
+    hook.Add('OnEntityCreated', 'QSystem.ReloadingNPCsRestiction', function(npc)
+        if npc:IsNPC() then
+            local entitis = ents.FindByClass('quest_entity')
+            for _, ent in pairs(entitis) do
+                if IsValid(ent) then
+                    ent:SetNPCsBehavior(npc)
+                end
+            end
+        end
+    end)
 end
 
 hook.Add('DisableEvent', 'QSystem.RemoveEventFromTable', function(eQuest, quest)

@@ -2,9 +2,6 @@ AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "shared.lua" )
 include('shared.lua')
 
-util.AddNetworkString('qsystem_quest_entity_set_value')
-util.AddNetworkString('qsystem_quest_entity_reset_values')
-
 function ENT:SetQuest(quest_id, ply)
 	if ply ~= nil then
 		timer.Simple(0.5, function()
@@ -17,13 +14,10 @@ function ENT:SetQuest(quest_id, ply)
 end
 
 function ENT:SetStep(step)
-	local delay = 1
-	
 	self:SetNWBool('StopThink', true)
 	self:SetNWFloat('ThinkDelay', RealTime() + 1)
 
 	local quest = self:GetQuest()
-	local ply = self:GetPlayer()
 
 	if quest ~= nil and quest.steps[step] ~= nil then
 		local old_step = self:GetQuestStep()
@@ -31,6 +25,10 @@ function ENT:SetStep(step)
 			self:SetNWString('old_step', old_step)
 		end
 		self:SetNWString('step', step)
+
+		if step ~= 'start' then
+			self:SetNWBool('is_first_start', false)
+		end
 
 		self.triggers = {}
 		if quest.steps[step].triggers ~= nil then
@@ -46,14 +44,9 @@ function ENT:SetStep(step)
 			end
 		end
 
-		local triggers = self.triggers
-		timer.Simple(delay, function()
-			if IsValid(self) then
-				net.Start('cl_qsystem_entity_step_triggers')
-				net.WriteEntity(self)
-				net.WriteTable(triggers)
-				net.Broadcast()
-			end
+		timer.Simple(self:GetSyncDelay(), function()
+			if not IsValid(self) then return end
+			self:SyncTriggers()
 		end)
 
 		self.points = {}
@@ -79,20 +72,6 @@ function ENT:SetStep(step)
 				end
 			end
 		end
-
-		-- local points = self.points
-		-- timer.Simple(delay, function()
-		-- 	if IsValid(self) then
-		-- 		net.Start('cl_qsystem_entity_step_points')
-		-- 		net.WriteEntity(self)
-		-- 		net.WriteTable(points)
-		-- 		if quest.isEvent then
-		-- 			net.Broadcast()
-		-- 		else
-		-- 			net.Send(ply)
-		-- 		end
-		-- 	end
-		-- end)
 	end
 
 	if step == 'start' then
@@ -109,16 +88,16 @@ function ENT:SetStep(step)
 		end
 	end
 
-	self:OnNextStep(step)
+	self:OnNextStep()
 
 	local start_result = nil
 	if quest.steps[step].construct ~= nil then
 		start_result = quest.steps[step].construct(self)
 	end
 
-	timer.Simple(delay, function()
+	timer.Simple(self:GetSyncDelay(), function()
 		if IsValid(self) then
-			net.Start('cl_qsystem_entity_step_construct')
+			net.Start('cl_qsystem_on_construct')
 			net.WriteEntity(self)
 			net.WriteString(self:GetQuestId())
 			net.WriteString(step)
@@ -130,9 +109,9 @@ function ENT:SetStep(step)
 		end
 	end)
 
-	timer.Simple(delay, function()
+	timer.Simple(self:GetSyncDelay(), function()
 		if IsValid(self) then
-			net.Start('cl_qsystem_entity_step_done')
+			net.Start('cl_qsystem_on_next_step')
 			net.WriteEntity(self)
 			net.WriteString(step)
 			net.Broadcast()
@@ -210,18 +189,10 @@ function ENT:Reward(customPayment)
 end
 
 function ENT:Reparation(customPayment)
-	if self:GetQuest().payment ~= nil then
-		self:Reward(self:GetQuest().payment / 2)
+	local payment = customPayment or self:GetQuest().payment
+	if payment ~= nil then
+		self:Reward(payment / 2)
 	end
-end
-
-function ENT:IsQuestWeapon(getWep)
-	for key, data in pairs(self.weapons) do
-		if IsValid(getWep) and data.weapon_class == getWep:GetClass() then
-			return true
-		end
-	end
-	return false
 end
 
 function ENT:GiveQuestWeapon(weapon_class)
@@ -241,6 +212,11 @@ function ENT:GiveQuestWeapon(weapon_class)
 
 	table.insert(self.weapons, data)
 
+	timer.Simple(self:GetSyncDelay(), function()
+		if not IsValid(self) then return end
+		self:SyncWeapons()
+	end)
+
 	return wep
 end
 
@@ -255,6 +231,11 @@ function ENT:RemoveQuestWeapon(weapon_class)
 			table.remove(self.weapons, key)
 		end
 	end
+
+	timer.Simple(self:GetSyncDelay(), function()
+		if not IsValid(self) then return end
+		self:SyncWeapons()
+	end)
 end
 
 function ENT:RemoveAllQuestWeapon()
@@ -325,5 +306,330 @@ end
 function ENT:RemoveAllStructure()
 	for id, spawn_id in pairs(self.structures) do
 		QuestSystem:RemoveStructure(spawn_id)
+	end
+end
+
+function ENT:AddQuestItem(item , item_id)
+
+	if IsValid(item) and item:GetClass() == 'quest_item' then
+		item:SetQuest(self)
+		item:SetId(item_id)
+	end
+
+	table.insert(self.items, {
+		id = item_id,
+		item = item
+	})
+
+	if QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then
+		item:SetCustomCollisionCheck(true)
+	end
+
+	timer.Simple(self:GetSyncDelay(), function()
+		if not IsValid(self) then return end
+		self:SyncItems()
+	end)
+end
+
+function ENT:AddQuestNPC(npc, type, tag)
+	tag = tag or 'none'
+	
+	table.insert(self.npcs, {
+		type = type,
+		tag = tag,
+		npc = npc
+	})
+
+	if QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then
+		npc:SetCustomCollisionCheck(true)
+	end
+
+	timer.Simple(self:GetSyncDelay(), function()
+		if not IsValid(self) then return end
+		self:SyncNPCs()
+	end)
+end
+
+function ENT:SetNPCsBehavior(ent)
+	if table.Count(self.npcs) == 0 then return end
+
+	local npcNotReactionOtherPlayer = self:GetQuest().npcNotReactionOtherPlayer or false
+
+	if QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then
+		npcNotReactionOtherPlayer = true
+	end
+
+	local function restictionByPlayer(ply)
+		for _, data in pairs(self.npcs) do
+			if IsValid(data.npc) then
+				if table.HasValue(self.players, ply) then
+					if data.type == 'enemy' then
+						data.npc:AddEntityRelationship(ply, D_HT, 70)
+					elseif data.type == 'friend' then
+						data.npc:AddEntityRelationship(ply, D_LI, 70)
+					end
+				else
+					if npcNotReactionOtherPlayer then
+						data.npc:AddEntityRelationship(ply, D_NU, 99)
+					end
+				end
+			end
+		end
+	end
+
+	if ent ~= nil then
+		if IsValid(ent) and ent:IsPlayer() then
+			restictionByPlayer(ent)
+			return
+		end
+	else
+		for _, ply in pairs(player.GetHumans()) do
+			restictionByPlayer(ply)
+		end
+	end
+
+	local function restictionByOtherNPC(otherNPC)
+		if IsValid(otherNPC) and otherNPC:IsNPC() then
+			local isExist = false
+
+			for _, data in pairs(self.npcs) do
+				if IsValid(data.npc) and otherNPC == data.npc then
+					isExist = true
+					break
+				end
+			end
+
+			if not isExist then
+				for _, data in pairs(self.npcs) do
+					if IsValid(data.npc) then
+						data.npc:AddEntityRelationship(otherNPC, D_NU, 99)
+						otherNPC:AddEntityRelationship(data.npc, D_NU, 99)
+					end
+				end
+			end
+		end
+	end
+
+	if ent ~= nil then
+		restictionByOtherNPC(ent)
+	else
+		for _, ent in pairs(ents.GetAll()) do
+			restictionByOtherNPC(ent)
+		end
+	end
+end
+
+function ENT:AddPlayer(ply)
+	if IsValid(ply) and ply:IsPlayer() and not table.HasValue(self.players, ply) then
+		table.insert(self.players, ply)
+
+		if self:IsFirstStart() then
+			timer.Simple(self:GetSyncDelay(), function()
+				if not IsValid(self) then return end
+				self:SyncPlayers()
+			end)
+		else
+			self:SyncPlayers()
+		end
+
+		self:SyncNoDraw()
+		self:SetNPCsBehavior(ply)
+	end
+end
+
+function ENT:RemovePlayer(ply)
+	if IsValid(ply) and ply:IsPlayer() and table.HasValue(self.players, ply) then
+		table.RemoveByValue(self.players, ply)
+
+		if self:IsFirstStart() then
+			timer.Simple(self:GetSyncDelay(), function()
+				if not IsValid(self) then return end
+				self:SyncPlayers()
+			end)
+		else
+			self:SyncPlayers()
+		end
+
+		self:SyncNoDraw()
+		self:SetNPCsBehavior(ply)
+	end
+end
+
+function ENT:SyncNoDraw(ply)
+	if table.Count(self.npcs) ~= 0 then
+		net.Start('cl_qsystem_nodraw_npc')
+		net.WriteEntity(self)
+		if ply then net.Send(ply) else net.Broadcast() end
+	end
+
+	if table.Count(self.items) ~= 0 then
+		net.Start('cl_qsystem_nodraw_items')
+		net.WriteEntity(self)
+		if ply then net.Send(ply) else net.Broadcast() end
+	end
+
+	if table.Count(self.structures) ~= 0 then
+		net.Start('cl_qsystem_nodraw_structures')
+		net.WriteEntity(self)
+		net.WriteTable(self.structures)
+		if ply then net.Send(ply) else net.Broadcast() end
+	end
+end
+
+function ENT:SyncItems(ply)
+	net.Start('cl_qsystem_sync_items')
+	net.WriteEntity(self)
+	net.WriteTable(self.items)
+	if ply then net.Send(ply) else net.Broadcast() end
+end
+
+function ENT:SyncNPCs(ply)
+	net.Start('cl_qsystem_sync_npcs')
+	net.WriteEntity(self)
+	net.WriteTable(self.npcs)
+	if ply then net.Send(ply) else net.Broadcast() end
+end
+
+function ENT:SyncPlayers(ply)
+	net.Start('cl_qsystem_sync_players')
+	net.WriteEntity(self)
+	net.WriteTable(self.players)
+	if ply then net.Send(ply) else net.Broadcast() end
+end
+
+function ENT:SyncTriggers(ply)
+	net.Start('cl_qsystem_sync_triggers')
+	net.WriteEntity(self)
+	net.WriteTable(self.triggers)
+	if ply then net.Send(ply) else net.Broadcast() end
+end
+
+function ENT:SyncPoints(ply)
+	net.Start('cl_qsystem_sync_points')
+	net.WriteEntity(self)
+	net.WriteTable(self.points)
+	if ply then net.Send(ply) else net.Broadcast() end
+end
+
+function ENT:SyncValues(ply)
+	net.Start('cl_qsystem_sync_values')
+	net.WriteEntity(self)
+	net.WriteTable(self.values)
+	if ply then net.Send(ply) else net.Broadcast() end
+end
+
+function ENT:SyncWeapons(ply)
+	net.Start('cl_qsystem_sync_weapons')
+	net.WriteEntity(self)
+	net.WriteTable(self.weapons)
+	if ply then net.Send(ply) else net.Broadcast() end
+end
+
+function ENT:SyncAll(ply)
+	self:SyncPlayers(ply)
+	self:SyncTriggers(ply)
+	self:SyncPoints(ply)
+	self:SyncNPCs(ply)
+	self:SyncItems(ply)
+	self:SyncValues(ply)
+	self:SyncNoDraw(ply)
+end
+
+function ENT:SetStepValue(key, value)
+	self.values[key] = value
+	self:SyncValues()
+end
+
+function ENT:ResetStepValues()
+	self.values = {}
+	self:SyncValues()
+end
+
+function ENT:DoorLocker(ent, lockState)
+	lockState = lockState or 'lock'
+	lockState = lockState:lower()
+	local doors
+	if istable(ent) then
+		doors = ent
+	else
+		doors = { ent }
+	end
+
+	for _, door in pairs(doors) do
+		if lockState == 'lock' and door.qsystemDoorIsLock ~= true 
+			or lockState == 'unlock' and door.qsystemDoorIsLock ~= false
+		then
+			local doorsValidClass = {
+				"func_door",
+				"func_door_rotating",
+				"prop_door_rotating",
+				"func_movelinear",
+				"prop_dynamic",
+			}
+		
+			if table.HasValue(doorsValidClass, door:GetClass()) then
+				door:Fire(lockState)		
+				if lockState == 'lock' then
+					door.qsystemDoorIsLock = true
+				else
+					door.qsystemDoorIsLock = false
+				end
+			end
+		end
+	end
+end
+
+function ENT:RemoveNPC(type, tag)
+	if #self.npcs ~= nil then
+		if type ~= nil then
+			local key_removes = {}
+
+			for key, data in pairs(self.npcs) do
+				if IsValid(data.npc) then
+					if tag ~= nil then
+						if type == data.type and tag == data.tag then
+							data.npc:FadeRemove()
+							table.insert(key_removes, key)
+						end
+					elseif type == data.type then
+						data.npc:FadeRemove()
+						table.insert(key_removes, key)
+					end
+				end
+			end
+
+			for _, key in pairs(key_removes) do
+				table.remove(self.npcs, key)
+			end
+		else
+			for _, data in pairs(self.npcs) do
+				data.npc:FadeRemove()
+			end
+			table.Empty(self.npcs)
+		end
+
+		self:SyncNPCs()
+	end
+end
+
+
+function ENT:RemoveItems(item_id)
+	if #self.items ~= nil then
+		if item_id ~= nil then
+			for key, data in pairs(self.items) do
+				if IsValid(data.item) and data.name == item_id then
+					data.item:FadeRemove()
+					table.remove(self.items, key)
+					break;
+				end
+			end
+		else
+			for _, data in pairs(self.items) do
+				if IsValid(data.item) then
+					data.item:FadeRemove()
+				end
+			end
+			table.Empty(self.items)
+		end
 	end
 end

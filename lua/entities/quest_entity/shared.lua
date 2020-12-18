@@ -46,26 +46,32 @@ function ENT:Initialize()
 			hook.Add('ShouldCollide', globalHookName, function(ent1, ent2)
 				if not IsValid(self) then hook.Remove("ShouldCollide", globalHookName) return end
 
-				local quest = self:GetQuest()
+				if ent2:IsPlayer() then
+					local quest = self:GetQuest()
 
-				for id, spawn_id in pairs(self.structures) do
-					local props = QuestSystem:GetStructure(spawn_id)
-					if table.HasValue(props, ent1) and not table.HasValue(self.players, ent2) then
-						return false
+					for id, spawn_id in pairs(self.structures) do
+						local props = QuestSystem:GetStructure(spawn_id)
+						if table.HasValue(props, ent1) and not table.HasValue(self.players, ent2) then
+							return false
+						end
 					end
-				end
 
-				for _, data in pairs(self.items) do
-					local item = data.item
-					if IsValid(item) and ent1 == item and not table.HasValue(self.players, ent2) then
-						return false
+					for _, data in pairs(self.items) do
+						local item = data.item
+						if IsValid(item) and item:GetCustomCollisionCheck() then
+							if ent1 == item and not table.HasValue(self.players, ent2) then
+								return false
+							end
+						end
 					end
-				end
 
-				for _, data in pairs(self.npcs) do
-					local npc = data.npc
-					if IsValid(npc) and ent1 == npc and not table.HasValue(self.players, ent2) then
-						return false
+					for _, data in pairs(self.npcs) do
+						local npc = data.npc
+						if IsValid(npc) and npc:GetCustomCollisionCheck() then
+							if ent1 == npc and not table.HasValue(self.players, ent2) then
+								return false
+							end
+						end
 					end
 				end
 			end)
@@ -109,6 +115,10 @@ function ENT:Initialize()
 	end)
 end
 
+function ENT:GetSyncDelay()
+	return 0.5
+end
+
 function ENT:IsExistStepArg(arg)
 	for step_name, step_data in pairs(self:GetQuest().steps) do
 		if step_data[arg] ~= nil then return true end
@@ -145,6 +155,10 @@ function ENT:GetPlayer()
 	return self.players[1]
 end
 
+function ENT:IsFirstStart()
+	return self:GetNWBool('is_first_start', true)
+end
+
 function ENT:GetQuestFunction(id)
 	local quest = self:GetQuest()
 	if quest ~= nil and quest.functions ~= nil then
@@ -155,32 +169,6 @@ end
 
 function ENT:GetAllPlayers()
 	return self.players
-end
-
-function ENT:AddPlayer(ply)
-	if not table.HasValue(self.players, ply) then
-		table.insert(self.players, ply)
-
-		if SERVER then
-			net.Start('cl_qsystem_add_player')
-			net.WriteEntity(self)
-			net.WriteEntity(ply)
-			net.Broadcast()
-		end
-	end
-end
-
-function ENT:RemovePlayer(ply)
-	if table.HasValue(self.players, ply) then
-		table.RemoveByValue(self.players, ply)
-
-		if SERVER then
-			net.Start('cl_qsystem_remove_player')
-			net.WriteEntity(self)
-			net.WriteEntity(ply)
-			net.Broadcast()
-		end
-	end
 end
 
 function ENT:Think()
@@ -217,85 +205,6 @@ function ENT:Think()
 	end
 end
 
-function ENT:RemoveNPC(isDisappear, type, tag)
-	local function NpcRemove(npc, isDisappear)
-		if CLIENT then return end
-
-		if isDisappear then
-			npc:SetRenderMode(RENDERMODE_TRANSCOLOR)
-			hook.Add('Think', npc, function()
-				if IsValid(npc) then
-					npc.delayDisappear = npc.delayDisappear or CurTime() + 5
-					
-					if npc.delayDisappear < CurTime() then
-						local color = npc:GetColor()
-						local minus = 1
-						if color.a - minus >= 0 then
-							npc:SetColor(ColorAlpha(color, color.a - minus))
-						else
-							npc:Remove()
-						end
-					end
-				end
-			end)
-		else
-			npc:Remove()
-		end
-	end
-
-	if #self.npcs ~= nil then
-		if type ~= nil then
-			local key_removes = {}
-
-			for key, data in pairs(self.npcs) do
-				if IsValid(data.npc) then
-					if tag ~= nil then
-						if type == data.type and tag == data.tag then
-							NpcRemove(data.npc, isDisappear)
-							table.insert(key_removes, key)
-						end
-					elseif type == data.type then
-						NpcRemove(data.npc, isDisappear)
-						table.insert(key_removes, key)
-					end
-				end
-			end
-
-			for _, key in pairs(key_removes) do
-				table.remove(self.npcs, key)
-			end
-		else
-			for _, data in pairs(self.npcs) do
-				if IsValid(data.npc) then 
-					NpcRemove(data.npc, isDisappear)
-				end
-			end
-			table.Empty(self.npcs)
-		end
-	end
-end
-
-function ENT:RemoveItems(item_id)
-	if #self.items ~= nil then
-		if item_id ~= nil then
-			for key, data in pairs(self.items) do
-				if IsValid(data.item) and data.name == item_id then
-					if SERVER then data.item:Remove() end
-					table.remove(self.items, key)
-					break;
-				end
-			end
-		else
-			for _, data in pairs(self.items) do
-				if IsValid(data.item) then
-					if SERVER then data.item:Remove() end
-				end
-			end
-			table.Empty(self.items)
-		end
-	end
-end
-
 function ENT:OnRemove()
 	local step = self:GetQuestStepTable()
 
@@ -305,9 +214,9 @@ function ENT:OnRemove()
 		end
 	end
 
-	self:RemoveNPC()
-	self:RemoveItems()
 	if SERVER then
+		self:RemoveNPC()
+		self:RemoveItems()
 		self:RemoveAllQuestWeapon()
 		self:RemoveAllStructure()
 	end
@@ -325,7 +234,7 @@ function ENT:OnRemove()
 	end
 end
 
-function ENT:OnNextStep(step)
+function ENT:OnNextStep()
 	local delay = 1
 	local quest = self:GetQuest()
 	local step = self:GetQuestStep()
@@ -342,14 +251,9 @@ function ENT:OnNextStep(step)
 		end
 
 		if SERVER then
-			local points = self.points
 			timer.Simple(delay, function()
-				if IsValid(self) then
-					net.Start('cl_qsystem_entity_step_points')
-					net.WriteEntity(self)
-					net.WriteTable(points)
-					net.Broadcast()
-				end
+				if not IsValid(self) then return end
+				self:SyncPoints()
 			end)
 		end
 	end
@@ -364,63 +268,12 @@ function ENT:OnNextStep(step)
 
 	
 	if SERVER then
-		if table.Count(self.npcs) ~= 0 then
-			local notReaction = quest.npcNotReactionOtherPlayer or false
-
-			for _, ply in pairs(player.GetHumans()) do
-				for _, data in pairs(self.npcs) do
-					if IsValid(data.npc) then
-						if table.HasValue(self.players, ply) then
-							if data.type == 'enemy' then
-								data.npc:AddEntityRelationship(ply, D_HT, 70)
-							elseif data.type == 'friend' then
-								data.npc:AddEntityRelationship(ply, D_LI, 70)
-							end
-						else
-							if notReaction then
-								data.npc:AddEntityRelationship(ply, D_NU, 99)
-							end
-						end
-					end
-				end
-			end
-
-			for _, ent in pairs(ents.FindByClass('quest_entity')) do
-				if ent ~= self then
-					local otherQuestsNpc = ent.npcs
-					for _, anotherData in pairs(otherQuestsNpc) do
-						for _, data in pairs(self.npcs) do
-							if IsValid(anotherData.npc) and IsValid(data.npc) then
-								data.npc:AddEntityRelationship(anotherData.npc, D_NU, 99)
-								anotherData.npc:AddEntityRelationship(data.npc, D_NU, 99)
-							end
-						end
-					end
-				end
-			end
-		end
+		self:SetNPCsBehavior()
 
 		if QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then				
 			timer.Simple(1, function()
 				if IsValid(self) then
-					if table.Count(self.npcs) ~= 0 then
-						net.Start('cl_qsystem_nodraw_npc')
-						net.WriteEntity(self)
-						net.Broadcast()
-					end
-
-					if table.Count(self.items) ~= 0 then
-						net.Start('cl_qsystem_nodraw_items')
-						net.WriteEntity(self)
-						net.Broadcast()
-					end
-
-					if table.Count(self.structures) ~= 0 then
-						net.Start('cl_qsystem_nodraw_structures')
-						net.WriteEntity(self)
-						net.WriteTable(self.structures)
-						net.Broadcast()
-					end
+					self:SyncNoDraw()
 				end
 			end)
 		end
@@ -508,119 +361,15 @@ function ENT:GetQuestItem(item_id)
 	return NULL
 end
 
-function ENT:AddQuestItem(item , item_id)
-
-	if IsValid(item) and item:GetClass() == 'quest_item' then
-		item:SetQuest(self)
-		item:SetId(item_id)
-	end
-
-	table.insert(self.items, {
-		id = item_id,
-		item = item
-	})
-
-	local quest = self:GetQuest()
-	if SERVER then
-		if QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then
-			item:SetCustomCollisionCheck(true)
-		end
-
-		timer.Simple(1, function()
-			if not IsValid(self) then return end
-
-			net.Start('cl_qsystem_add_item')
-			net.WriteEntity(self)
-			net.WriteEntity(item)
-			net.WriteString(item_id)
-			net.Broadcast()
-		end)
-	end
-end
-
-function ENT:AddQuestNPC(npc, type, tag)
-	tag = tag or 'none'
-	
-	table.insert(self.npcs, {
-		type = type,
-		tag = tag,
-		npc = npc
-	})
-
-	local quest = self:GetQuest()
-	if SERVER then
-		if QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then
-			npc:SetCustomCollisionCheck(true)
-		end
-
-		timer.Simple(1, function()
-			if not IsValid(self) then return end
-
-			net.Start('cl_qsystem_add_npc')
-			net.WriteEntity(self)
-			net.WriteEntity(npc)
-			net.WriteString(type)
-			net.WriteString(tag)
-			net.Broadcast()
-		end)
-	end
-end
-
-function ENT:DoorLocker(ent, lockState)
-	lockState = lockState or 'lock'
-	lockState = lockState:lower()
-	local doors
-	if istable(ent) then
-		doors = ent
-	else
-		doors = { ent }
-	end
-
-	for _, door in pairs(doors) do
-		if lockState == 'lock' and door.qsystemDoorIsLock ~= true 
-			or lockState == 'unlock' and door.qsystemDoorIsLock ~= false
-		then
-			local doorsValidClass = {
-				"func_door",
-				"func_door_rotating",
-				"prop_door_rotating",
-				"func_movelinear",
-				"prop_dynamic",
-			}
-		
-			if table.HasValue(doorsValidClass, door:GetClass()) then
-				door:Fire(lockState)
-				print(lockState)
-		
-				if lockState == 'lock' then
-					door.qsystemDoorIsLock = true
-				else
-					door.qsystemDoorIsLock = false
-				end
-			end
-		end
-	end
-end
-
-function ENT:SetStepValue(key, value)
-	self.values[key] = value
-	
-	if SERVER then
-		net.Start('qsystem_quest_entity_set_value')
-		net.WriteEntity(self)
-		net.WriteString(key)
-		net.WriteType(value)
-		net.Broadcast()
-	end
-end
-
 function ENT:GetStepValue(key)
 	return self.values[key]
 end
 
-function ENT:ResetStepValues()
-	self.values = {}
-	net.Start('qsystem_quest_entity_reset_values')
-	net.WriteEntity(self)
-	net.Broadcast()
+function ENT:IsQuestWeapon(otherWeapon)
+	for _, data in pairs(self.weapons) do
+		if IsValid(otherWeapon) and data.weapon_class == otherWeapon:GetClass() then
+			return true
+		end
+	end
+	return false
 end

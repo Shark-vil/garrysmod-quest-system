@@ -206,7 +206,7 @@ if SERVER then
         if QuestSystem.structures[spawn_id] ~= nil then
             for _, ent in pairs(QuestSystem.structures[spawn_id]) do
                 if IsValid(ent) then
-                    ent:Remove()
+                    ent:FadeRemove()
                 end
             end
             
@@ -222,7 +222,7 @@ if SERVER then
         for spawn_id, data in pairs(QuestSystem.structures) do
             for _, ent in pairs(data) do
                 if IsValid(ent) then
-                    ent:Remove()
+                    ent:FadeRemove()
                 end
             end
         end

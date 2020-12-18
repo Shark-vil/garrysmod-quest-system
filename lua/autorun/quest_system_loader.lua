@@ -69,6 +69,7 @@ using('extension/player_getting_list/sv_player_lib.lua')
 using('extension/player_quest/sv_extension.lua')
 using('extension/player_quest/sh_extension.lua')
 using('extension/player_quest/cl_extension.lua')
+using('extension/sv_entity_remove.lua')
 
 using('tools/trigger_editor/sv_trigger_editor.lua')
 using('tools/trigger_editor/cl_trigger_editor.lua')

@@ -1,14 +1,15 @@
 if SERVER then
-    util.AddNetworkString('cl_qsystem_entity_step_construct')
-    util.AddNetworkString('cl_qsystem_entity_step_triggers')
-    util.AddNetworkString('cl_qsystem_entity_step_points')
-    util.AddNetworkString('cl_qsystem_entity_step_done')
-    util.AddNetworkString('cl_qsystem_add_npc')
-    util.AddNetworkString('cl_qsystem_add_item')
-    util.AddNetworkString('cl_qsystem_add_player')
-    util.AddNetworkString('cl_qsystem_remove_player')
+    util.AddNetworkString('cl_qsystem_on_construct')
+    util.AddNetworkString('cl_qsystem_sync_triggers')
+    util.AddNetworkString('cl_qsystem_sync_points')
+    util.AddNetworkString('cl_qsystem_on_next_step')
+    util.AddNetworkString('cl_qsystem_sync_npcs')
+    util.AddNetworkString('cl_qsystem_sync_items')
+    util.AddNetworkString('cl_qsystem_sync_players')
+    util.AddNetworkString('cl_qsystem_sync_values')
+    util.AddNetworkString('cl_qsystem_sync_weapons')
 else
-    net.Receive('cl_qsystem_entity_step_construct', function()
+    net.Receive('cl_qsystem_on_construct', function()
         local ent = net.ReadEntity()
 
         if not IsValid(ent) or not table.HasValue(ent.players, LocalPlayer()) then return end
@@ -38,60 +39,51 @@ else
         end
     end)
 
-    net.Receive('cl_qsystem_entity_step_triggers', function()
+    net.Receive('cl_qsystem_sync_triggers', function()
         local ent = net.ReadEntity()
         local triggers = net.ReadTable()
-        local quest = ent:GetQuest()
-
-        if IsValid(ent) then
-            ent.triggers = triggers
-        end
+        ent.triggers = triggers
     end)
 
-    net.Receive('cl_qsystem_entity_step_points', function()
+    net.Receive('cl_qsystem_sync_points', function()
         local ent = net.ReadEntity()
         local points = net.ReadTable()
-        local quest = ent:GetQuest()
-
-        if IsValid(ent) then
-            ent.points = points
-        end
+        ent.points = points
     end)
 
-    net.Receive('cl_qsystem_entity_step_done', function()
+    net.Receive('cl_qsystem_on_next_step', function()
         local ent = net.ReadEntity()
         local step = net.ReadString()
         ent:OnNextStep(step)
     end)
 
-    net.Receive('cl_qsystem_add_npc', function()
+    net.Receive('cl_qsystem_sync_npcs', function()
         local ent = net.ReadEntity()
-        local npc = net.ReadEntity()
-        local type = net.ReadString()
-        local tag = net.ReadString()
-
-        ent:AddQuestNPC(npc, type, tag)
+        local npcs = net.ReadTable()
+        ent.npcs = npcs
     end)
 
-    net.Receive('cl_qsystem_add_item', function()
+    net.Receive('cl_qsystem_sync_items', function()
         local ent = net.ReadEntity()
-        local item = net.ReadEntity()
-        local id = net.ReadString()
-        
-        ent:AddQuestItem(item, id)
+        local items = net.ReadTable()
+        ent.items = items
     end)
 
-    net.Receive('cl_qsystem_add_player', function()
+    net.Receive('cl_qsystem_sync_players', function()
         local ent = net.ReadEntity()
-        local ply = net.ReadEntity()
-
-        ent:AddPlayer(ply)
+        local players = net.ReadTable()
+        ent.players = players
     end)
 
-    net.Receive('cl_qsystem_remove_player', function()
+    net.Receive('cl_qsystem_sync_values', function()
         local ent = net.ReadEntity()
-        local ply = net.ReadEntity()
+        local values = net.ReadTable()
+        ent.values = values
+    end)
 
-        ent:RemovePlayer(ply)
+    net.Receive('cl_qsystem_sync_weapons', function()
+        local ent = net.ReadEntity()
+        local weapons = net.ReadTable()
+        ent.weapons = weapons
     end)
 end

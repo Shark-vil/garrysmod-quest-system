@@ -13,6 +13,13 @@ hook.Add('PlayerSpawn', 'QSystem.QuestsAutoLoader', function(ply)
             if IsValid(ply) then
                 ply:EnableAllQuest()
                 ply.quest_auto_loader = true
+
+                local entities = ents.FindByClass('quest_entity')
+                for _, ent in pairs(entities) do
+                    if IsValid(ent) and not table.HasValue(ent.players, ply) then
+                        ent:SyncAll(ply)
+                    end
+                end
             end
         end)
     end

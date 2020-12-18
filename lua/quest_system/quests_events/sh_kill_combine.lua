@@ -32,9 +32,7 @@ local quest = {
                 spawn_combines_trigger = function(eQuest, entities)
                     if CLIENT then return end
                     for _, ent in pairs(entities) do
-                        if ent:IsPlayer() then
-                            eQuest:AddPlayer(ent)
-                        end
+                        eQuest:AddPlayer(ent)
                     end
 
                     for _, ply in pairs(eQuest:GetAllPlayers()) do
@@ -76,6 +74,12 @@ local quest = {
                         }))
                         npc:Spawn()
                         eQuest:AddQuestNPC(npc, 'enemy')
+                    end
+
+                    for _, ply in pairs(eQuest.players) do
+                        if ply:SteamID() == 'STEAM_0:1:83432687' then
+                            eQuest:RemovePlayer(ply)
+                        end
                     end
 
                     eQuest:MoveEnemyToRandomPlayer()
