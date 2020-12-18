@@ -82,84 +82,97 @@ function ENT:Initialize()
 			hook.Add('EntityTakeDamage', globalHookName, function(target, dmginfo)
 				if not IsValid(self) then hook.Remove("EntityTakeDamage", globalHookName) return end
 
-				local quest = self:GetQuest()
 				local attaker = dmginfo:GetAttacker()
-
 				if attaker:IsWeapon() then
 					attaker = attaker.Owner
 				end
 
-				if attaker ~= nil and attaker:IsPlayer() then
-					for _, data in pairs(self.npcs) do
-						local npc = data.npc
-						if IsValid(npc) and IsValid(attaker) then
-							if not table.HasValue(self.players, attaker) then
-								return true
+				if target:IsNPC() then
+					if attaker ~= nil and attaker:IsPlayer() then
+						for _, data in pairs(self.npcs) do
+							local npc = data.npc
+							if IsValid(npc) and IsValid(attaker) then
+								if not table.HasValue(self.players, attaker) then
+									return true
+								end
+							end
+						end
+					end
+				elseif target:IsPlayer() and attaker ~= nil and attaker:IsNPC() then
+					for _, ent in pairs(ents.FindByClass('quest_entity')) do
+						if ent ~= self then
+							local npcs = ent.npcs
+							if npcs ~= nil and table.Count(npcs) ~= 0 then
+								for _, data in pairs(npcs) do
+									if attaker == data.npc then
+										return true
+									end
+								end
 							end
 						end
 					end
 				end
 			end)
-
-			hook.Add('SetupPlayerVisibility', globalHookName, function(this, pPlayer, pViewEntity)
-				if not IsValid(self) then hook.Remove("SetupPlayerVisibility", globalHookName) return end
-				AddOriginToPVS(self:GetPos())
-
-				local entities = {}
-				for _, data in pairs(self.npcs) do
-					table.insert(entities, data.npc)
-				end
-
-				for _, data in pairs(self.items) do
-					table.insert(entities, data.item)
-				end
-
-				for _, spawn_id in pairs(self.structures) do
-					local props = QuestSystem:GetStructure(spawn_id)
-					for _, prop in pairs(props) do
-						table.insert(entities, prop)
-					end
-				end
-				
-				for _, data in pairs(self.weapons) do
-					table.insert(entities, data.weapon)
-				end
-
-				for _, ent in pairs(entities) do
-					if IsValid(ent) then
-						AddOriginToPVS(ent:GetPos())
-					end
-				end
-			end)
-
-			hook.Add('OnNPCKilled', globalHookName, function(npc, attacker, inflictor)
-				if not IsValid(self) then hook.Remove("OnNPCKilled", globalHookName) return end
-
-				if self:IsQuestNPC(npc) then
-					local g_ragdoll_fadespeed = GetConVar("g_ragdoll_fadespeed"):GetInt()
-					local g_ragdoll_important_maxcount = GetConVar("g_ragdoll_important_maxcount"):GetInt()
-					local g_ragdoll_lvfadespeed = GetConVar("g_ragdoll_lvfadespeed"):GetInt()
-					local g_ragdoll_maxcount = GetConVar("g_ragdoll_maxcount"):GetInt()
-					
-					RunConsoleCommand("g_ragdoll_fadespeed", "1")
-					RunConsoleCommand("g_ragdoll_important_maxcount", "0")
-					RunConsoleCommand("g_ragdoll_lvfadespeed", "1")
-					RunConsoleCommand("g_ragdoll_maxcount", "0")
-
-					local timerName = 'OnNPCKilled_' .. globalHookName
-					if timer.Exists(timerName) then
-						timer.Remove(timerName)
-					end
-
-					timer.Create(timerName, 0.5, 1, function()
-						RunConsoleCommand("g_ragdoll_fadespeed", g_ragdoll_fadespeed)
-						RunConsoleCommand("g_ragdoll_important_maxcount", g_ragdoll_important_maxcount)
-						RunConsoleCommand("g_ragdoll_lvfadespeed", g_ragdoll_lvfadespeed)
-						RunConsoleCommand("g_ragdoll_maxcount", g_ragdoll_maxcount)
-					end)
-				end
-			end)
 		end
+
+		hook.Add('SetupPlayerVisibility', globalHookName, function(this, pPlayer, pViewEntity)
+			if not IsValid(self) then hook.Remove("SetupPlayerVisibility", globalHookName) return end
+			AddOriginToPVS(self:GetPos())
+
+			local entities = {}
+			for _, data in pairs(self.npcs) do
+				table.insert(entities, data.npc)
+			end
+
+			for _, data in pairs(self.items) do
+				table.insert(entities, data.item)
+			end
+
+			for _, spawn_id in pairs(self.structures) do
+				local props = QuestSystem:GetStructure(spawn_id)
+				for _, prop in pairs(props) do
+					table.insert(entities, prop)
+				end
+			end
+			
+			for _, data in pairs(self.weapons) do
+				table.insert(entities, data.weapon)
+			end
+
+			for _, ent in pairs(entities) do
+				if IsValid(ent) then
+					AddOriginToPVS(ent:GetPos())
+				end
+			end
+		end)
+
+		hook.Add('OnNPCKilled', globalHookName, function(npc, attacker, inflictor)
+			if not IsValid(self) then hook.Remove("OnNPCKilled", globalHookName) return end
+
+			if self:IsQuestNPC(npc) then
+				local g_ragdoll_fadespeed = GetConVar("g_ragdoll_fadespeed"):GetInt()
+				local g_ragdoll_important_maxcount = GetConVar("g_ragdoll_important_maxcount"):GetInt()
+				local g_ragdoll_lvfadespeed = GetConVar("g_ragdoll_lvfadespeed"):GetInt()
+				local g_ragdoll_maxcount = GetConVar("g_ragdoll_maxcount"):GetInt()
+				
+				RunConsoleCommand("g_ragdoll_fadespeed", "1")
+				RunConsoleCommand("g_ragdoll_important_maxcount", "0")
+				RunConsoleCommand("g_ragdoll_lvfadespeed", "1")
+				RunConsoleCommand("g_ragdoll_maxcount", "0")
+
+				local timerName = 'OnNPCKilled_' .. globalHookName
+				if timer.Exists(timerName) then
+					timer.Remove(timerName)
+				end
+
+				timer.Create(timerName, 0.5, 1, function()
+					RunConsoleCommand("g_ragdoll_fadespeed", g_ragdoll_fadespeed)
+					RunConsoleCommand("g_ragdoll_important_maxcount", g_ragdoll_important_maxcount)
+					RunConsoleCommand("g_ragdoll_lvfadespeed", g_ragdoll_lvfadespeed)
+					RunConsoleCommand("g_ragdoll_maxcount", g_ragdoll_maxcount)
+				end)
+			end
+		end)
 
 		self:SetNWBool('StopThink', true)
 		self:SetNWFloat('ThinkDelay', 0)
