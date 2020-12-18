@@ -36,6 +36,7 @@ local quest = {
                     item:SetPos(table.Random(positions))
                     item:SetAngles(AngleRand())
                     item:Spawn()
+                    item:SetFreeze(true)
                     eQuest:AddQuestItem(item , 'box')
                 end,
             },
@@ -65,8 +66,8 @@ local quest = {
         safe_employer = {
             structures = {
                 barricades = function(eQuest, entities, spawn_id)
-                    print(spawn_id)
-                    PrintTable(entities)
+                    -- print(spawn_id)
+                    -- PrintTable(entities)
                 end
             },
             points = {
