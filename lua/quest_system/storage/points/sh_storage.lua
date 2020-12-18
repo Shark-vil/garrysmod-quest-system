@@ -22,9 +22,6 @@ function storage:GetFilePath(id, name)
 end
 
 function storage:Save(id, name, data)
-    toServer = toServer or false
-    sharedSave = sharedSave or false
-
     if CLIENT then
         net.Start('sv_qsystem_points_save')
         net.WriteString(id)
