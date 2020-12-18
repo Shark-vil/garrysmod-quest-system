@@ -22,6 +22,11 @@ function ENT:Initialize()
 
     if CLIENT then
         local lines = nil
+        -------------------------------------
+        -- Renders the background dialog text above the NPC's head.
+        -------------------------------------
+        -- @params wiki - https://wiki.facepunch.com/gmod/GM:PostDrawOpaqueRenderables
+        -------------------------------------
         hook.Add('PostDrawOpaqueRenderables', self, function()
             local npc = self:GetNPC()
     
@@ -98,10 +103,18 @@ function ENT:Initialize()
     end
 end
 
+--[[
+    WARNING: The function is probably not used. To be removed.
+--]]
 function ENT:OnTakeDamage(damage)
     self:Remove()
 end
 
+-------------------------------------
+-- An entity deletes itself if one of the conditions is violated.
+-------------------------------------
+-- @params wiki - https://wiki.facepunch.com/gmod/ENTITY:Think
+-------------------------------------
 function ENT:Think()
     if self.isStarted then
         if SERVER then
@@ -113,6 +126,11 @@ function ENT:Think()
     end
 end
 
+-------------------------------------
+-- Saves data about the first dialogue and unfreezes the player if it is frozen.
+-------------------------------------
+-- @params wiki - https://wiki.facepunch.com/gmod/ENTITY:OnRemove
+-------------------------------------
 function ENT:OnRemove()
     if SERVER then
         QuestService:WaitingNPCWalk(self:GetNPC(), false)
@@ -128,19 +146,39 @@ function ENT:OnRemove()
     end
 end
 
+-------------------------------------
+-- Gets the dialog data table.
+-------------------------------------
+-- @return table - dialogue data table
+-------------------------------------
 function ENT:GetDialogue()
     self.dialogue = self.dialogue or QuestDialogue:GetDialogue(self:GetDialogueID())
     return self.dialogue
 end
 
+-------------------------------------
+-- Get the ID of the conversation.
+-------------------------------------
+-- @return string - dialogue id
+-------------------------------------
 function ENT:GetDialogueID()
     return self:GetNWString('id')
 end
 
+-------------------------------------
+-- Get the id of the current dialog step.
+-------------------------------------
+-- @return string - step id
+-------------------------------------
 function ENT:GetStepID()
     return self:GetNWString('step_id')
 end
 
+-------------------------------------
+-- Get the data for the current step.
+-------------------------------------
+-- @return table - step data table
+-------------------------------------
 function ENT:GetStep()
     local dialogue = self:GetDialogue()
     if dialogue.isBackground then
@@ -151,20 +189,42 @@ function ENT:GetStep()
     end
 end
 
+-------------------------------------
+-- Get the entity of the player.
+-------------------------------------
+-- @return entity - player entity
+-------------------------------------
 function ENT:GetPlayer()
     return self:GetNWEntity('player')
 end
 
+-------------------------------------
+-- Get the player interlocutor entity.
+-------------------------------------
+-- @return entity - specific entity
+-------------------------------------
 function ENT:GetNPC()
     return self:GetNWEntity('npc')
 end
 
+-------------------------------------
+-- Checks if the player is using this dialogue for the first time or not.
+-------------------------------------
+-- @return bool - will return true if the player has already used this dialog, otherwise false
+-------------------------------------
 function ENT:AlreadySaid()
     local value = self:GetPlayerValue('already_said')
     if value == nil then value = false end
     return tobool(value)
 end
 
+-------------------------------------
+-- Reads a custom variable from a file and writes to the entity network variable.
+-------------------------------------
+-- @param value_name string - custom variable key in dialog
+-------------------------------------
+-- @return string - will return a string with the data of a variable or nil
+-------------------------------------
 function ENT:GetPlayerValue(value_name)
     local value = self:GetNWString('var_' .. value_name)
 
@@ -188,6 +248,12 @@ function ENT:GetPlayerValue(value_name)
     return nil
 end
 
+-------------------------------------
+-- Starts a dialogue between the player and the interlocutor.
+-------------------------------------
+-- @param ignore_npc_text bool - pass true if you want to skip the NPC replic
+-- @param is_next bool - convey the truth if the dialogue continues (By default assigned automatically)
+-------------------------------------
 function ENT:StartDialogue(ignore_npc_text, is_next)
     ignore_npc_text = ignore_npc_text or false
     is_next = is_next or false
@@ -243,6 +309,11 @@ function ENT:StartDialogue(ignore_npc_text, is_next)
     self.isFirst = false
 end
 
+-------------------------------------
+-- Plays the sound coming from the player's interlocutor.
+-------------------------------------
+-- @params wiki - https://wiki.facepunch.com/gmod/Entity:EmitSound
+-------------------------------------
 function ENT:VoiceSay(sound_path, soundLevel, pitchPercent, volume, channel, soundFlags, dsp)
     if not IsValid(self) or not IsValid(self:GetNPC()) then return end
     

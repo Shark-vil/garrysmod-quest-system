@@ -3,6 +3,7 @@ include('shared.lua')
 function ENT:Draw()
    self:DrawModel()
 
+	-- Draws text above the head of the NPC
 	if self:GetPos():Distance(LocalPlayer():GetPos()) < 800 then
 		local angle = LocalPlayer():EyeAngles()
 		angle:RotateAroundAxis(angle:Forward(), 90)

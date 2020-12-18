@@ -2,22 +2,49 @@ AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "shared.lua" )
 include('shared.lua')
 
+-------------------------------------
+-- Adds a dialog ID to a network variable.
+-------------------------------------
+-- @param id string - dialogue id
+-------------------------------------
 function ENT:SetDialogueID(id)
     self:SetNWString('id', id)
 end
 
+-------------------------------------
+-- Adds a dialog step to a network variable.
+-------------------------------------
+-- @param step_id string - dialogue step id
+-------------------------------------
 function ENT:SetStep(step_id)
     self:SetNWString('step_id', step_id)
 end
 
+-------------------------------------
+-- Adds the dialogue player to the network variable.
+-------------------------------------
+-- @param ply entity - player entity
+-------------------------------------
 function ENT:SetPlayer(ply)
     self:SetNWEntity('player', ply)
 end
 
+-------------------------------------
+-- Adds the entity with which the player has a conversation to the network variable.
+-- If the entity does not exist, you can add the player himself as an interlocutor.
+-------------------------------------
+-- @param npc entity - entity of the interlocutor
+-------------------------------------
 function ENT:SetNPC(npc)
     self:SetNWEntity('npc', npc)
 end
 
+-------------------------------------
+-- Switches the dialog to another step.
+-------------------------------------
+-- @param step_id string - step id
+-- @param ignore_npc_text bool - if true, the NPC replic will be skipped
+-------------------------------------
 function ENT:Next(step_id, ignore_npc_text)
     ignore_npc_text = ignore_npc_text or false
     self:SetStep(step_id)
@@ -26,6 +53,9 @@ function ENT:Next(step_id, ignore_npc_text)
     end)
 end
 
+-------------------------------------
+-- Loads custom network variables, if they exist.
+-------------------------------------
 function ENT:LoadPlayerValues()
     local ply = self:GetPlayer()
     if IsValid(ply) then
@@ -46,6 +76,15 @@ function ENT:LoadPlayerValues()
     end
 end
 
+-------------------------------------
+-- Saves the user variable to the database, and connects in real time if necessary.
+-------------------------------------
+-- @param value_name string - variable key
+-- @param value string - variable value (string only)
+-- @param not_autoload bool - if true, the variable will not be uploaded to the network immediately after saving
+-------------------------------------
+-- @return bool - returns true if the variable was saved, false otherwise
+-------------------------------------
 function ENT:SavePlayerValue(value_name, value, not_autoload)
     local ply = self:GetPlayer()
     if IsValid(ply) then
@@ -77,6 +116,14 @@ function ENT:SavePlayerValue(value_name, value, not_autoload)
     return false
 end
 
+-------------------------------------
+-- Deletes the network variable data file.
+-------------------------------------
+-- @param value_name string - variable key
+-- @param player_id string - player id (default nil, since the player can be obtained automatically)
+-------------------------------------
+-- @return bool - returns true if the variable was removed, false otherwise
+-------------------------------------
 function ENT:RemovePlayerValue(value_name, player_id)
 
     if player_id == nil then
@@ -100,11 +147,18 @@ function ENT:RemovePlayerValue(value_name, player_id)
     return false
 end
 
+-------------------------------------
+-- Stops the dialog by deleting the dialog entity.
+-------------------------------------
 function ENT:Stop()
     self:Remove()
 end
 
-
+-------------------------------------
+-- Checks the state of fear of the NPC. Used to stop the dialogue if NPCs are attacked.
+-------------------------------------
+-- @return bool - will return true if the NPC is in a state of fear, otherwise false
+-------------------------------------
 function ENT:NpcIsFear()
     local npc = self:GetNPC()
     if IsValid(npc) and npc:IsNPC() then
