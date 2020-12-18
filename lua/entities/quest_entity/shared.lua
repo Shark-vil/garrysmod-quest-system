@@ -132,6 +132,16 @@ function ENT:Initialize()
 
 		self:SetNWBool('StopThink', true)
 		self:SetNWFloat('ThinkDelay', 0)
+	else
+		local globalHookName = self:GetNWString('global_hook_name')
+		hook.Add("EntityEmitSound", globalHookName, function(t)
+			if not IsValid(self) then hook.Remove("EntityEmitSound", globalHookName) return end
+			local ent = t.Entity
+	
+			if self:IsQuestNPC(ent) and table.HasValue(self:GetAllPlayers(), LocalPlayer()) then
+				return false
+			end
+		end)
 	end
 
 	timer.Simple(1, function()
@@ -257,6 +267,7 @@ function ENT:OnRemove()
 	hook.Remove("ShouldCollide", globalHookName)
 	hook.Remove("EntityTakeDamage", globalHookName)
 	hook.Remove("OnNPCKilled", globalHookName)
+	hook.Remove("EntityEmitSound", globalHookName)
 
 	local quest = self:GetQuest()
 	if quest.isEvent then
@@ -346,11 +357,13 @@ function ENT:NotifyAll(title, desc, lifetime, image, bgcolor)
 end
 
 function ENT:IsQuestNPC(npc, type, tag)
-	for _, data in pairs(self.npcs) do
-		if data.npc == npc then
-			if type ~= nil and data.type ~= type then return false end
-			if tag ~= nil and data.tag ~= tag then return false end
-			return true
+	if IsValid(npc) then 
+		for _, data in pairs(self.npcs) do
+			if data.npc == npc then
+				if type ~= nil and data.type ~= type then return false end
+				if tag ~= nil and data.tag ~= tag then return false end
+				return true
+			end
 		end
 	end
 	return false

@@ -15,10 +15,24 @@ else
         for _, data in pairs(npcs) do
             local npc = data.npc
             if IsValid(npc) then
-                npc:SetNoDraw(not noDraw)
+                if QuestSystem:GetConfig('HideQuestsNPCNotCompletely') then
+                    if not noDraw then
+                        npc:SetRenderMode(RENDERMODE_TRANSCOLOR)
+                        npc:SetColor(ColorAlpha(npc:GetColor(), 50))
+                    end
+                else
+                    npc:SetNoDraw(not noDraw)
+                end
                 local wep = npc:GetActiveWeapon()
                 if IsValid(wep) then
-                    wep:SetNoDraw(not noDraw)
+                    if QuestSystem:GetConfig('HideQuestsNPCNotCompletely') then
+                        if not noDraw then
+                            wep:SetRenderMode(RENDERMODE_TRANSCOLOR)
+                            wep:SetColor(ColorAlpha(wep:GetColor(), 50))
+                        end
+                    else
+                        wep:SetNoDraw(not noDraw)
+                    end
                 end
             end
         end
