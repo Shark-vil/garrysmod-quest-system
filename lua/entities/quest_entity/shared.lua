@@ -356,14 +356,12 @@ function ENT:OnNextStep()
 
 	
 	if SERVER then
+		self:SyncNPCs()
+		self:SyncItems()
 		self:SetNPCsBehavior()
 
 		if QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then				
-			timer.Simple(1, function()
-				if IsValid(self) then
-					self:SyncNoDraw()
-				end
-			end)
+			self:SyncNoDraw()
 		end
 	end
 

@@ -181,20 +181,20 @@ if SERVER then
                 end
                 table.insert(QuestSystem.structures[spawn_id], ent)
             end
-            timer.Simple(1, function()
-                if QuestSystem.structures[spawn_id] ~= nil then
-                    local ids = {}
-                    for _, ent in pairs(QuestSystem.structures[spawn_id]) do
-                        if IsValid(ent) then
-                            table.insert(ids, ent:EntIndex())
-                        end
+
+            if QuestSystem.structures[spawn_id] ~= nil then
+                local ids = {}
+                for _, ent in pairs(QuestSystem.structures[spawn_id]) do
+                    if IsValid(ent) then
+                        table.insert(ids, ent:EntIndex())
                     end
-                    net.Start('qsystem_add_structure_from_client')
-                    net.WriteString(spawn_id)
-                    net.WriteTable(ids)
-                    net.Broadcast()
                 end
-            end)
+                net.Start('qsystem_add_structure_from_client')
+                net.WriteString(spawn_id)
+                net.WriteTable(ids)
+                net.Broadcast()
+            end
+
             return spawn_id
         end
         return nil
@@ -235,12 +235,14 @@ else
 
         QuestSystem.structures[spawn_id] = {}
 
-        for _, id in pairs(ids) do
-            local ent = Entity(id)
-            if IsValid(ent) then
-                table.insert(QuestSystem.structures[spawn_id], ent)
+        timer.Simple(0.3, function()
+            for _, id in pairs(ids) do
+                local ent = Entity(id)
+                if IsValid(ent) then
+                    table.insert(QuestSystem.structures[spawn_id], ent)
+                end
             end
-        end
+        end)
     end)
 
     net.Receive('qsystem_remove_structure_from_client', function()

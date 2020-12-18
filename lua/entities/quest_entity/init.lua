@@ -316,7 +316,9 @@ function ENT:AddQuestItem(item , item_id)
 		item:SetCustomCollisionCheck(true)
 	end
 
-	self:SyncItems()
+	if not self:GetNWBool('StopThink') then
+		self:SyncItems()
+	end
 end
 
 function ENT:AddQuestNPC(npc, type, tag)
@@ -332,7 +334,9 @@ function ENT:AddQuestNPC(npc, type, tag)
 		npc:SetCustomCollisionCheck(true)
 	end
 
-	self:SyncNPCs()
+	if not self:GetNWBool('StopThink') then
+		self:SyncNPCs()
+	end
 end
 
 function ENT:SetNPCsBehavior(ent)
