@@ -115,7 +115,7 @@ function ENT:Initialize()
 			end)
 		end
 
-		hook.Add('SetupPlayerVisibility', globalHookName, function(this, pPlayer, pViewEntity)
+		hook.Add('SetupPlayerVisibility', globalHookName, function(pPlayer, pViewEntity)
 			if not IsValid(self) then hook.Remove("SetupPlayerVisibility", globalHookName) return end
 			AddOriginToPVS(self:GetPos())
 
