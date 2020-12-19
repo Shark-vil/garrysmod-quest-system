@@ -103,13 +103,6 @@ function ENT:Initialize()
     end
 end
 
---[[
-    WARNING: The function is probably not used. To be removed.
---]]
-function ENT:OnTakeDamage(damage)
-    self:Remove()
-end
-
 -------------------------------------
 -- An entity deletes itself if one of the conditions is violated.
 -------------------------------------
