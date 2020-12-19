@@ -4,8 +4,8 @@ QuestSystem.cfg.Debug = true
 
 QuestSystem.cfg.HideQuestsOfOtherPlayers = true
 QuestSystem.cfg.HideQuestsNPCNotCompletely = true
-QuestSystem.cfg.EnableEvents = false
-QuestSystem.cfg.EventsTimeDelay = 30
+QuestSystem.cfg.EnableEvents = true
+QuestSystem.cfg.EventsTimeDelay = 120
 -- The higher the number, the lower the chance of activating the event
 -- 0 - disable restiction
 QuestSystem.cfg.EventsRandomActivate = 10
