@@ -27,10 +27,6 @@ end
 -- @return any - will return the value returned by the quest step constructor or nil
 -------------------------------------
 function ENT:SetStep(step)
-	--[[
-		WARNING: Изменить на:
-		https://wiki.facepunch.com/gmod/Entity:NextThink
-	--]]
 	self:SetNWBool('StopThink', true)
 	self:SetNWFloat('ThinkDelay', RealTime() + 1)
 
