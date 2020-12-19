@@ -608,7 +608,7 @@ end
 -------------------------------------
 -- @return string - will return the value of a variable or nil
 -------------------------------------
-function ENT:GetStepValue(key)
+function ENT:GetVariable(key)
 	return self.values[key]
 end
 

@@ -699,7 +699,7 @@ end
 -- @param key string - variable key
 -- @param value any - variable value
 -------------------------------------
-function ENT:SetStepValue(key, value)
+function ENT:SetVariable(key, value)
 	self.values[key] = value
 	self:SyncValues()
 end
@@ -707,7 +707,7 @@ end
 -------------------------------------
 -- Removes all existing quest variables.
 -------------------------------------
-function ENT:ResetStepValues()
+function ENT:ResetVariables()
 	self.values = {}
 	self:SyncValues()
 end
