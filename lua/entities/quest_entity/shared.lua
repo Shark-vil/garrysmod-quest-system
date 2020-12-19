@@ -193,9 +193,9 @@ function ENT:Initialize()
 
 		local quest = self:GetQuest()
 		if quest.isEvent then
-			hook.Run('EnableEvent', self, quest)
+			hook.Run('QSystem.EventStarted', self, quest)
 		else
-			hook.Run('EnableQuest', self, quest)
+			hook.Run('QSystem.QuestStarted', self, quest)
 		end
 	end)
 end
@@ -386,9 +386,9 @@ function ENT:OnRemove()
 
 	local quest = self:GetQuest()
 	if quest.isEvent then
-		hook.Run('DisableEvent', self, quest)
+		hook.Run('QSystem.EventStopped', self, quest)
 	else
-		hook.Run('DisableQuest', self, quest)
+		hook.Run('QSystem.QuestStopped', self, quest)
 	end
 end
 
@@ -450,9 +450,9 @@ function ENT:OnNextStep()
 	end
 
 	if quest.isEvent then
-		hook.Run('NewEventStep', self, step, quest)
+		hook.Run('QSystem.NextEventStep', self, step, quest)
 	else
-		hook.Run('NewQuestStep', self, step, quest)
+		hook.Run('QSystem.NextQuestStep', self, step, quest)
 	end
 end
 

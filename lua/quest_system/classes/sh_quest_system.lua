@@ -403,6 +403,11 @@ function QuestSystem:QuestIsValid(ply, quest_id)
         end
     end
 
+    local anyCondition = hook.Run('QSystem.QuestCondition', ply, quest_id)
+    if anyCondition ~= nil and isbool(anyCondition) and anyCondition == false then
+        return false
+    end
+
     return true
 end
 
