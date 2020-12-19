@@ -166,39 +166,6 @@ function ENT:Initialize()
 			end
 		end)
 
-		-------------------------------------
-		-- Sets the smooth removal of a ragdoll NPC after a kill.
-		-------------------------------------
-		-- @params wiki - https://wiki.facepunch.com/gmod/GM:OnNPCKilled
-		-------------------------------------
-		hook.Add('OnNPCKilled', globalHookName, function(npc, attacker, inflictor)
-			if not IsValid(self) then hook.Remove("OnNPCKilled", globalHookName) return end
-
-			if self:IsQuestNPC(npc) then
-				local g_ragdoll_fadespeed = GetConVar("g_ragdoll_fadespeed"):GetInt()
-				local g_ragdoll_important_maxcount = GetConVar("g_ragdoll_important_maxcount"):GetInt()
-				local g_ragdoll_lvfadespeed = GetConVar("g_ragdoll_lvfadespeed"):GetInt()
-				local g_ragdoll_maxcount = GetConVar("g_ragdoll_maxcount"):GetInt()
-				
-				RunConsoleCommand("g_ragdoll_fadespeed", "1")
-				RunConsoleCommand("g_ragdoll_important_maxcount", "0")
-				RunConsoleCommand("g_ragdoll_lvfadespeed", "1")
-				RunConsoleCommand("g_ragdoll_maxcount", "0")
-
-				local timerName = 'OnNPCKilled_' .. globalHookName
-				if timer.Exists(timerName) then
-					timer.Remove(timerName)
-				end
-
-				timer.Create(timerName, 0.5, 1, function()
-					RunConsoleCommand("g_ragdoll_fadespeed", g_ragdoll_fadespeed)
-					RunConsoleCommand("g_ragdoll_important_maxcount", g_ragdoll_important_maxcount)
-					RunConsoleCommand("g_ragdoll_lvfadespeed", g_ragdoll_lvfadespeed)
-					RunConsoleCommand("g_ragdoll_maxcount", g_ragdoll_maxcount)
-				end)
-			end
-		end)
-
 		self:SetNWBool('StopThink', true)
 		self:SetNWFloat('ThinkDelay', 0)
 	else
