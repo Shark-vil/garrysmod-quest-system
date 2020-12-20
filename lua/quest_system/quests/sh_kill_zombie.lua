@@ -37,23 +37,15 @@ local quest = {
                     if CLIENT then return end
 
                     for _, pos in pairs(positions) do
-                        local npc = ents.Create(table.Random({'npc_zombie', 'npc_headcrab', 'npc_fastzombie'}))
-                        npc:SetPos(pos)
-                        npc:Spawn()
-                        eQuest:AddQuestNPC(npc, 'enemy')
+                        eQuest:SpawnQuestNPC(table.Random({'npc_zombie', 'npc_headcrab', 'npc_fastzombie'}), {
+                            pos = pos,
+                            type = 'enemy'
+                        })
                     end
                 end,
             },
-            think = function(eQuest)
-                if CLIENT then return end
-
-                local zombies = eQuest:GetQuestNpc('enemy')
-                if #zombies ~= 0 then
-                    for _, npc in pairs(zombies) do
-                        if IsValid(npc) then
-                            return
-                        end
-                    end
+            onQuestNPCKilled = function(eQuest, data, npc, attacker, inflictor)
+                if not eQuest:QuestNPCIsValid('enemy') then
                     eQuest:NextStep('complete')
                 end
             end

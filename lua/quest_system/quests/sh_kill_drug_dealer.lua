@@ -31,29 +31,27 @@ local quest = {
                 spawn_dealer = function(eQuest, positions)
                     if CLIENT then return end
 
-                    local npc = ents.Create('npc_citizen')
-                    npc:SetPos(table.Random(positions))
-                    npc:Give('weapon_pistol')
-                    npc:Spawn()
-                    eQuest:AddQuestNPC(npc, 'enemy')
+                    eQuest:SpawnQuestNPC('npc_citizen', {
+                        pos = table.Random(positions),
+                        weapon_class = 'weapon_pistol',
+                        type = 'enemy'
+                    })
                 end,
             },
-            hooks = {
-                OnNPCKilled = function(eQuest, npc, attacker, inflictor)
-                    if eQuest:IsQuestNPC(npc) then
-                        if eQuest:GetPlayer() == attacker then
-                            if not eQuest:IsQuestWeapon(attacker:GetActiveWeapon()) then
-                                eQuest:Notify('Провалено', 'Вы использовали не то оружие.')
-                                eQuest:Failed()
-                            else
-                                eQuest:NextStep('complete')
-                            end
+            onQuestNPCKilled = function(eQuest, data, npc, attacker, inflictor)
+                if not eQuest:QuestNPCIsValid('enemy') then
+                    if eQuest:GetPlayer() == attacker then
+                        if not eQuest:IsQuestWeapon(attacker:GetActiveWeapon()) then
+                            eQuest:Notify('Провалено', 'Вы использовали не то оружие.')
+                            eQuest:Failed()
                         else
-                            eQuest:NextStep('compensation')
+                            eQuest:NextStep('complete')
                         end
+                    else
+                        eQuest:NextStep('compensation')
                     end
                 end
-            }
+            end
         },
         complete = {
             construct = function(eQuest)
