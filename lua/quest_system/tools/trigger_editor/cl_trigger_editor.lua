@@ -67,11 +67,19 @@ OpenTriggerSelectPanel = function(quest)
     QuestList:Dock(FILL)
     QuestList:SetMultiSelect(false)
     QuestList:AddColumn("Id")
+    QuestList:AddColumn("Type")
 
+    local exists_names = {}
     for _, step in pairs(quest.steps) do
         if step.triggers ~= nil then
             for name, _ in pairs(step.triggers) do
-                QuestList:AddLine(name)
+                if not table.HasValue(exists_names, name) then
+                    local line = QuestList:AddLine(name)
+                    QuestSystem:GetStorage('trigger'):Read(quest.id, name, function(ply, data)
+                        line:SetColumnText(2, data.type)
+                    end)
+                    table.insert(exists_names, name)
+                end
             end
         end
     end

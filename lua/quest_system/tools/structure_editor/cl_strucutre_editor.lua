@@ -67,11 +67,28 @@ OpenPointsSelectPanel = function(quest)
     QuestList:Dock(FILL)
     QuestList:SetMultiSelect(false)
     QuestList:AddColumn("Id")
+    QuestList:AddColumn("Zone")
+    QuestList:AddColumn("Props count")
 
+    local exists_names = {}
     for _, step in pairs(quest.steps) do
         if step.structures ~= nil then
             for name, _ in pairs(step.structures) do
-                QuestList:AddLine(name)
+                if not table.HasValue(exists_names, name) then
+                    local line = QuestList:AddLine(name)
+                    QuestSystem:GetStorage('structure'):Read(quest.id, name, function(ply, data)
+                        local zone = data.Zone
+                        if zone ~= nil then
+                            local vec1 = zone.vec1
+                            local vec2 = zone.vec2
+                            if vec1 ~= nil and vec2 ~= nil then
+                                line:SetColumnText(2, 'X - ' .. tostring(vec1) .. '; Y - ' .. tostring(vec2))
+                            end
+                        end
+                        line:SetColumnText(3, tostring(table.Count(data.Props)))
+                    end)
+                    table.insert(exists_names, name)
+                end
             end
         end
     end

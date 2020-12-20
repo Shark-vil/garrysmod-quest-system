@@ -60,7 +60,7 @@ if SERVER then
         local fileData = storage:Read(id, name)
 
         if fileData ~= nil then
-            net.Invoke('structure_read', ply, fileData)
+            net.Invoke('structure_read' .. name, ply, fileData)
         end
     end)
 end
@@ -68,7 +68,7 @@ end
 function storage:Read(id, name, callback)
     if CLIENT then
         if callback ~= nil and isfunction(callback) then
-            net.RegisterCallback('structure_read', callback)
+            net.RegisterCallback('structure_read' .. name, callback)
 
             net.Start('sv_qsystem_structure_read')
             net.WriteString(id)

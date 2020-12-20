@@ -67,11 +67,19 @@ OpenPointsSelectPanel = function(quest)
     QuestList:Dock(FILL)
     QuestList:SetMultiSelect(false)
     QuestList:AddColumn("Id")
+    QuestList:AddColumn("Vectors")
 
+    local exists_names = {}
     for _, step in pairs(quest.steps) do
         if step.points ~= nil then
             for name, _ in pairs(step.points) do
-                QuestList:AddLine(name)
+                if not table.HasValue(exists_names, name) then
+                    local line = QuestList:AddLine(name)
+                    QuestSystem:GetStorage('points'):Read(quest.id, name, function(ply, data)
+                        line:SetColumnText(2, 'Vectors count - ' .. tostring(table.Count(data)))
+                    end)
+                    table.insert(exists_names, name)
+                end
             end
         end
     end
