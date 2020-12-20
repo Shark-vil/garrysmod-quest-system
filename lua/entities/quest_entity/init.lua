@@ -9,6 +9,8 @@ include('shared.lua')
 -- @param ply entity - player entity (Optional)
 -------------------------------------
 function ENT:SetQuest(quest_id, ply)
+	QuestSystem:Debug('SetQuest - ' .. tostring(quest_id) .. ' to ' .. tostring(ply))
+
 	if ply ~= nil then
 		timer.Simple(0.5, function()
 			if IsValid(self) then
@@ -27,6 +29,8 @@ end
 -- @return any - will return the value returned by the quest step constructor or nil
 -------------------------------------
 function ENT:SetStep(step)
+	QuestSystem:Debug('SetStep - ' ..step)
+
 	self:SetNWBool('StopThink', true)
 	self:SetNWFloat('ThinkDelay', RealTime() + 1)
 
@@ -185,41 +189,55 @@ function ENT:NextStep(step)
 end
 
 -------------------------------------
--- DarkRp Only
+-- DarkRp supported
 -------------------------------------
 -- Gives registered players a reward, if it is in the quest configuration.
 -------------------------------------
 -- (Optional) @param customPayment number - set the amount of cash reward
 -- (By default, the number is taken from the quest configuration - quest.payment)
+-- (Optional) @param addToPayment number - add the specified amount of money to the total.
+-- Can be used as a bonus.
 -------------------------------------
-function ENT:Reward(customPayment)
-	if engine.ActiveGamemode() ~= 'darkrp' then return end
-
+function ENT:Reward(customPayment, addToPayment)
 	local players = self:GetAllPlayers()
-	for _, ply in pairs(players) do
-		if ply.addMoney ~= nil then
-			local payment = customPayment or self:GetQuest().payment
-			if payment ~= nil then
-				ply:addMoney(payment)
-				DarkRP.notify(ply, 4, 4, 'Ваша награда за выполнение квеста - ' 
-					.. DarkRP.formatMoney(payment))
+	local payment = customPayment or self:GetQuest().payment
+	addToPayment = addToPayment or 0
+
+	if payment ~= nil then
+		payment = payment + addToPayment
+		for _, ply in pairs(players) do
+			local new_payment = hook.Run('QSystem.PreReward', self, ply, payment)
+			if new_payment ~= nil and isnumber(new_payment) then
+				payment = new_payment
 			end
+
+			if ply.addMoney ~= nil then
+				if engine.ActiveGamemode() == 'darkrp' then
+					ply:addMoney(payment)
+					DarkRP.notify(ply, 4, 4, 'Ваша награда за выполнение квеста - ' 
+						.. DarkRP.formatMoney(payment))
+				end
+			end
+
+			hook.Run('QSystem.PostReward', self, ply, payment)
 		end
 	end
 end
 
 -------------------------------------
--- DarkRp Only
+-- DarkRp supported
 -------------------------------------
 -- Provides compensation to the player if the quest was interrupted or not completed correctly.
 -------------------------------------
 -- (Optional) @param customPayment number - set the amount of cash reward
 -- (By default, the number from the quest configuration is taken (quest.payment) and divided by two)
+-- (Optional) @param addToPayment number - add the specified amount of money to the total.
+-- Can be used as a bonus.
 -------------------------------------
-function ENT:Reparation(customPayment)
+function ENT:Reparation(customPayment, addToPayment)
 	local payment = customPayment or self:GetQuest().payment
 	if payment ~= nil then
-		self:Reward(payment / 2)
+		self:Reward(payment / 2, addToPayment)
 	end
 end
 
@@ -292,32 +310,36 @@ end
 -- Called to complete a quest and play a sound on success.
 -------------------------------------
 function ENT:Complete()
-	if self:GetQuest().isEvent then
-		if SERVER then self:Remove() end
-		return
-	end
-
-	local ply = self:GetPlayer()
-	local quest_id = self:GetQuestId()
-	ply:DisableQuest(quest_id)
-	ply:RemoveQuest(quest_id)
-	ply:SendLua([[surface.PlaySound('vo/NovaProspekt/al_done01.wav')]])
+	self:TimerCreate(function()
+		if self:GetQuest().isEvent then
+			if SERVER then self:Remove() end
+			return
+		end
+	
+		local ply = self:GetPlayer()
+		local quest_id = self:GetQuestId()
+		ply:DisableQuest(quest_id)
+		ply:RemoveQuest(quest_id)
+		ply:SendLua([[surface.PlaySound('vo/NovaProspekt/al_done01.wav')]])
+	end)
 end
 
 -------------------------------------
 -- Called to complete quest and play sound on failure
 -------------------------------------
 function ENT:Failed()
-	if self:GetQuest().isEvent then
-		if SERVER then self:Remove() end
-		return
-	end
-
-	local ply = self:GetPlayer()
-	local quest_id = self:GetQuestId()
-	ply:DisableQuest(quest_id)
-	ply:RemoveQuest(quest_id)
-	ply:SendLua([[surface.PlaySound('vo/k_lab/ba_getoutofsight01.wav')]])
+	self:TimerCreate(function()
+		if self:GetQuest().isEvent then
+			if SERVER then self:Remove() end
+			return
+		end
+	
+		local ply = self:GetPlayer()
+		local quest_id = self:GetQuestId()
+		ply:DisableQuest(quest_id)
+		ply:RemoveQuest(quest_id)
+		ply:SendLua([[surface.PlaySound('vo/k_lab/ba_getoutofsight01.wav')]])
+	end)
 end
 
 -------------------------------------
@@ -337,6 +359,37 @@ function ENT:MoveEnemyToRandomPlayer()
 					data.npc:SetSaveValue("m_vecLastPosition", player_pos)
 					data.npc:SetSchedule(SCHED_FORCED_GO)
 				end
+			end
+		end
+	end
+end
+
+-------------------------------------
+-- Makes quest NPCs move towards a given vector.
+-------------------------------------
+-- @param pos vector - destination vector
+-- (Optional) @param type string - npc type
+-- @param tag string - npc tag
+-------------------------------------
+function ENT:MoveQuestNpcToPosition(pos, type, tag)
+	local function MoveToPosition(npc, pos)
+		npc:SetSaveValue("m_vecLastPosition", pos)
+		npc:SetSchedule(SCHED_FORCED_GO)
+	end
+
+	for _, data in pairs(self.npcs) do
+		if IsValid(data.npc) then
+			if type ~= nil and tag ~= nil then
+				if type == data.type and tag == data.tag then
+					MoveToPosition(data.npc, pos)
+					break
+				end
+			elseif type ~= nil then
+				if type == data.type then
+					MoveToPosition(data.npc, pos)
+				end
+			else
+				MoveToPosition(data.npc, pos)
 			end
 		end
 	end
@@ -404,7 +457,7 @@ function ENT:AddQuestNPC(npc, type, tag)
 	table.insert(self.npcs, {
 		type = type,
 		tag = tag,
-		npc = npc
+		npc = npc,
 	})
 
 	if QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then
@@ -414,6 +467,120 @@ function ENT:AddQuestNPC(npc, type, tag)
 	if not self:GetNWBool('StopThink') then
 		self:SyncNPCs()
 	end
+end
+
+-------------------------------------
+-- Spawns NPCs with a slight delay in order to compensate for lags,
+-- and also automatically registers the entity in the NPC list.
+-------------------------------------
+-- @param npc_class string - npc class
+-- @param data table - data to create
+-- Example:
+-- local npc = ENTITY:SpawnQuestNPC('npc_citizen',
+-- {
+-- 	pos = Vector(0, 0, 0),
+-- 	type = 'friend',
+-- 	tag = 'Garry', -- Optional
+-- 	model = 'models/Humans/Group01/Male_Cheaple.mdl', -- Optional
+-- 	ang = Angle(0, 0, 0), -- Optional
+-- 	weapon_class = 'weapon_pistol', -- Optional
+-- 	afterSpawnExecute = function(eQuest, data) -- Optional
+--		local npc = data.npc
+-- 		timer.Simple(3, function()
+-- 			if not IsValid(npc) then return end
+-- 			-- BOOOOOOM!!!!!!
+-- 			util.BlastDamage(npc, npc, npc:GetPos(), 350, 250)
+-- 			local effectdata = EffectData()
+-- 			effectdata:SetOrigin(npc:GetPos())
+-- 			util.Effect("Explosion", effectdata)
+-- 		end)
+-- 	end
+-- }
+-------------------------------------
+-- @return entity - will return the entity of the object (It is not recommended to perform checks for the existence of an entity immediately after receipt, since spawn occurs with a delay!)
+-------------------------------------
+function ENT:SpawnQuestNPC(npc_class, data)
+	local npc = ents.Create(npc_class)
+	npc:SetPos(data.pos)
+	if data.ang ~= nil then
+		npc:SetAngles(data.ang)
+	end
+	if data.model ~= nil then
+		npc:SetModel(data.model)
+	end
+	if data.weapon_class ~= nil then
+		npc:Give(data.weapon_class)
+	end
+	table.insert(self.spawned_npcs, {
+		npc = npc,
+		type = data.type,
+		tag = data.tag,
+		afterSpawnExecute = data.afterSpawnExecute
+	})
+	return npc
+end
+
+-------------------------------------
+-- Spawns a quest item and registers it in the list.
+-------------------------------------
+-- @param item_class string - any entity class
+-- @param data table - data to create
+-- Example:
+-- local item = ENTITY:SpawnQuestItem('quest_item', {
+-- 	id = 'box',
+-- 	model = 'models/props_junk/cardboard_box004a.mdl',
+-- 	pos = Vector(0, 0, 0),
+-- 	ang = AngleRand()
+-- })
+-- item:SetFreeze(true)
+-------------------------------------
+-- @return entity - will return the entity of the object
+-------------------------------------
+function ENT:SpawnQuestItem(item_class, data)
+	local item = ents.Create(item_class)
+	item:SetPos(data.pos)
+	if data.ang ~= nil then
+		item:SetAngles(data.ang)
+	end
+	if data.model ~= nil then
+		item:SetModel(data.model)
+	end
+	item:Spawn()
+	self:AddQuestItem(item, data.id)
+	return item
+end
+
+-------------------------------------
+-- Checks the existence of one or more NPCs. If there are several NPCs in the check,
+-- then the truth will be returned, even if there is only one left alive!
+-------------------------------------
+-- @param type string - npc type
+-- (Optional) @param tag string - npc tag
+-------------------------------------
+-- @return bool - will return true if one or more npc exists, otherwise false
+-------------------------------------
+function ENT:QuestNPCIsValid(type, tag)
+	local allowAlive = false
+	for _, data in pairs(self.npcs) do
+		if type ~= nil and tag ~= nil then
+			if data.type == type and data.tag == tag then
+				if IsValid(data.npc) and data.npc:Health() > 0 then
+					allowAlive = true
+					break
+				end
+			end
+		elseif type ~= nil then
+			if data.type == type then
+				if IsValid(data.npc) and data.npc:Health() > 0 then
+					allowAlive = true
+					break
+				end
+			end
+		else
+			ErrorNoHalt('This function must take at least 1 argument!')
+		end
+	end
+	return allowAlive
 end
 
 -------------------------------------
@@ -464,19 +631,32 @@ function ENT:SetNPCsBehavior(ent)
 	local function restictionByOtherNPC(otherNPC)
 		if IsValid(otherNPC) and otherNPC:IsNPC() then
 			local isExist = false
+			local npcData = nil
 
 			for _, data in pairs(self.npcs) do
-				if IsValid(data.npc) and otherNPC == data.npc then
+				if otherNPC == data.npc then
 					isExist = true
+					npcData = data
 					break
 				end
 			end
 
-			if not isExist then
-				for _, data in pairs(self.npcs) do
-					if IsValid(data.npc) then
+
+			for _, data in pairs(self.npcs) do
+				if IsValid(data.npc) then
+					if not isExist then
 						data.npc:AddEntityRelationship(otherNPC, D_NU, 99)
 						otherNPC:AddEntityRelationship(data.npc, D_NU, 99)
+					else
+						if npcData ~= data then
+							if npcData.type == 'enemy' and data.type == 'friend' then
+								npcData.npc:AddEntityRelationship(data.npc, D_HT, 70)
+								data.npc:AddEntityRelationship(npcData.npc, D_HT, 70)
+							elseif npcData.type == 'friend' and data.type == 'friend' then
+								npcData.npc:AddEntityRelationship(data.npc, D_LI, 70)
+								data.npc:AddEntityRelationship(npcData.npc, D_LI, 70)
+							end
+						end
 					end
 				end
 			end

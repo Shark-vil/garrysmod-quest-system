@@ -6,19 +6,47 @@ local quest = {
     npcNotReactionOtherPlayer = false,
     timeQuest = 240,
     functions = {
-        spawn_npc_on_trigger = function(eQuest, entities)
+        f_spawn_enemy_npcs = function(eQuest, entities)
             if table.HasValue(entities, eQuest:GetPlayer()) then
                 if CLIENT then return end
                 eQuest:Notify('Незваные гости', 'О нет, кажется на нашего заказчика напали! Спасите его, чтобы не провалить задание.')
-                eQuest:NextStep('safe_employer')
+                eQuest:NextStep('safe_customer')
             end
         end,
-        failed_if_employer_death = function(eQuest)
-            local npc = eQuest:GetQuestNpc('friend', 'employer')
-            if not IsValid(npc) then
+        f_loss_conditions = function(eQuest)
+            if not eQuest:QuestNPCIsValid('friend', 'customer') then
                 eQuest:NextStep('failed')
+            elseif not eQuest:QuestNPCIsValid('enemy') then
+                eQuest:Notify('Завершено', 'Вы спасли клиента. Теперь можете отдать заказ.')
+                eQuest:NextStep('give_box')
             end
         end,
+        f_spawn_customer = function(eQuest, pos, isAttack)
+            if eQuest:QuestNPCIsValid('friend', 'customer') then return end
+
+            local weapon_class = nil
+            if isAttack then
+                weapon_class = table.Random({
+                    'weapon_pistol',
+                     'weapon_smg1', 
+                     'weapon_smg1', 
+                     'weapon_shotgun', 
+                     'weapon_357'
+                })
+            end
+
+            eQuest:SpawnQuestNPC('npc_citizen', {
+                pos = pos,
+                weapon_class = weapon_class,
+                type = 'friend',
+                tag = 'customer',
+                afterSpawnExecute = function(data)
+                    if not isAttack then return end
+                    local npc = data.npc
+                    eQuest:MoveQuestNpcToPosition(npc:GetPos(), 'enemy')
+                end
+            })
+        end
     },
     steps = {
         start = {
@@ -31,109 +59,91 @@ local quest = {
             points = {
                 spawn_points_1 = function(eQuest, positions)
                     if CLIENT then return end
-                    local item = ents.Create('quest_item')
-                    item:SetModel('models/props_junk/cardboard_box004a.mdl')
-                    item:SetPos(table.Random(positions))
-                    item:SetAngles(AngleRand())
-                    item:Spawn()
-                    item:SetFreeze(true)
-                    eQuest:AddQuestItem(item , 'box')
+                    eQuest:SpawnQuestItem('quest_item', {
+                        id = 'box',
+                        model = 'models/props_junk/cardboard_box004a.mdl',
+                        pos = table.Random(positions),
+                        ang = AngleRand()
+                    }):SetFreeze(true)
                 end,
             },
             onUseItem = function(eQuest, item)
                 if eQuest:GetQuestItem('box') == item then
                     item:FadeRemove()
-                    eQuest:NextStep('spawn_npc_on_trigger')
+                    if math.random(0, 1) == 1 then
+                        eQuest:SetVariable('is_customer_attack', true)
+                        eQuest:NextStep('attack_on_the_customer')
+                    else
+                        eQuest:Notify('Доставка', 'Дело за малым. Найдите клиента и отдайте ему коробку.')
+                        eQuest:NextStep('give_box')
+                    end
                 end
             end,
         },
-        spawn_npc_on_trigger = {
+        attack_on_the_customer = {
             construct = function(eQuest)
                 if SERVER then return end
                 eQuest:Notify('Завершено', 'Отлично, вы нашли коробку. Теперь отнесите её заказчику.')
             end,
             triggers = {
                 spawn_npc_trigger = function(eQuest, entities)
-                    local func = eQuest:GetQuestFunction('spawn_npc_on_trigger')
-                    func(eQuest, entities)
+                    eQuest:ExecQuestFunction('f_spawn_enemy_npcs', eQuest, entities)
                 end,
                 spawn_npc_trigger_2 = function(eQuest, entities)
-                    local func = eQuest:GetQuestFunction('spawn_npc_on_trigger')
-                    func(eQuest, entities)
+                    eQuest:ExecQuestFunction('f_spawn_enemy_npcs', eQuest, entities)
                 end,
             }
         },
-        safe_employer = {
+        safe_customer = {
             structures = {
-                barricades = function(eQuest, entities, spawn_id)
-                    -- print(spawn_id)
-                    -- PrintTable(entities)
-                end
+                barricades = true
             },
             points = {
                 enemy = function(eQuest, positions)
                     if CLIENT then return end
                     for _, pos in pairs(positions) do
-                        local npc = ents.Create('npc_combine_s')
-                        npc:SetPos(pos)
-                        npc:Give('weapon_ar2')
-                        npc:Spawn()
-                        eQuest:AddQuestNPC(npc, 'enemy')
+                        eQuest:SpawnQuestNPC('npc_combine_s', {
+                            pos = pos,
+                            weapon_class = 'weapon_ar2',
+                            type = 'enemy'
+                        })
                     end
                 end,
-                employer = function(eQuest, positions)
-                    if CLIENT then return end
-                    local employer = ents.Create('npc_citizen')
-                    employer:SetPos(table.Random(positions))
-                    employer:SetHealth(1000)
-                    employer:Give('weapon_smg1')
-                    employer:Spawn()
-                    eQuest:AddQuestNPC(employer, 'friend', 'employer')
-
-                    local npcs = eQuest:GetQuestNpc('enemy')
-                    for _, npc in pairs(npcs) do
-                        npc:AddEntityRelationship(employer, D_HT, 70)
-                        npc:SetSaveValue("m_vecLastPosition", employer:GetPos())
-	                    npc:SetSchedule(SCHED_FORCED_GO)
-                    end
+                customer = function(eQuest, positions)
+                    if CLIENT then return end                    
+                    eQuest:ExecQuestFunction('f_spawn_customer', eQuest, table.Random(positions), true)
                 end,
             },
-            think = function(eQuest)
-                if CLIENT then return end
-                eQuest:GetQuest().functions.failed_if_employer_death(eQuest)
-
-                local npcs = eQuest:GetQuestNpc('enemy')
-                local allowDeath = true
-                for _, npc in pairs(npcs) do
-                    if IsValid(npc) then
-                        allowDeath = false
-                    end
-                end
-                if allowDeath then eQuest:NextStep('give_box')  end
-            end
+            onQuestNPCKilled = function(eQuest, data, npc, attacker, inflictor)
+                eQuest:ExecQuestFunction('f_loss_conditions', eQuest)
+            end,
         },
         give_box = {
-            construct = function(eQuest)
-                if SERVER then return end
-                eQuest:Notify('Завершено', 'Вы спасли клиента. Теперь можете отдать заказ.')
-            end,
+            points = {
+                customer = function(eQuest, positions)
+                    if CLIENT then return end                    
+                    eQuest:ExecQuestFunction('f_spawn_customer', eQuest, table.Random(positions))
+                end,
+            },
             onUse = function(eQuest, ent)
-                local npc = eQuest:GetQuestNpc('friend', 'employer')
+                local npc = eQuest:GetQuestNpc('friend', 'customer')
                 if IsValid(ent) and ent == npc then
-                    eQuest:RemoveNPC(true)
                     eQuest:NextStep('complete')
                 end
             end,
-            think = function(eQuest)
-                if CLIENT then return end
-                eQuest:GetQuest().functions.failed_if_employer_death(eQuest)
-            end
+            onQuestNPCKilled = function(eQuest)
+                eQuest:ExecQuestFunction('f_loss_conditions', eQuest)
+            end,
         },
         complete = {
             construct = function(eQuest)
                 if CLIENT then return end
                 eQuest:Notify('Завершено', 'Вы успешно доставили заказ получателю.')
-                eQuest:Reward()
+                if eQuest:GetVariable('is_customer_attack') then
+                    eQuest:Reward(nil, 500)
+                else
+                    eQuest:Reward()
+                end
                 eQuest:Complete()
             end,
         },

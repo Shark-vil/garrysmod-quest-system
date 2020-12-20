@@ -23,7 +23,6 @@ else
             description = net.ReadString()
         end
 
-        local quest = QuestSystem:GetQuest(quest_id)
         ent.quest = ent.quest or QuestSystem:GetQuest(quest_id)
 
         local quest = ent:GetQuest()

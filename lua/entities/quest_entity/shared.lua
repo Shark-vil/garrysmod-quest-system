@@ -17,6 +17,7 @@ ENT.weapons = {}
 ENT.players = {}
 ENT.values = {}
 ENT.structures = {}
+ENT.spawned_npcs = {}
 
 function ENT:Initialize()
     self:SetModel('models/props_junk/PopCan01a.mdl')
@@ -43,7 +44,7 @@ function ENT:Initialize()
 				
 				local step = self:GetQuestStepTable()
 				if step ~= nil and step.onUse ~= nil then
-					if self:GetPlayer() == ply then
+					if table.HasValue(self.players, ply) then
 						step.onUse(self, ent)
 					end
 				end
@@ -129,6 +130,24 @@ function ENT:Initialize()
 				end
 			end)
 		end
+
+		-------------------------------------
+		-- Calls a function for a step if the quest NPC is killed.
+		-------------------------------------
+		-- @params wiki - https://wiki.facepunch.com/gmod/GM:OnNPCKilled
+		-------------------------------------
+		hook.Add('OnNPCKilled', globalHookName, function(npc, attacker, inflictor)
+			if not IsValid(self) then hook.Remove("OnNPCKilled", globalHookName) return end
+			for _, data in pairs(self.npcs) do
+				if data.npc == npc then
+					local step = self:GetQuestStepTable()
+					if step ~= nil and step.onQuestNPCKilled ~= nil then
+						step.onQuestNPCKilled(self, data, npc, attacker, inflictor)
+					end
+					break
+				end
+			end
+		end)
 
 		-------------------------------------
 		-- Forces the visibility of all quest entities. Otherwise, clients may receive an empty value.
@@ -293,18 +312,17 @@ function ENT:IsFirstStart()
 end
 
 -------------------------------------
--- Get a global quest function.
+-- Executable a global quest function.
 -------------------------------------
 -- @params id - function identifier
+-- @params args - any arguments separated by commas
 -------------------------------------
--- @return function - will return a function or nil
--------------------------------------
-function ENT:GetQuestFunction(id)
+function ENT:ExecQuestFunction(id, ...)
 	local quest = self:GetQuest()
 	if quest ~= nil and quest.functions ~= nil then
-		return quest.functions[id]
+		local func = quest.functions[id]
+		func(...)
 	end
-	return nil
 end
 
 -------------------------------------
@@ -396,6 +414,8 @@ end
 -- Registers and synchronizes the remaining dependencies. This function is called after - SetStep.
 -------------------------------------
 function ENT:OnNextStep()
+	QuestSystem:Debug('> OnNextStep execute')
+	
 	local delay = 1
 	local quest = self:GetQuest()
 	local step = self:GetQuestStep()
@@ -429,6 +449,29 @@ function ENT:OnNextStep()
 
 	
 	if SERVER then
+		--[[
+			Smooth creation of NPC in order to compensate for lags.
+		--]]
+		do
+			local count = table.Count(self.spawned_npcs)
+			if count ~= 0 then
+				local delay = 0.1
+				local next_delay = delay
+				for i = 1, count do
+					local data = self.spawned_npcs[i]
+					self:AddQuestNPC(data.npc, data.type, data.tag)
+					self:TimerCreate(function()
+						data.npc:Spawn()
+						if data.afterSpawnExecute ~= nil then
+							data.afterSpawnExecute(self, data)
+						end
+					end, next_delay)
+					next_delay = next_delay + delay
+				end
+				table.Empty(self.spawned_npcs)
+			end
+		end
+
 		self:SyncNPCs()
 		self:SyncItems()
 		self:SetNPCsBehavior()
