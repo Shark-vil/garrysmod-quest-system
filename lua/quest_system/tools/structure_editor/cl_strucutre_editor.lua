@@ -223,14 +223,16 @@ OpenPointsPanelEditor = function(quest, structure_name)
         }
 
         for _, ent in pairs(props) do
-            local prop_data = {
-                class = ent:GetClass(),
-                model = ent:GetModel(),
-                pos = ent:GetPos(),
-                ang = ent:GetAngles()
-            }
+            if tobool(string.find(ent:GetClass(), 'prop_*')) then
+                local prop_data = {
+                    class = ent:GetClass(),
+                    model = ent:GetModel(),
+                    pos = ent:GetPos(),
+                    ang = ent:GetAngles()
+                }
 
-            table.insert(new_data.Props, prop_data)
+                table.insert(new_data.Props, prop_data)
+            end
         end
 
         if structure_name ~= nil and new_data.Zone ~= nil and table.Count(new_data.Props) ~= 0 then

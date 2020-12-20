@@ -23,6 +23,9 @@ local quest = {
             }
         },
         spawn = {
+            structures = {
+                barricades = true
+            },
             construct = function(eQuest)
                 if CLIENT then return end
                 eQuest:Notify('Враг близко', 'Наркоторговец где-то по близости. Найдите и убейте его.')
