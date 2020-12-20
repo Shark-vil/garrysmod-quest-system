@@ -36,11 +36,22 @@ local quest = {
                 spawn_zombie = function(eQuest, positions)
                     if CLIENT then return end
 
+                    local index = 1
                     for _, pos in pairs(positions) do
+                        if index > 5 then
+                            if math.random(0, 1) == 1 then
+                                goto skip
+                            end
+                        end
+                        
                         eQuest:SpawnQuestNPC(table.Random({'npc_zombie', 'npc_headcrab', 'npc_fastzombie'}), {
                             pos = pos,
                             type = 'enemy'
                         })
+
+                        ::skip::
+
+                        index = index + 1
                     end
                 end,
             },
