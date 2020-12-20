@@ -40,7 +40,7 @@ local quest = {
                 weapon_class = weapon_class,
                 type = 'friend',
                 tag = 'customer',
-                afterSpawnExecute = function(data)
+                afterSpawnExecute = function(eQuest, data)
                     if not isAttack then return end
                     local npc = data.npc
                     eQuest:MoveQuestNpcToPosition(npc:GetPos(), 'enemy')
