@@ -12,7 +12,7 @@ ENT.AdminSpawnable = false
 ENT.eQuest = nil
 
 function ENT:SetQuest(eQuest)
-    self.eQuest = eQuest
+    self:SetNWEntity('quest_entity', eQuest)
 end
 
 function ENT:SetId(itemId)
@@ -20,7 +20,7 @@ function ENT:SetId(itemId)
 end
 
 function ENT:GetQuestEntity()
-    return self.eQuest
+    return self:GetNWEntity('quest_entity')
 end
 
 function ENT:GetItemId()

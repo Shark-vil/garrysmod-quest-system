@@ -34,14 +34,18 @@ local quest = {
                 spawn_dealer = function(eQuest, positions)
                     if CLIENT then return end
 
-                    eQuest:SpawnQuestNPC('npc_citizen', {
+                    local npc = eQuest:SpawnQuestNPC('npc_citizen', {
                         pos = table.Random(positions),
                         weapon_class = 'weapon_pistol',
                         type = 'enemy'
                     })
+
+                    QuestSystem:SingleReplic(eQuest:GetPlayer(), npc, 
+                        'Наркодиллер', 'Чёрт, облава! Эй, кто бы там ни был, я буду защищаться!', 6)
                 end,
             },
             onQuestNPCKilled = function(eQuest, data, npc, attacker, inflictor)
+                if CLIENT then return end
                 if not eQuest:QuestNPCIsValid('enemy') then
                     if eQuest:GetPlayer() == attacker then
                         if not eQuest:IsQuestWeapon(attacker:GetActiveWeapon()) then

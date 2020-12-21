@@ -28,12 +28,13 @@ end
 
 function ENT:Use(activator, caller, useType, value)
     local eQuest = self:GetQuestEntity()
-    if useType == USE_ON and activator:IsPlayer() and activator == eQuest:GetPlayer() then
+    if IsValid(eQuest) and useType == USE_ON and activator:IsPlayer() and eQuest:IsQuestPlayer(activator) then
         local step = eQuest:GetQuestStep()
         local quest = eQuest:GetQuest()
         if quest.steps[step].onUseItem ~= nil then
             local func = quest.steps[step].onUseItem
-            func(eQuest, self)
+            net.InvokeAll('qsystem_rpc_function_onUseItem', self, activator, caller, useType, value)
+            func(eQuest, self, activator, caller, useType, value)
         end
     end
 end

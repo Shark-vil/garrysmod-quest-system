@@ -1,6 +1,6 @@
 QuestSystem.cfg = {}
 
-QuestSystem.cfg.Debug = true
+QuestSystem.cfg.Debug = false
 
 QuestSystem.cfg.HideQuestsOfOtherPlayers = true
 QuestSystem.cfg.HideQuestsNPCNotCompletely = true

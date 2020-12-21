@@ -1,15 +1,10 @@
-if SERVER then
-    util.AddNetworkString('cl_qsystem_nodraw_npc')
-    util.AddNetworkString('cl_qsystem_nodraw_items')
-    util.AddNetworkString('cl_qsystem_nodraw_structures')
-else
-    net.Receive('cl_qsystem_nodraw_npc', function()
-        if not QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then return end
+net.RegisterCallback('qsystem_sync_nodraw', function(_, ent)
+    if not QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then return end
+    if not IsValid(ent) then return end
 
-        local ent = net.ReadEntity()
+    -- NPC
+    do
         local npcs = ent.npcs
-        
-        if not IsValid(ent) then return end
         local noDraw = table.HasValue(ent.players, LocalPlayer())
 
         for _, data in pairs(npcs) do
@@ -36,15 +31,11 @@ else
                 end
             end
         end
-    end)
+    end
 
-    net.Receive('cl_qsystem_nodraw_items', function()
-        if not QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then return end
-
-        local ent = net.ReadEntity()
+    -- Items
+    do
         local items = ent.items
-    
-        if not IsValid(ent) then return end
         local noDraw = table.HasValue(ent.players, LocalPlayer())
 
         for _, data in pairs(items) do
@@ -53,15 +44,11 @@ else
                 item:SetNoDraw(not noDraw)
             end
         end
-    end)
+    end
 
-    net.Receive('cl_qsystem_nodraw_structures', function()
-        if not QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then return end
-
-        local ent = net.ReadEntity()
-        local structures = net.ReadTable()
-    
-        if not IsValid(ent) then return end
+    -- Structures
+    do
+        local structures = ent.structures
         local noDraw = table.HasValue(ent.players, LocalPlayer())
 
         for id, spawn_id in pairs(structures) do
@@ -74,5 +61,5 @@ else
                 end
             end
         end
-    end)
-end
+    end
+end)

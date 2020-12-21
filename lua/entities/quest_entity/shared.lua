@@ -17,7 +17,6 @@ ENT.weapons = {}
 ENT.players = {}
 ENT.values = {}
 ENT.structures = {}
-ENT.spawned_npcs = {}
 
 function ENT:Initialize()
     self:SetModel('models/props_junk/PopCan01a.mdl')
@@ -45,6 +44,7 @@ function ENT:Initialize()
 				local step = self:GetQuestStepTable()
 				if step ~= nil and step.onUse ~= nil then
 					if table.HasValue(self.players, ply) then
+						net.InvokeAll('qsystem_rpc_function_onUse', self, ent)
 						step.onUse(self, ent)
 					end
 				end
@@ -142,6 +142,8 @@ function ENT:Initialize()
 				if data.npc == npc then
 					local step = self:GetQuestStepTable()
 					if step ~= nil and step.onQuestNPCKilled ~= nil then
+						net.InvokeAll('qsystem_rpc_function_onQuestNPCKilled', 
+							self, data, npc, attacker, inflictor)
 						step.onQuestNPCKilled(self, data, npc, attacker, inflictor)
 					end
 					break
@@ -225,7 +227,7 @@ end
 -- @return number - delay number
 -------------------------------------
 function ENT:GetSyncDelay()
-	return 0.5
+	return 0.3
 end
 
 -------------------------------------
@@ -342,11 +344,8 @@ end
 function ENT:Think()
 	local step = self:GetQuestStepTable()
 
-	if step ~= nil then
-		if step.think ~= nil 
-			and not self:GetNWBool('StopThink') 
-			and self:GetNWFloat('ThinkDelay') < RealTime() 
-		then
+	if step ~= nil and not self:SetNWBool('StopThink', true) then
+		if step.think ~= nil then
 			step.think(self)
 		end
 
@@ -416,12 +415,11 @@ end
 function ENT:OnNextStep()
 	QuestSystem:Debug('> OnNextStep execute')
 	
-	local delay = 1
 	local quest = self:GetQuest()
 	local step = self:GetQuestStep()
 	local old_step = self:GetQuestOldStep()
 
-	if #self.points ~= 0 then			
+	if #self.points ~= 0 then
 		if quest.steps[step].points ~= nil then
 			for _, data in pairs(self.points) do
 				local func = quest.steps[step].points[data.name]
@@ -429,13 +427,8 @@ function ENT:OnNextStep()
 					func(self, data.points)
 				end
 			end
-		end
 
-		if SERVER then
-			timer.Simple(delay, function()
-				if not IsValid(self) then return end
-				self:SyncPoints()
-			end)
+			net.InvokeAll('qsystem_rpc_function_onPoints', self)
 		end
 	end
 
@@ -449,29 +442,6 @@ function ENT:OnNextStep()
 
 	
 	if SERVER then
-		--[[
-			Smooth creation of NPC in order to compensate for lags.
-		--]]
-		do
-			local count = table.Count(self.spawned_npcs)
-			if count ~= 0 then
-				local delay = 0.1
-				local next_delay = delay
-				for i = 1, count do
-					local data = self.spawned_npcs[i]
-					self:AddQuestNPC(data.npc, data.type, data.tag)
-					self:TimerCreate(function()
-						data.npc:Spawn()
-						if data.afterSpawnExecute ~= nil then
-							data.afterSpawnExecute(self, data)
-						end
-					end, next_delay)
-					next_delay = next_delay + delay
-				end
-				table.Empty(self.spawned_npcs)
-			end
-		end
-
 		self:SyncNPCs()
 		self:SyncItems()
 		self:SetNPCsBehavior()
@@ -481,10 +451,9 @@ function ENT:OnNextStep()
 		end
 	end
 
-	if SERVER then
-		self:SetNWBool('StopThink', false)
-		self:SetNWFloat('ThinkDelay', RealTime() + 1)
-	end
+	-- if SERVER then
+	-- 	self:SetNWBool('StopThink', false)
+	-- end
 
 	if quest.steps[step].hooks ~= nil then
 		for hook_type, func in pairs(quest.steps[step].hooks) do
@@ -545,6 +514,24 @@ function ENT:IsQuestNPC(npc, type, tag)
 			if data.npc == npc then
 				if type ~= nil and data.type ~= type then return false end
 				if tag ~= nil and data.tag ~= tag then return false end
+				return true
+			end
+		end
+	end
+	return false
+end
+
+-------------------------------------
+-- Checks if the player is part of the quest.
+-------------------------------------
+-- @params ply - player entity
+-------------------------------------
+-- @return bool - will return true if the player belongs to the quest, otherwise false
+-------------------------------------
+function ENT:IsQuestPlayer(ply)
+	if IsValid(ply) and ply:IsPlayer() then 
+		for _, questPlayer in pairs(self.players) do
+			if questPlayer == ply then
 				return true
 			end
 		end

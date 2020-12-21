@@ -173,7 +173,6 @@ end
 function QuestDialogue:SetPlayerDialogue(id, ply, npc)
     if QuestDialogue:GetDialogue(id) ~= nil then
         local dialogue_ent = ents.Create('quest_dialogue')
-        dialogue_ent:SetPos(ply:GetPos())
         dialogue_ent:Spawn()
         dialogue_ent:SetDialogueID(id)
         dialogue_ent:SetStep('start')
@@ -188,4 +187,28 @@ function QuestDialogue:SetPlayerDialogue(id, ply, npc)
     end
 
     return NULL
+end
+
+-------------------------------------
+-- Start a single NPC replic without any functionality.
+-------------------------------------
+-- @param ply entity - player entity
+-- @param npc entity - any entity, not necessarily an NPC
+-- @param name string - interlocutor name
+-- @param text string - dialogue text
+-- @param delay number - window activity time
+-------------------------------------
+function QuestSystem:SingleReplic(ply, npc, name, text, delay)
+    local dialogue_ent = ents.Create('quest_dialogue')
+    dialogue_ent:Spawn()
+    dialogue_ent:SingleReplic(name, text, delay)
+    dialogue_ent:SetStep('start')
+    dialogue_ent:SetPlayer(ply)
+    dialogue_ent:SetNPC(npc)
+
+    timer.Simple(0.6, function()
+        dialogue_ent:StartDialogue()
+    end)
+
+    return dialogue_ent
 end

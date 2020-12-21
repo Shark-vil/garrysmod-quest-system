@@ -13,6 +13,7 @@ local quest = {
             end
         end,
         f_loss_conditions = function(eQuest)
+            if CLIENT then return end
             if not eQuest:QuestNPCIsValid('friend', 'customer') then
                 eQuest:NextStep('failed')
             elseif not eQuest:QuestNPCIsValid('enemy') then
@@ -21,6 +22,7 @@ local quest = {
             end
         end,
         f_spawn_customer = function(eQuest, pos, isAttack)
+            if CLIENT then return end
             if eQuest:QuestNPCIsValid('friend', 'customer') then return end
 
             local weapon_class = nil
@@ -67,6 +69,7 @@ local quest = {
                 end,
             },
             onUseItem = function(eQuest, item)
+                if CLIENT then return end
                 if eQuest:GetQuestItem('box') == item then
                     item:FadeRemove()
                     if math.random(0, 1) == 1 then
@@ -108,8 +111,7 @@ local quest = {
                         })
                     end
                 end,
-                customer = function(eQuest, positions)
-                    if CLIENT then return end                    
+                customer = function(eQuest, positions)                
                     eQuest:ExecQuestFunction('f_spawn_customer', eQuest, table.Random(positions), true)
                 end,
             },
@@ -119,12 +121,13 @@ local quest = {
         },
         give_box = {
             points = {
-                customer = function(eQuest, positions)
-                    if CLIENT then return end                    
+                customer = function(eQuest, positions)                
                     eQuest:ExecQuestFunction('f_spawn_customer', eQuest, table.Random(positions))
                 end,
             },
             onUse = function(eQuest, ent)
+                if CLIENT then return end
+
                 local npc = eQuest:GetQuestNpc('friend', 'customer')
                 if IsValid(ent) and ent == npc then
                     eQuest:NextStep('complete')

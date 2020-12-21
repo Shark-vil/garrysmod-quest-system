@@ -100,6 +100,20 @@ function ENT:Initialize()
                 end
             end
         end)
+    else
+        -------------------------------------
+        -- Provides visibility of the entity of the dialogue to clients.
+        -- Otherwise, clients may not receive data.
+		-------------------------------------
+		-- @params wiki - https://wiki.facepunch.com/gmod/GM:SetupPlayerVisibility
+		-------------------------------------
+        hook.Add('SetupPlayerVisibility', self, function(this, pPlayer, pViewEntity)
+            AddOriginToPVS(self:GetPos())
+            local npc = self:GetNPC()
+            if IsValid(npc) then
+                AddOriginToPVS(npc:GetPos())
+            end
+		end)
     end
 end
 
@@ -145,8 +159,27 @@ end
 -- @return table - dialogue data table
 -------------------------------------
 function ENT:GetDialogue()
-    self.dialogue = self.dialogue or QuestDialogue:GetDialogue(self:GetDialogueID())
-    return self.dialogue
+    if self:GetNWString('single_replic') ~= '' then
+        return {
+            name = self:GetNWString('single_replic_name'),
+            notFreeze = true,
+            notLook = true,
+            steps = {
+                start = {
+                    text = self:GetNWString('single_replic'),
+                    delay = self:GetNWFloat('single_replic_delay'),
+                    eventDelay = function(eDialogue)
+                        if SERVER then
+                            eDialogue:Stop()
+                        end
+                    end,
+                },
+            }
+        }
+    else
+        self.dialogue = self.dialogue or QuestDialogue:GetDialogue(self:GetDialogueID())
+        return self.dialogue
+    end
 end
 
 -------------------------------------
@@ -252,14 +285,14 @@ function ENT:StartDialogue(ignore_npc_text, is_next)
     is_next = is_next or false
 
     if SERVER then
-        if self:NpcIsFear() then
+        if self:GetNWString('single_replic') ~= '' and self:NpcIsFear() then
             self:Remove()
             return
         end
 
         local ply = self:GetPlayer()
         
-        if not is_next then
+        if not is_next and self:GetNWString('single_replic') == '' then
             local dialogue = self:GetDialogue()
             if not dialogue.isBackground and not dialogue.notFreeze then
                 ply:Freeze(true)

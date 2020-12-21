@@ -68,7 +68,7 @@ end
 function storage:Read(id, name, callback)
     if CLIENT then
         if callback ~= nil and isfunction(callback) then
-            net.RegisterCallback('points_read' .. name, callback)
+            net.RegisterCallback('points_read' .. name, callback, true, true)
 
             net.Start('sv_qsystem_points_read')
             net.WriteString(id)

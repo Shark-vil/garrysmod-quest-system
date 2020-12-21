@@ -26,13 +26,10 @@ end
 -------------------------------------
 -- @param step string - step id
 -------------------------------------
--- @return any - will return the value returned by the quest step constructor or nil
--------------------------------------
 function ENT:SetStep(step)
 	QuestSystem:Debug('SetStep - ' ..step)
 
 	self:SetNWBool('StopThink', true)
-	self:SetNWFloat('ThinkDelay', RealTime() + 1)
 
 	local quest = self:GetQuest()
 
@@ -59,9 +56,9 @@ function ENT:SetStep(step)
 					})
 				end
 			end
-		end
 
-		self:SyncTriggers()
+			self:SyncTriggers()
+		end
 
 		self.points = {}
 		if quest.steps[step].points ~= nil then
@@ -75,6 +72,8 @@ function ENT:SetStep(step)
 					})
 				end
 			end
+
+			self:SyncPoints()
 		end
 
 		if quest.steps[step].structures ~= nil then
@@ -89,86 +88,68 @@ function ENT:SetStep(step)
 					end
 				end
 			end
+
+			self:SyncStructures()
 		end
-	end
-
-	if step == 'start' then
-		if quest.isEvent then
-			quest.title = '[Событие] ' .. quest.title
-		end
-
-		if quest.timeToNextStep ~= nil and quest.nextStep ~= nil then
-			quest.description = quest.description .. '\nДо начала: ' .. quest.timeToNextStep .. ' сек.'
-		end
-
-		if quest.timeQuest ~= nil then
-			quest.description = quest.description .. '\nВремя выполнения: ' .. quest.timeQuest .. ' сек.'
-		end
-	end
-
-	self:OnNextStep()
-
-	local start_result = nil
-	if quest.steps[step].construct ~= nil then
-		start_result = quest.steps[step].construct(self)
 	end
 
 	self:TimerCreate(function()
-		net.Start('cl_qsystem_on_construct')
-		net.WriteEntity(self)
-		net.WriteString(self:GetQuestId())
-		net.WriteString(step)
-		if step == 'start' then
-			net.WriteString(utf8.force(quest.title))
-			net.WriteString(utf8.force(quest.description))
-		end
-		net.Broadcast()
-	end)
+		self:OnNextStep()
 
-	self:TimerCreate(function()
-		net.Start('cl_qsystem_on_next_step')
-		net.WriteEntity(self)
-		net.WriteString(step)
-		net.Broadcast()
-	end)
+		self:TimerCreate(function()
+			net.InvokeAll('qsystem_on_next_step', self, step)
 
-	if step == 'start' then
-		if quest.timeToNextStep ~= nil and quest.nextStep ~= nil then
-			timer.Simple(quest.timeToNextStep, function()
-				if IsValid(self) then
-					if quest.nextStepCheck ~= nil then
-						if quest.nextStepCheck(self) then
-							self:NextStep(quest.nextStep)
+			self:TimerCreate(function()
+				net.InvokeAll('qsystem_on_construct', self, step)
+		
+				self:TimerCreate(function()
+					if quest.steps[step].construct ~= nil then
+						quest.steps[step].construct(self)
+					end
+		
+					if SERVER then
+						self:SetNWBool('StopThink', false)
+					end
+				end)
+			end)
+		
+			if step == 'start' then
+				if quest.timeToNextStep ~= nil and quest.nextStep ~= nil then
+					self:TimerCreate(function()
+						if quest.nextStepCheck ~= nil then
+							if quest.nextStepCheck(self) then
+								self:NextStep(quest.nextStep)
+							else
+								self:Failed()
+							end
 						else
+							self:NextStep(quest.nextStep)
+						end
+					end, quest.timeToNextStep)
+				end
+		
+				if quest.timeQuest ~= nil then
+					local time = quest.timeQuest
+		
+					if quest.timeToNextStep ~= nil then
+						time = time + quest.timeToNextStep
+					end
+		
+					timer.Simple(time, function()
+						if IsValid(self) then
+							local failedText = quest.failedText or {
+								title = 'Quest failed',
+								text = 'The execution time has expired.'
+							}
+		
+							self:NotifyOnlyRegistred(failedText.title, failedText.text)
 							self:Failed()
 						end
-					end
+					end)
 				end
-			end)
-		end
-
-		if quest.timeQuest ~= nil then
-			local time = quest.timeQuest
-
-			if quest.timeToNextStep ~= nil then
-				time = time + quest.timeToNextStep
 			end
-
-			timer.Simple(time, function()
-				if IsValid(self) then
-					local failedText = quest.failedText or {
-						title = 'Quest failed',
-						text = 'The execution time has expired.'
-					}
-
-					self:NotifyOnlyRegistred(failedText.title, failedText.text)
-					self:Failed()
-				end
-			end)
-		end
-	end
-
-	return start_result
+		end)
+	end)
 end
 
 -------------------------------------
@@ -370,11 +351,36 @@ end
 -- @param pos vector - destination vector
 -- (Optional) @param type string - npc type
 -- @param tag string - npc tag
+-- @param moveType string - type of movement - walk or run
 -------------------------------------
-function ENT:MoveQuestNpcToPosition(pos, type, tag)
+function ENT:MoveQuestNpcToPosition(pos, type, tag, moveType)
+	moveType = moveType or 'walk'
 	local function MoveToPosition(npc, pos)
 		npc:SetSaveValue("m_vecLastPosition", pos)
-		npc:SetSchedule(SCHED_FORCED_GO)
+		if moveType == 'walk' then
+			npc:SetSchedule(SCHED_FORCED_GO)
+		else
+			npc:SetSchedule(SCHED_FORCED_GO_RUN)
+		end
+
+		local timerName = 'QSystem.WalkNpcToPosition.ID' .. tostring(npc:EntIndex())
+		timer.Create(timerName, 1, 0, function()
+			if not IsValid(npc) or not IsValid(self) then
+				timer.Remove(timerName)
+				return
+			end
+			
+			for _, ply in pairs(self.players) do
+				if ply:GetPos():Distance(npc:GetPos()) < 800 then
+					npc:ClearSchedule()
+					if type == 'enemy' then
+						npc:SetTarget(ply)
+					end
+					timer.Remove(timerName)
+					return
+				end
+			end
+		end)
 	end
 
 	for _, data in pairs(self.npcs) do
@@ -470,8 +476,7 @@ function ENT:AddQuestNPC(npc, type, tag)
 end
 
 -------------------------------------
--- Spawns NPCs with a slight delay in order to compensate for lags,
--- and also automatically registers the entity in the NPC list.
+-- Spawns a quest npc and registers it in the list.
 -------------------------------------
 -- @param npc_class string - npc class
 -- @param data table - data to create
@@ -497,7 +502,7 @@ end
 -- 	end
 -- }
 -------------------------------------
--- @return entity - will return the entity of the object (It is not recommended to perform checks for the existence of an entity immediately after receipt, since spawn occurs with a delay!)
+-- @return entity - will return the entity of the object
 -------------------------------------
 function ENT:SpawnQuestNPC(npc_class, data)
 	local npc = ents.Create(npc_class)
@@ -511,12 +516,47 @@ function ENT:SpawnQuestNPC(npc_class, data)
 	if data.weapon_class ~= nil then
 		npc:Give(data.weapon_class)
 	end
-	table.insert(self.spawned_npcs, {
-		npc = npc,
-		type = data.type,
-		tag = data.tag,
-		afterSpawnExecute = data.afterSpawnExecute
-	})
+
+	--[[
+		Adds an NPC spawn check. If the player does not see the NPC spawn vector
+		or if the distance is greater than the minimum.
+	--]]
+	if (data.notViewSpawn or data.notSpawnDistance ~= nil) and #self.players ~= 0 then
+		local timerName = 'QSystem.SpawnNotView.ID' .. tostring(npc:EntIndex())
+		timer.Create(timerName, 0.5, 0, function()
+			if not IsValid(self) then
+				timer.Remove(timerName)
+				return
+			end
+
+			if data.notViewSpawn then
+				for _, ply in pairs(self.players) do
+					local DirectionAngle = math.pi / 90
+					local EntityDifference = data.pos - ply:EyePos()
+					local EntityDifferenceDot = ply:GetAimVector():Dot(EntityDifference) / EntityDifference:Length()
+					local IsView = EntityDifferenceDot > DirectionAngle;
+					if IsView then
+						return
+					end
+				end
+			end
+
+			if data.notSpawnDistance ~= nil then
+				for _, ply in pairs(self.players) do
+					local minDistance = data.notSpawnDistance
+					if ply:GetPos():Distance(data.pos) < minDistance then
+						return
+					end
+				end
+			end
+
+			npc:Spawn()
+			timer.Remove(timerName)
+		end)
+	else
+		npc:Spawn()
+	end
+	self:AddQuestNPC(npc, data.type, data.tag)
 	return npc
 end
 
@@ -630,34 +670,30 @@ function ENT:SetNPCsBehavior(ent)
 
 	local function restictionByOtherNPC(otherNPC)
 		if IsValid(otherNPC) and otherNPC:IsNPC() then
-			local isExist = false
-			local npcData = nil
-
 			for _, data in pairs(self.npcs) do
 				if otherNPC == data.npc then
-					isExist = true
-					npcData = data
-					break
+					for _, npcData in pairs(self.npcs) do
+						if IsValid(npcData.npc) and IsValid(otherNPC) and npcData.npc ~= otherNPC then
+							if npcData.type == 'enemy' and data.type == 'friend' then
+								npcData.npc:AddEntityRelationship(data.npc, D_HT, 70)
+								data.npc:AddEntityRelationship(npcData.npc, D_HT, 70)
+							elseif (npcData.type == 'friend' and data.type == 'friend') or
+								(npcData.type == 'enemy' and data.type == 'enemy')
+							then
+								npcData.npc:AddEntityRelationship(data.npc, D_LI, 70)
+								data.npc:AddEntityRelationship(npcData.npc, D_LI, 70)
+							end
+						end
+					end
+					return
 				end
 			end
 
 
 			for _, data in pairs(self.npcs) do
 				if IsValid(data.npc) then
-					if not isExist then
-						data.npc:AddEntityRelationship(otherNPC, D_NU, 99)
-						otherNPC:AddEntityRelationship(data.npc, D_NU, 99)
-					else
-						if npcData ~= data then
-							if npcData.type == 'enemy' and data.type == 'friend' then
-								npcData.npc:AddEntityRelationship(data.npc, D_HT, 70)
-								data.npc:AddEntityRelationship(npcData.npc, D_HT, 70)
-							elseif npcData.type == 'friend' and data.type == 'friend' then
-								npcData.npc:AddEntityRelationship(data.npc, D_LI, 70)
-								data.npc:AddEntityRelationship(npcData.npc, D_LI, 70)
-							end
-						end
-					end
+					data.npc:AddEntityRelationship(otherNPC, D_NU, 99)
+					otherNPC:AddEntityRelationship(data.npc, D_NU, 99)
 				end
 			end
 		end
@@ -710,53 +746,32 @@ end
 -- Synchronizes the prohibition of drawing quest objects for other players.
 -------------------------------------
 -- (Optional) @param ply entity - player entity (Sent to all players by default)
+-- (Optional) @param delay number - delay before sending data to clients
 -------------------------------------
-function ENT:SyncNoDraw(ply)
+function ENT:SyncNoDraw(ply, delay)
 	self:TimerCreate(function()
-		if table.Count(self.npcs) ~= 0 then
-			QuestSystem:Debug('SyncNoDraw NPCs (' .. table.Count(self.npcs) .. ') - ' .. table.ToString(self.npcs))
-
-			net.Start('cl_qsystem_nodraw_npc')
-			net.WriteEntity(self)
-			if ply then net.Send(ply) else net.Broadcast() end
+		if ply then 
+			net.Invoke('qsystem_sync_nodraw', ply, self)
+		else 
+			net.InvokeAll('qsystem_sync_nodraw', self)
 		end
-	end)
-
-	self:TimerCreate(function()
-		if table.Count(self.items) ~= 0 then
-			QuestSystem:Debug('SyncNoDraw Items (' .. table.Count(self.items) .. ') - ' .. table.ToString(self.items))
-
-			net.Start('cl_qsystem_nodraw_items')
-			net.WriteEntity(self)
-			if ply then net.Send(ply) else net.Broadcast() end
-		end
-	end)
-
-	self:TimerCreate(function()
-		if table.Count(self.structures) ~= 0 then
-			QuestSystem:Debug('SyncNoDraw Structures (' .. table.Count(self.structures) .. ') - ' .. table.ToString(self.structures))
-
-			net.Start('cl_qsystem_nodraw_structures')
-			net.WriteEntity(self)
-			net.WriteTable(self.structures)
-			if ply then net.Send(ply) else net.Broadcast() end
-		end
-	end)
+	end, delay)
 end
 
 -------------------------------------
 -- Synchronizes data on quest items with clients.
 -------------------------------------
 -- (Optional) @param ply entity - player entity (Sent to all players by default)
+-- (Optional) @param delay number - delay before sending data to clients
 -------------------------------------
 function ENT:SyncItems(ply, delay)
 	self:TimerCreate(function()
 		QuestSystem:Debug('SyncItems (' .. table.Count(self.items) .. ') - ' .. table.ToString(self.items))
-
-		net.Start('cl_qsystem_sync_items')
-		net.WriteEntity(self)
-		net.WriteTable(self.items)
-		if ply then net.Send(ply) else net.Broadcast() end
+		if ply then 
+			net.Invoke('qsystem_sync_items', ply, self, self.items)
+		else 
+			net.InvokeAll('qsystem_sync_items', self, self.items)
+		end
 	end, delay)
 end
 
@@ -764,15 +779,17 @@ end
 -- Synchronizes data on quest NPCs with clients.
 -------------------------------------
 -- (Optional) @param ply entity - player entity (Sent to all players by default)
+-- (Optional) @param delay number - delay before sending data to clients
 -------------------------------------
 function ENT:SyncNPCs(ply, delay)
 	self:TimerCreate(function()
 		QuestSystem:Debug('SyncNPCs (' .. table.Count(self.npcs) .. ') - ' .. table.ToString(self.npcs))
 
-		net.Start('cl_qsystem_sync_npcs')
-		net.WriteEntity(self)
-		net.WriteTable(self.npcs)
-		if ply then net.Send(ply) else net.Broadcast() end
+		if ply then 
+			net.Invoke('qsystem_sync_npcs', ply, self, self.npcs)
+		else 
+			net.InvokeAll('qsystem_sync_npcs', self, self.npcs)
+		end
 	end, delay)
 end
 
@@ -780,15 +797,17 @@ end
 -- Synchronizes data about registered players with clients.
 -------------------------------------
 -- (Optional) @param ply entity - player entity (Sent to all players by default)
+-- (Optional) @param delay number - delay before sending data to clients
 -------------------------------------
 function ENT:SyncPlayers(ply, delay)
 	self:TimerCreate(function()
 		QuestSystem:Debug('SyncPlayers (' .. table.Count(self.players) .. ') - ' .. table.ToString(self.players))
 
-		net.Start('cl_qsystem_sync_players')
-		net.WriteEntity(self)
-		net.WriteTable(self.players)
-		if ply then net.Send(ply) else net.Broadcast() end
+		if ply then 
+			net.Invoke('qsystem_sync_players', ply, self, self.players)
+		else 
+			net.InvokeAll('qsystem_sync_players', self, self.players)
+		end
 	end, delay)
 end
 
@@ -796,15 +815,17 @@ end
 -- Synchronizes data about quest triggers with clients.
 -------------------------------------
 -- (Optional) @param ply entity - player entity (Sent to all players by default)
+-- (Optional) @param delay number - delay before sending data to clients
 -------------------------------------
 function ENT:SyncTriggers(ply, delay)
 	self:TimerCreate(function()
 		QuestSystem:Debug('SyncTriggers (' .. table.Count(self.triggers) .. ') - ' .. table.ToString(self.triggers))
 
-		net.Start('cl_qsystem_sync_triggers')
-		net.WriteEntity(self)
-		net.WriteTable(self.triggers)
-		if ply then net.Send(ply) else net.Broadcast() end
+		if ply then 
+			net.Invoke('qsystem_sync_triggers', ply, self, self.triggers)
+		else 
+			net.InvokeAll('qsystem_sync_triggers', self, self.triggers)
+		end
 	end, delay)
 end
 
@@ -812,15 +833,17 @@ end
 -- Synchronizes data about quest points with clients.
 -------------------------------------
 -- (Optional) @param ply entity - player entity (Sent to all players by default)
+-- (Optional) @param delay number - delay before sending data to clients
 -------------------------------------
 function ENT:SyncPoints(ply, delay)
 	self:TimerCreate(function()
 		QuestSystem:Debug('SyncPoints (' .. table.Count(self.points) .. ') - ' .. table.ToString(self.points))
 
-		net.Start('cl_qsystem_sync_points')
-		net.WriteEntity(self)
-		net.WriteTable(self.points)
-		if ply then net.Send(ply) else net.Broadcast() end
+		if ply then 
+			net.Invoke('qsystem_sync_points', ply, self, self.points)
+		else 
+			net.InvokeAll('qsystem_sync_points', self, self.points)
+		end
 	end, delay)
 end
 
@@ -828,15 +851,17 @@ end
 -- Synchronizes data about quest variables with clients.
 -------------------------------------
 -- (Optional) @param ply entity - player entity (Sent to all players by default)
+-- (Optional) @param delay number - delay before sending data to clients
 -------------------------------------
 function ENT:SyncValues(ply, delay)
 	self:TimerCreate(function()
 		QuestSystem:Debug('SyncValues (' .. table.Count(self.values) .. ') - ' .. table.ToString(self.values))
 
-		net.Start('cl_qsystem_sync_values')
-		net.WriteEntity(self)
-		net.WriteTable(self.values)
-		if ply then net.Send(ply) else net.Broadcast() end
+		if ply then 
+			net.Invoke('qsystem_sync_values', ply, self, self.values)
+		else 
+			net.InvokeAll('qsystem_sync_values', self, self.values)
+		end
 	end, delay)
 end
 
@@ -844,15 +869,35 @@ end
 -- Synchronizes data on quest weapons with clients.
 -------------------------------------
 -- (Optional) @param ply entity - player entity (Sent to all players by default)
+-- (Optional) @param delay number - delay before sending data to clients
 -------------------------------------
 function ENT:SyncWeapons(ply, delay)
 	self:TimerCreate(function()
 		QuestSystem:Debug('SyncWeapons (' .. table.Count(self.weapons) .. ') - ' .. table.ToString(self.weapons))
 
-		net.Start('cl_qsystem_sync_weapons')
-		net.WriteEntity(self)
-		net.WriteTable(self.weapons)
-		if ply then net.Send(ply) else net.Broadcast() end
+		if ply then 
+			net.Invoke('qsystem_sync_weapons', ply, self, self.weapons)
+		else 
+			net.InvokeAll('qsystem_sync_weapons', self, self.weapons)
+		end
+	end, delay)
+end
+
+-------------------------------------
+-- Synchronizes data on quest structures with clients.
+-------------------------------------
+-- (Optional) @param ply entity - player entity (Sent to all players by default)
+-- (Optional) @param delay number - delay before sending data to clients
+-------------------------------------
+function ENT:SyncStructures(ply, delay)
+	self:TimerCreate(function()
+		QuestSystem:Debug('SyncStructures (' .. table.Count(self.structures) .. ') - ' .. table.ToString(self.structures))
+
+		if ply then 
+			net.Invoke('qsystem_sync_structures', ply, self, self.structures)
+		else 
+			net.InvokeAll('qsystem_sync_structures', self, self.structures)
+		end
 	end, delay)
 end
 
@@ -860,6 +905,7 @@ end
 -- Calls all sync methods in order.
 -------------------------------------
 -- (Optional) @param ply entity - player entity (Sent to all players by default)
+-- (Optional) @param delay number - delay before sending data to clients
 -------------------------------------
 function ENT:SyncAll(ply)
 	QuestSystem:Debug('Start SyncAll <<<<<<')
@@ -869,6 +915,7 @@ function ENT:SyncAll(ply)
 	self:SyncNPCs(ply)
 	self:SyncItems(ply)
 	self:SyncValues(ply)
+	self:SyncStructures(ply)
 	self:SyncNoDraw(ply)
 	QuestSystem:Debug('>>>>>> Finish SyncAll')
 end

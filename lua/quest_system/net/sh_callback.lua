@@ -15,14 +15,16 @@ local function network_callback(len, ply)
         if data.adminOnly then
             if ply:IsAdmin() or ply:IsSuperAdmin() then
                 local vars = net.ReadType()
-                data.execute(ply, vars, name)
+                data.execute(ply, unpack(vars))
             end
         else
             local vars = net.ReadType()
-            data.execute(ply, vars, name)
+            data.execute(ply, unpack(vars))
         end
 
-        net.RemoveCallback(name)
+        if data.onRemove then
+            net.RemoveCallback(name)
+        end
     end
 end
 
@@ -35,25 +37,36 @@ else
     net.Receive('cl_qsystem_callback', network_callback)
 end
 
-net.Invoke = function(name, ply, data)    
+net.Invoke = function(name, ply, ...)    
     if SERVER then
         net.Start('cl_qsystem_callback')
         net.WriteString(name)
-        net.WriteType(data)
+        net.WriteType({ ... })
         net.Send(ply)
     else
         net.Start('sv_qsystem_callback')
         net.WriteString(name)
-        net.WriteType(data)
+        net.WriteType({ ... })
         net.SendToServer()
     end
 end
 
-net.RegisterCallback = function(name, func, adminOnly)
-    adminOnly = adminOnly or true
+net.InvokeAll = function(name, ...)    
+    if SERVER then
+        net.Start('cl_qsystem_callback')
+        net.WriteString(name)
+        net.WriteType({ ... })
+        net.Broadcast()
+    end
+end
+
+net.RegisterCallback = function(name, func, onRemove, adminOnly)
+    adminOnly = adminOnly or false
+    onRemove = onRemove or false
     storage[name] = {
         adminOnly = adminOnly,
-        execute = func
+        execute = func,
+        onRemove = onRemove
     }
 end
 

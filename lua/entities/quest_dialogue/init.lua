@@ -40,6 +40,23 @@ function ENT:SetNPC(npc)
 end
 
 -------------------------------------
+-- UNFINISHED
+-------------------------------------
+-- Creates a dialog box with text, and closes after a specified period of time.
+-- This function has not yet been implemented very correctly, and is not recommended for use.
+-- Use character dialog configs.
+-------------------------------------
+-- @param name string - interlocutor name
+-- @param text string - dialogue text
+-- @param delay number - window activity time
+-------------------------------------
+function ENT:SingleReplic(name, text, delay)
+    self:SetNWString('single_replic', text)
+    self:SetNWString('single_replic_name', name)
+    self:SetNWFloat('single_replic_delay', delay)
+end
+
+-------------------------------------
 -- Switches the dialog to another step.
 -------------------------------------
 -- @param step_id string - step id
