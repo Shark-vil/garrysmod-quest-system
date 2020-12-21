@@ -18,6 +18,8 @@ ENT.players = {}
 ENT.values = {}
 ENT.structures = {}
 
+ENT.StopThink = false
+
 function ENT:Initialize()
     self:SetModel('models/props_junk/PopCan01a.mdl')
 	self:PhysicsInit(SOLID_NONE)
@@ -344,7 +346,7 @@ end
 function ENT:Think()
 	local step = self:GetQuestStepTable()
 
-	if step ~= nil and not self:SetNWBool('StopThink', true) then
+	if step ~= nil and not self:SetNWBool('StopThink', true) and not self.StopThink then
 		if step.think ~= nil then
 			step.think(self)
 		end

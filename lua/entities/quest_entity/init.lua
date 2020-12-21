@@ -29,7 +29,8 @@ end
 function ENT:SetStep(step)
 	QuestSystem:Debug('SetStep - ' ..step)
 
-	self:SetNWBool('StopThink', true)
+	self.StopThink = true
+	self:SetNWBool('StopThink', self.StopThink)
 
 	local quest = self:GetQuest()
 
@@ -94,61 +95,57 @@ function ENT:SetStep(step)
 	end
 
 	self:TimerCreate(function()
-		self:OnNextStep()
-
 		self:TimerCreate(function()
-			net.InvokeAll('qsystem_on_next_step', self, step)
-
+			net.InvokeAll('qsystem_on_construct', self, step)
+	
 			self:TimerCreate(function()
-				net.InvokeAll('qsystem_on_construct', self, step)
-		
-				self:TimerCreate(function()
-					if quest.steps[step].construct ~= nil then
-						quest.steps[step].construct(self)
-					end
-		
-					if SERVER then
-						self:SetNWBool('StopThink', false)
-					end
-				end)
-			end)
-		
-			if step == 'start' then
-				if quest.timeToNextStep ~= nil and quest.nextStep ~= nil then
-					self:TimerCreate(function()
-						if quest.nextStepCheck ~= nil then
-							if quest.nextStepCheck(self) then
-								self:NextStep(quest.nextStep)
-							else
-								self:Failed()
-							end
-						else
-							self:NextStep(quest.nextStep)
-						end
-					end, quest.timeToNextStep)
+				if quest.steps[step].construct ~= nil then
+					quest.steps[step].construct(self)
 				end
-		
-				if quest.timeQuest ~= nil then
-					local time = quest.timeQuest
-		
-					if quest.timeToNextStep ~= nil then
-						time = time + quest.timeToNextStep
-					end
-		
-					timer.Simple(time, function()
-						if IsValid(self) then
-							local failedText = quest.failedText or {
-								title = 'Quest failed',
-								text = 'The execution time has expired.'
-							}
-		
-							self:NotifyOnlyRegistred(failedText.title, failedText.text)
+	
+				self.StopThink = false
+				self:SetNWBool('StopThink', self.StopThink)
+
+				net.InvokeAll('qsystem_on_next_step', self, step)
+				self:OnNextStep()
+			end)
+		end)
+	
+		if step == 'start' then
+			if quest.timeToNextStep ~= nil and quest.nextStep ~= nil then
+				self:TimerCreate(function()
+					if quest.nextStepCheck ~= nil then
+						if quest.nextStepCheck(self) then
+							self:NextStep(quest.nextStep)
+						else
 							self:Failed()
 						end
-					end)
-				end
+					else
+						self:NextStep(quest.nextStep)
+					end
+				end, quest.timeToNextStep)
 			end
-		end)
+	
+			if quest.timeQuest ~= nil then
+				local time = quest.timeQuest
+	
+				if quest.timeToNextStep ~= nil then
+					time = time + quest.timeToNextStep
+				end
+	
+				timer.Simple(time, function()
+					if IsValid(self) then
+						local failedText = quest.failedText or {
+							title = 'Quest failed',
+							text = 'The execution time has expired.'
+						}
+	
+						self:NotifyOnlyRegistred(failedText.title, failedText.text)
+						self:Failed()
+					end
+				end)
+			end
+		end
 	end)
 end
 
