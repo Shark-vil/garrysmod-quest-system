@@ -10,7 +10,7 @@ SWEP.AdminOnly = true
 SWEP.Slot = 0
 SWEP.SlotPos = 4
 
-SWEP.Spawnable = true
+SWEP.Spawnable = false
 
 SWEP.ViewModel = Model( "models/weapons/c_toolgun.mdl" )
 SWEP.WorldModel = Model( "models/weapons/w_toolgun.mdl" )

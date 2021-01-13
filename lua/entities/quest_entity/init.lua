@@ -528,11 +528,7 @@ function ENT:SpawnQuestNPC(npc_class, data)
 
 			if data.notViewSpawn then
 				for _, ply in pairs(self.players) do
-					local DirectionAngle = math.pi / 90
-					local EntityDifference = data.pos - ply:EyePos()
-					local EntityDifferenceDot = ply:GetAimVector():Dot(EntityDifference) / EntityDifference:Length()
-					local IsView = EntityDifferenceDot > DirectionAngle;
-					if IsView then
+					if QuestService:PlayerIsViewVector(ply, data.pos) then
 						return
 					end
 				end

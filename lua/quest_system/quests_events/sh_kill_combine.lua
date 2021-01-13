@@ -29,27 +29,18 @@ local quest = {
                 end
             end,
             triggers = {
-                spawn_combines_trigger = function(eQuest, entities)
-                    if CLIENT then return end
-                    for _, ent in pairs(entities) do
+                spawn_combines_trigger = {
+                    onEnter = function(eQuest, ent)
+                        if CLIENT then return end
                         eQuest:AddPlayer(ent)
+                    end,
+                    onExit = function(eQuest, ent)
+                        if CLIENT then return end
+                        if not eQuest:HasQuester(ent) then return end
+                        eQuest:RemovePlayer(ent)
                     end
-
-                    for _, ply in pairs(eQuest:GetAllPlayers()) do
-                        local toRemove = true
-                        for _, ent in pairs(entities) do
-                            if ply == ent then
-                                toRemove = false
-                                break
-                            end
-                        end
-
-                        if toRemove then
-                            eQuest:RemovePlayer(ply)
-                        end
-                    end
-                end,
-            }
+                },
+            },
         },
         spawn_combines = {
             construct = function(eQuest)

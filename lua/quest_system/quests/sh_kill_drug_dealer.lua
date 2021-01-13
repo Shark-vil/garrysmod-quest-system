@@ -14,12 +14,13 @@ local quest = {
                 end
             end,
             triggers = {
-                spawn_dealer_trigger = function(eQuest, entities)
-                    if CLIENT then return end
-                    if table.HasValue(entities, eQuest:GetPlayer()) then
+                spawn_dealer_trigger = {
+                    onEnter = function(eQuest, ent)
+                        if CLIENT then return end
+                        if ent ~= eQuest:GetPlayer() then return end
                         eQuest:NextStep('spawn')
-                    end
-                end,
+                    end,
+                }
             }
         },
         spawn = {
@@ -40,8 +41,8 @@ local quest = {
                         type = 'enemy'
                     })
 
-                    QuestSystem:SingleReplic(eQuest:GetPlayer(), npc, 
-                        'Наркодиллер', 'Чёрт, облава! Эй, кто бы там ни был, я буду защищаться!', 6)
+                    QuestDialogue:SingleReplic(eQuest:GetPlayer(), npc, 'Наркодиллер', 
+                        'Чёрт, облава! Эй, кто бы там ни был, я буду защищаться!', 6)
                 end,
             },
             onQuestNPCKilled = function(eQuest, data, npc, attacker, inflictor)

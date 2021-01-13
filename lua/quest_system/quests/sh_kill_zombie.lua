@@ -13,18 +13,20 @@ local quest = {
                 eQuest:Notify(quest.title, quest.description)
             end,
             triggers = {
-                spawn_zombie_trigger_1 = function(eQuest, entities)
-                    if CLIENT then return end
-                    if table.HasValue(entities, eQuest:GetPlayer()) then
+                spawn_zombie_trigger_1 = {
+                    onEnter = function(eQuest, ent)
+                        if CLIENT then return end
+                        if ent ~= eQuest:GetPlayer() then return end
                         eQuest:NextStep('spawn')
                     end
-                end,
-                spawn_zombie_trigger_2 = function(eQuest, entities)
-                    if CLIENT then return end
-                    if table.HasValue(entities, eQuest:GetPlayer()) then
+                },
+                spawn_zombie_trigger_2 = {
+                    onEnter = function(eQuest, ent)
+                        if CLIENT then return end
+                        if ent ~= eQuest:GetPlayer() then return end
                         eQuest:NextStep('spawn')
                     end
-                end
+                },
             }
         },
         spawn = {

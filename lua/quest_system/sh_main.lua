@@ -2,8 +2,9 @@ if SERVER then
     local function ActivateRandomEvent()
         local events = QuestSystem:GetAllEvents()
         local event = table.Random(events)
-
-        if event ~= nil and QuestSystem.activeEvents[event.id] == nil then
+        local activeEvent = QuestSystem.activeEvents[event.id]
+        
+        if event ~= nil and (activeEvent == nil or not IsValid(activeEvent)) then
             QuestSystem:EnableEvent(event.id)
         end
     end

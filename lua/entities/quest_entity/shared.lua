@@ -18,6 +18,8 @@ ENT.players = {}
 ENT.values = {}
 ENT.structures = {}
 
+ENT.trigger_entities = {}
+
 ENT.StopThink = false
 
 function ENT:Initialize()
@@ -33,25 +35,6 @@ function ENT:Initialize()
 			.. tostring(string.Replace(CurTime(), '.', ''))
 
 		self:SetNWString('global_hook_name', globalHookName)
-
-		if self:IsExistStepArg('onUse') then
-			-------------------------------------
-			-- Calls a step function - onUse - when press E on any (almost) entity.
-			-------------------------------------
-			-- @params wiki - https://wiki.facepunch.com/gmod/GM:PlayerUse
-			-------------------------------------
-			hook.Add("PlayerUse", globalHookName, function(ply, ent)
-				if not IsValid(self) then hook.Remove("PlayerUse", globalHookName) return end
-				
-				local step = self:GetQuestStepTable()
-				if step ~= nil and step.onUse ~= nil then
-					if table.HasValue(self.players, ply) then
-						net.InvokeAll('qsystem_rpc_function_onUse', self, ent)
-						step.onUse(self, ent)
-					end
-				end
-			end)
-		end
 
 		if QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then
 			-------------------------------------
@@ -133,25 +116,46 @@ function ENT:Initialize()
 			end)
 		end
 
-		-------------------------------------
-		-- Calls a function for a step if the quest NPC is killed.
-		-------------------------------------
-		-- @params wiki - https://wiki.facepunch.com/gmod/GM:OnNPCKilled
-		-------------------------------------
-		hook.Add('OnNPCKilled', globalHookName, function(npc, attacker, inflictor)
-			if not IsValid(self) then hook.Remove("OnNPCKilled", globalHookName) return end
-			for _, data in pairs(self.npcs) do
-				if data.npc == npc then
-					local step = self:GetQuestStepTable()
-					if step ~= nil and step.onQuestNPCKilled ~= nil then
-						net.InvokeAll('qsystem_rpc_function_onQuestNPCKilled', 
-							self, data, npc, attacker, inflictor)
-						step.onQuestNPCKilled(self, data, npc, attacker, inflictor)
+		if self:IsExistStepArg('onUse') then
+			-------------------------------------
+			-- Calls a step function - onUse - when press E on any (almost) entity.
+			-------------------------------------
+			-- @params wiki - https://wiki.facepunch.com/gmod/GM:PlayerUse
+			-------------------------------------
+			hook.Add("PlayerUse", globalHookName, function(ply, ent)
+				if not IsValid(self) then hook.Remove("PlayerUse", globalHookName) return end
+				
+				local step = self:GetQuestStepTable()
+				if step ~= nil and step.onUse ~= nil then
+					if table.HasValue(self.players, ply) then
+						net.InvokeAll('qsystem_rpc_function_onUse', self, ent)
+						step.onUse(self, ent)
 					end
-					break
 				end
-			end
-		end)
+			end)
+		end
+
+		if self:IsExistStepArg('onQuestNPCKilled') then
+			-------------------------------------
+			-- Calls a function for a step if the quest NPC is killed.
+			-------------------------------------
+			-- @params wiki - https://wiki.facepunch.com/gmod/GM:OnNPCKilled
+			-------------------------------------
+			hook.Add('OnNPCKilled', globalHookName, function(npc, attacker, inflictor)
+				if not IsValid(self) then hook.Remove("OnNPCKilled", globalHookName) return end
+				for _, data in pairs(self.npcs) do
+					if data.npc == npc then
+						local step = self:GetQuestStepTable()
+						if step ~= nil and step.onQuestNPCKilled ~= nil then
+							net.InvokeAll('qsystem_rpc_function_onQuestNPCKilled', 
+								self, data, npc, attacker, inflictor)
+							step.onQuestNPCKilled(self, data, npc, attacker, inflictor)
+						end
+						break
+					end
+				end
+			end)
+		end
 
 		-------------------------------------
 		-- Forces the visibility of all quest entities. Otherwise, clients may receive an empty value.
@@ -306,6 +310,10 @@ function ENT:GetPlayer()
 	return self.players[1]
 end
 
+function ENT:HasQuester(ply)
+	return table.HasValue(self.players, ply)
+end
+
 -------------------------------------
 -- Check if step is first.
 -------------------------------------
@@ -353,21 +361,43 @@ function ENT:Think()
 
 		if #self.triggers ~= 0 and step.triggers ~= nil then
 			for _, tdata in pairs(self.triggers) do
+				local entities = {}
 				local name = tdata.name
 				local trigger = tdata.trigger
+				local trigger_functions = step.triggers[name]
+				local trigger_think = trigger_functions.think
+				local trigger_onEnter = trigger_functions.onEnter
+				local trigger_onExit = trigger_functions.onExit
+
+				self.trigger_entities[name] = self.trigger_entities[name] or {}
 
 				if trigger.type == 'box' then
-					local func = step.triggers[name]
-					if func ~= nil then
-						local entities = ents.FindInBox(trigger.vec1, trigger.vec2)
-						func(self, entities)
-					end
+					entities = ents.FindInBox(trigger.vec1, trigger.vec2)
 				elseif trigger.type == 'sphere' then
-					local func = step.triggers[name]
-					if func ~= nil then
-						local entities = ents.FindInSphere(trigger.center, trigger.radius)
-						func(self, entities)
+					entities = ents.FindInSphere(trigger.center, trigger.radius)
+				end
+
+				if trigger_onExit ~= nil then
+					for i = #self.trigger_entities[name], 1, -1 do
+						local ent = self.trigger_entities[name][i]
+						if not table.HasValue(entities, ent) then
+							trigger_onExit(self, ent)
+							table.remove(self.trigger_entities[name], i)
+						end
 					end
+				end
+
+				if trigger_onEnter ~= nil then
+					for _, ent in ipairs(entities) do
+						if not table.HasValue(self.trigger_entities[name], ent) then
+							table.insert(self.trigger_entities[name], ent)
+							trigger_onEnter(self, ent)
+						end
+					end
+				end
+
+				if trigger_think ~= nil then
+					trigger_think(self, entities)
 				end
 			end
 		end

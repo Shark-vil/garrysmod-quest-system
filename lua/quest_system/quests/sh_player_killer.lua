@@ -23,7 +23,7 @@ local quest = {
     },
     ]]
     condition = function(ply)
-        if table.Count(player.GetAll()) > 1 then
+        if player.GetCount() > 1 then
             return true
         else
             ply:QuestNotify('Отказ', 'На сервере слишком мало игроков для начала этого задания.')

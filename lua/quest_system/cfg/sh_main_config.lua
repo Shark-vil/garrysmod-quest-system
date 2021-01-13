@@ -14,6 +14,6 @@ QuestSystem.cfg.MaxActiveEvents = 2
 -- 0 - disable restiction
 QuestSystem.cfg.MaxActiveQuestsForOnePlayer = 4
 -- 0 - disable restiction
-QuestSystem.cfg.DelayBetweenQuests = 15
+QuestSystem.cfg.DelayBetweenQuests = 0
 
 QuestSystem.cfg.DisableDefaultQuests = false

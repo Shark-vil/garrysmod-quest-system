@@ -179,7 +179,7 @@ function QuestDialogue:SetPlayerDialogue(id, ply, npc)
         dialogue_ent:SetPlayer(ply)
         dialogue_ent:SetNPC(npc)
 
-        timer.Simple(0.6, function()
+        timer.Simple(1.5, function()
             dialogue_ent:StartDialogue()
         end)
 
@@ -198,15 +198,17 @@ end
 -- @param text string - dialogue text
 -- @param delay number - window activity time
 -------------------------------------
-function QuestSystem:SingleReplic(ply, npc, name, text, delay)
+function QuestDialogue:SingleReplic(ply, npc, name, text, delay, is_background)
+    is_background = is_background or false
+
     local dialogue_ent = ents.Create('quest_dialogue')
     dialogue_ent:Spawn()
-    dialogue_ent:SingleReplic(name, text, delay)
+    dialogue_ent:SingleReplic(name, text, delay, is_background)
     dialogue_ent:SetStep('start')
     dialogue_ent:SetPlayer(ply)
     dialogue_ent:SetNPC(npc)
 
-    timer.Simple(0.6, function()
+    timer.Simple(1.5, function()
         dialogue_ent:StartDialogue()
     end)
 

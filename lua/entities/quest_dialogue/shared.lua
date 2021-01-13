@@ -29,7 +29,6 @@ function ENT:Initialize()
         -------------------------------------
         hook.Add('PostDrawOpaqueRenderables', self, function()
             local npc = self:GetNPC()
-    
             if IsValid(npc) then
                 local dialogue = self:GetDialogue()
                 
@@ -125,7 +124,9 @@ end
 function ENT:Think()
     if self.isStarted then
         if SERVER then
-            if not IsValid(self:GetNPC()) or not IsValid(self:GetPlayer()) or self:NpcIsFear() then
+            if not IsValid(self:GetNPC()) or not IsValid(self:GetPlayer()) 
+                or (self:NpcIsFear() and not self:GetDialogue().isBackground) 
+            then
                 self:Remove()
                 return
             end
@@ -164,14 +165,14 @@ function ENT:GetDialogue()
             name = self:GetNWString('single_replic_name'),
             notFreeze = true,
             notLook = true,
+            isBackground = self:GetNWBool('single_replic_is_background'),
             steps = {
                 start = {
                     text = self:GetNWString('single_replic'),
                     delay = self:GetNWFloat('single_replic_delay'),
                     eventDelay = function(eDialogue)
-                        if SERVER then
-                            eDialogue:Stop()
-                        end
+                        if CLIENT then return end 
+                        eDialogue:Stop()
                     end,
                 },
             }
@@ -206,13 +207,7 @@ end
 -- @return table - step data table
 -------------------------------------
 function ENT:GetStep()
-    local dialogue = self:GetDialogue()
-    if dialogue.isBackground then
-        return dialogue.start
-    else
-        local step_id = self:GetStepID()
-        return dialogue.steps[step_id]
-    end
+    return self:GetDialogue().steps[self:GetStepID()]
 end
 
 -------------------------------------
@@ -285,7 +280,9 @@ function ENT:StartDialogue(ignore_npc_text, is_next)
     is_next = is_next or false
 
     if SERVER then
-        if self:GetNWString('single_replic') ~= '' and self:NpcIsFear() then
+        if self:GetNWString('single_replic') ~= '' and (self:NpcIsFear() 
+            and not self:GetDialogue().isBackground) 
+        then
             self:Remove()
             return
         end
@@ -319,12 +316,12 @@ function ENT:StartDialogue(ignore_npc_text, is_next)
             end)
         end
 
-        if SERVER and self:GetDialogue().isBackground then
-            timer.Simple(delay + 1, function()
-                if not IsValid(self) then return end
-                self:Remove()
-            end)
-        end
+        -- if SERVER and self:GetDialogue().isBackground then
+        --     timer.Simple(delay + 1, function()
+        --         if not IsValid(self) then return end
+        --         self:Remove()
+        --     end)
+        -- end
 
         if step.event ~= nil then
             step.event(self)

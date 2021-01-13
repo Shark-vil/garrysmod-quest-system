@@ -5,12 +5,11 @@ local quest = {
     payment = 500,
     npcNotReactionOtherPlayer = false,
     functions = {
-        f_spawn_enemy_npcs = function(eQuest, entities)
-            if table.HasValue(entities, eQuest:GetPlayer()) then
-                if CLIENT then return end
-                eQuest:Notify('Незваные гости', 'О нет, кажется на нашего заказчика напали! Спасите его, чтобы не провалить задание.')
-                eQuest:NextStep('safe_customer')
-            end
+        f_spawn_enemy_npcs = function(eQuest, ent)
+            if ent ~= eQuest:GetPlayer() then return end
+            if CLIENT then return end
+            eQuest:Notify('Незваные гости', 'О нет, кажется на нашего заказчика напали! Спасите его, чтобы не провалить задание.')
+            eQuest:NextStep('safe_customer')
         end,
         f_loss_conditions = function(eQuest)
             if CLIENT then return end
@@ -88,12 +87,16 @@ local quest = {
                 eQuest:Notify('Завершено', 'Отлично, вы нашли коробку. Теперь отнесите её заказчику.')
             end,
             triggers = {
-                spawn_npc_trigger = function(eQuest, entities)
-                    eQuest:ExecQuestFunction('f_spawn_enemy_npcs', eQuest, entities)
-                end,
-                spawn_npc_trigger_2 = function(eQuest, entities)
-                    eQuest:ExecQuestFunction('f_spawn_enemy_npcs', eQuest, entities)
-                end,
+                spawn_npc_trigger = {
+                    onEnter = function(eQuest, ent)
+                        eQuest:ExecQuestFunction('f_spawn_enemy_npcs', eQuest, ent)
+                    end
+                },
+                spawn_npc_trigger_2 = {
+                    onEnter = function(eQuest, ent)
+                        eQuest:ExecQuestFunction('f_spawn_enemy_npcs', eQuest, ent)
+                    end
+                },
             }
         },
         safe_customer = {
