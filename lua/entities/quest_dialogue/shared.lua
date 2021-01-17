@@ -114,6 +114,11 @@ function ENT:Initialize()
             end
 		end)
     end
+
+    timer.Simple(1, function()
+        if not IsValid(self) then return end
+        hook.Run('QSystem.StartDialogue', self)
+    end)
 end
 
 -------------------------------------
@@ -152,6 +157,8 @@ function ENT:OnRemove()
             self:GetPlayer():Freeze(false)
         end
     end
+
+    hook.Run('QSystem.StopDialogue', self)
 end
 
 -------------------------------------

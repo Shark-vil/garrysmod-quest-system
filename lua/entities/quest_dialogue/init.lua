@@ -9,6 +9,7 @@ include('shared.lua')
 -------------------------------------
 function ENT:SetDialogueID(id)
     self:SetNWString('id', id)
+    hook.Run('QSystem.ParentDialogueId', self, id)
 end
 
 -------------------------------------
@@ -18,6 +19,7 @@ end
 -------------------------------------
 function ENT:SetStep(step_id)
     self:SetNWString('step_id', step_id)
+    hook.Run('QSystem.ParentDialogueStepId', self, step_id)
 end
 
 -------------------------------------
@@ -27,6 +29,7 @@ end
 -------------------------------------
 function ENT:SetPlayer(ply)
     self:SetNWEntity('player', ply)
+    hook.Run('QSystem.ParentDialoguePlayer', self, ply)
 end
 
 -------------------------------------
@@ -37,6 +40,7 @@ end
 -------------------------------------
 function ENT:SetNPC(npc)
     self:SetNWEntity('npc', npc)
+    hook.Run('QSystem.ParentDialogueNPC', self, npc)
 end
 
 -------------------------------------
