@@ -2,13 +2,24 @@ local quest = {
     id = 'mobs_attack',
     title = 'Волны мобов',
     description = 'Вам нужно продержаться три волны, отбиваясь от толпы зомби. Ваше передвижение ограничено зоной квеста.',
-    timeToNextStep = 20,
-    nextStep = 'spawn_mobs_wave_1',
-    deathFailed = true,
+    condition = function(ply)
+        for _, eQuest in ipairs(ents.FindByClass('quest_entity')) do
+            if eQuest:GetQuest().id == 'mobs_attack' then
+                ply:QuestNotify('Отказ', 'Этот квест нельзя взять нескольким игрокам одновременно.')
+                return false
+            end
+        end
+        return true
+    end,
+    global_hooks = {
+        PlayerDeath = function(eQuest, ply)
+            eQuest:ExecQuestFunction('f_left_zone', eQuest, ply)
+        end
+    },
     functions = {
-        f_left_zone = function(eQuest, entities)
+        f_left_zone = function(eQuest, ent)
             if CLIENT then return end
-            if not table.HasValue(entities, eQuest:GetPlayer()) or not eQuest:GetPlayer():Alive() then
+            if ent == eQuest:GetPlayer() then
                 eQuest:NextStep('failed')
             end
         end,
@@ -85,9 +96,12 @@ local quest = {
             local ply = eQuest:GetPlayer()
             if ply:Alive() then
                 local pos = eQuest:GetVariable('player_old_pos')
-                if pos ~= nil then
-                    ply:SetPos(pos)
-                end
+                local health = eQuest:GetVariable('player_old_health')
+                local armor = eQuest:GetVariable('player_old_armor')
+                
+                ply:SetPos(pos)
+                ply:SetHealth(health)
+                ply:SetArmor(armor)
             end
         end,
         f_respawn_npc_if_bad_attack = function(eQuest)
@@ -130,26 +144,25 @@ local quest = {
                     eQuest:GetPlayer():ConCommand('r_cleardecals')    
                     return 
                 end
+
+                eQuest:TimerCreate(function()
+                    eQuest:NextStep('spawn_mobs_wave_1')
+                end, 20)
                 
                 local quest = eQuest:GetQuest()
                 eQuest:Notify(quest.title, quest.description)
 
                 local weapons = {
-                    'weapon_ss_doubleshotgun',
-                    'weapon_ss_tommygun',
-                    'weapon_ss_knife',
-                    'weapon_ss_grenadelauncher',
-                    'weapon_ss_chainsaw',
-                    'weapon_ss_singleshotgun',
-                    'weapon_ss_sniper',
-                    'weapon_ss_cannon',
-                    'weapon_ss_colt',
-                    'weapon_ss_colt_dual',
-                    'weapon_ss_laser',
-                    'weapon_ss_ghostbuster',
-                    'weapon_ss_minigun',
-                    'weapon_ss_flamer',
-                    'weapon_ss_rocketlauncher'
+                    'weapon_357',
+                    'weapon_pistol',
+                    'weapon_crossbow',
+                    'weapon_crowbar',
+                    'weapon_frag',
+                    'weapon_ar2',
+                    'weapon_rpg',
+                    'weapon_slam',
+                    'weapon_shotgun',
+                    'weapon_smg1',
                 }
 
                 for _, class in pairs(weapons) do
@@ -162,45 +175,49 @@ local quest = {
 
                     local ply = eQuest:GetPlayer()
                     eQuest:SetVariable('player_old_pos', ply:GetPos())
+                    eQuest:SetVariable('player_old_health', ply:Health())
+                    eQuest:SetVariable('player_old_armor', ply:Armor())
+
                     ply:SetPos(table.Random(positions))
+                    ply:SetHealth(100)
+                    ply:SetArmor(100)
                 end,
-                helpers_spawner = function(eQuest, positions)
+                ammo_spawner_global = function(eQuest, positions)
                     if CLIENT then return end
 
-                    local c_helpers = {
-                        'ss_armor_100',
-                        'ss_armor_50',
-                        'ss_armor_25',
-                        'ss_armor_5',
-                        'ss_armor_200',
-                        'ss_armor_1',
-                        'ss_health_pill',
-                        'ss_health_large',
-                        'ss_health_medium',
-                        'ss_health_small',
-                        'ss_health_super'
+                    local s_ammo = {
+                        'item_ammo_357',
+                        'item_ammo_357_large',
+                        'item_ammo_ar2',
+                        'item_ammo_ar2_large',
+                        'item_ammo_ar2_altfire',
+                        'item_ammo_crossbow',
+                        'item_ammo_pistol',
+                        'item_ammo_pistol_large',
+                        'item_rpg_round',
+                        'item_box_buckshot',
+                        'item_ammo_smg1',
+                        'item_ammo_smg1_large',
+                        'item_ammo_smg1_grenade',
+                        'npc_grenade_frag'
                     }
 
                     for i = 1, #positions do
-                        eQuest:SpawnQuestItem(table.Random(c_helpers), {
-                            id = 'helper_' .. i,
-                            pos = positions[i],
-                        })
+                        if math.random(0, 100) > 40 then 
+                            eQuest:SpawnQuestItem(table.Random(s_ammo), {
+                                id = 'ammo_' .. i,
+                                pos = positions[i],
+                            })
+                        end
                     end
-                end,
-                ammo_spawner = function(eQuest, positions)
-                    if CLIENT then return end
-
-                    eQuest:SpawnQuestItem('ss_ammo_backpack', {
-                        id = 'ammo_backpack',
-                        pos = table.Random(positions)
-                    })
                 end
             },
             triggers = {
-                quest_zone = function(eQuest, entities)
-                    eQuest:ExecQuestFunction('f_left_zone', eQuest, entities)
-                end,
+                quest_zone_global = {
+                    onExit = function(eQuest, ent)
+                        eQuest:ExecQuestFunction('f_left_zone', eQuest, ent)
+                    end
+                },
             }
         },
         spawn_mobs_wave_1 = {
@@ -216,11 +233,6 @@ local quest = {
             points = {
                 mob_spawners_1 = function(eQuest, positions)
                     eQuest:ExecQuestFunction('f_spawn_zombie_points', eQuest, positions, 10, 10)
-                end,
-            },
-            triggers = {
-                quest_zone = function(eQuest, entities)
-                    eQuest:ExecQuestFunction('f_left_zone', eQuest, entities)
                 end,
             },
             onQuestNPCKilled = function(eQuest, data, npc, attacker, inflictor)
@@ -246,20 +258,26 @@ local quest = {
                     eQuest:Notify('Передышка', 'Новая волна через 20 секунд...')
                 end
             end,
-            triggers = {
-                quest_zone = function(eQuest, entities)
-                    eQuest:ExecQuestFunction('f_left_zone', eQuest, entities)
-                end,
-            },
             points = {
-                ammo_spawner = function(eQuest, positions)
+                ammo_spawner_global = true,
+                helpers_spawner = function(eQuest, positions)
                     if CLIENT then return end
 
-                    eQuest:SpawnQuestItem('ss_ammo_backpack', {
-                        id = 'ammo_backpack',
-                        pos = table.Random(positions)
-                    })
-                end
+                    local s_helpers = {
+                        'item_healthkit',
+                        'item_healthvial',
+                        'item_battery',
+                    }
+
+                    for i = 1, #positions do
+                        if math.random(0, 100) > 70 then
+                            eQuest:SpawnQuestItem(table.Random(s_helpers), {
+                                id = 'helper_' .. i,
+                                pos = positions[i],
+                            })
+                        end
+                    end
+                end,
             }
         },
         spawn_mobs_wave_2 = {
@@ -275,11 +293,6 @@ local quest = {
             points = {
                 mob_spawners_1 = function(eQuest, positions)
                     eQuest:ExecQuestFunction('f_spawn_zombie_points', eQuest, positions, 15, 40)
-                end,
-            },
-            triggers = {
-                quest_zone = function(eQuest, entities)
-                    eQuest:ExecQuestFunction('f_left_zone', eQuest, entities)
                 end,
             },
             onQuestNPCKilled = function(eQuest, data, npc, attacker, inflictor)
@@ -305,20 +318,8 @@ local quest = {
                     eQuest:Notify('Передышка', 'Новая волна через 20 секунд...')
                 end
             end,
-            triggers = {
-                quest_zone = function(eQuest, entities)
-                    eQuest:ExecQuestFunction('f_left_zone', eQuest, entities)
-                end,
-            },
             points = {
-                ammo_spawner = function(eQuest, positions)
-                    if CLIENT then return end
-
-                    eQuest:SpawnQuestItem('ss_ammo_backpack', {
-                        id = 'ammo_backpack',
-                        pos = table.Random(positions)
-                    })
-                end
+                ammo_spawner_global = true
             }
         },
         spawn_mobs_wave_3 = {
@@ -334,11 +335,6 @@ local quest = {
             points = {
                 mob_spawners_1 = function(eQuest, positions)
                     eQuest:ExecQuestFunction('f_spawn_zombie_points', eQuest, positions, 20, 50)
-                end,
-            },
-            triggers = {
-                quest_zone = function(eQuest, entities)
-                    eQuest:ExecQuestFunction('f_left_zone', eQuest, entities)
                 end,
             },
             onQuestNPCKilled = function(eQuest, data, npc, attacker, inflictor)

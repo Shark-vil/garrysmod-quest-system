@@ -21,6 +21,9 @@ ENT.structures = {}
 ENT.trigger_entities = {}
 
 ENT.StopThink = false
+ENT.StepHookName = ''
+ENT.GlobalHookName = ''
+ENT.FactoryHookName = ''
 
 function ENT:Initialize()
     self:SetModel('models/props_junk/PopCan01a.mdl')
@@ -29,21 +32,29 @@ function ENT:Initialize()
     self:SetSolid(SOLID_NONE)
     self:SetNoDraw(true)
 
+	self.StepHookName = 'QuestEntityHook_' 
+	.. tostring(self:EntIndex()) 
+	.. tostring(string.Replace(CurTime(), '.', ''))
+
+	self.GlobalHookName = 'QuestEntityGlobalHook_' 
+	.. tostring(self:EntIndex()) 
+	.. tostring(string.Replace(CurTime(), '.', ''))
+
+	self.FactoryHookName = 'QuestEntityFactoryHook_' 
+	.. tostring(self:EntIndex()) 
+	.. tostring(string.Replace(CurTime(), '.', ''))
+
+	local factory_hook_name = self.FactoryHookName
+
 	if SERVER then
-		local globalHookName = 'QuestEntity_' 
-			.. tostring(self:EntIndex()) 
-			.. tostring(string.Replace(CurTime(), '.', ''))
-
-		self:SetNWString('global_hook_name', globalHookName)
-
 		if QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then
 			-------------------------------------
 			-- Disable collision with quest objects for players not belonging to the quest.
 			-------------------------------------
 			-- @params wiki - https://wiki.facepunch.com/gmod/GM:ShouldCollide
 			-------------------------------------
-			hook.Add('ShouldCollide', globalHookName, function(ent1, ent2)
-				if not IsValid(self) then hook.Remove("ShouldCollide", globalHookName) return end
+			hook.Add('ShouldCollide', factory_hook_name, function(ent1, ent2)
+				if not IsValid(self) then hook.Remove("ShouldCollide", factory_hook_name) return end
 
 				if ent2:IsPlayer() then
 					local quest = self:GetQuest()
@@ -80,8 +91,8 @@ function ENT:Initialize()
 			-------------------------------------
 			-- @params wiki - https://wiki.facepunch.com/gmod/GM:EntityTakeDamage
 			-------------------------------------
-			hook.Add('EntityTakeDamage', globalHookName, function(target, dmginfo)
-				if not IsValid(self) then hook.Remove("EntityTakeDamage", globalHookName) return end
+			hook.Add('EntityTakeDamage', factory_hook_name, function(target, dmginfo)
+				if not IsValid(self) then hook.Remove("EntityTakeDamage", factory_hook_name) return end
 
 				local attaker = dmginfo:GetAttacker()
 				if attaker:IsWeapon() then
@@ -122,8 +133,8 @@ function ENT:Initialize()
 			-------------------------------------
 			-- @params wiki - https://wiki.facepunch.com/gmod/GM:PlayerUse
 			-------------------------------------
-			hook.Add("PlayerUse", globalHookName, function(ply, ent)
-				if not IsValid(self) then hook.Remove("PlayerUse", globalHookName) return end
+			hook.Add("PlayerUse", factory_hook_name, function(ply, ent)
+				if not IsValid(self) then hook.Remove("PlayerUse", factory_hook_name) return end
 				
 				local step = self:GetQuestStepTable()
 				if step ~= nil and step.onUse ~= nil then
@@ -141,8 +152,8 @@ function ENT:Initialize()
 			-------------------------------------
 			-- @params wiki - https://wiki.facepunch.com/gmod/GM:OnNPCKilled
 			-------------------------------------
-			hook.Add('OnNPCKilled', globalHookName, function(npc, attacker, inflictor)
-				if not IsValid(self) then hook.Remove("OnNPCKilled", globalHookName) return end
+			hook.Add('OnNPCKilled', factory_hook_name, function(npc, attacker, inflictor)
+				if not IsValid(self) then hook.Remove("OnNPCKilled", factory_hook_name) return end
 				for _, data in pairs(self.npcs) do
 					if data.npc == npc then
 						local step = self:GetQuestStepTable()
@@ -162,8 +173,8 @@ function ENT:Initialize()
 		-------------------------------------
 		-- @params wiki - https://wiki.facepunch.com/gmod/GM:SetupPlayerVisibility
 		-------------------------------------
-		hook.Add('SetupPlayerVisibility', globalHookName, function(pPlayer, pViewEntity)
-			if not IsValid(self) then hook.Remove("SetupPlayerVisibility", globalHookName) return end
+		hook.Add('SetupPlayerVisibility', factory_hook_name, function(pPlayer, pViewEntity)
+			if not IsValid(self) then hook.Remove("SetupPlayerVisibility", factory_hook_name) return end
 			AddOriginToPVS(self:GetPos())
 
 			local entities = {}
@@ -196,8 +207,6 @@ function ENT:Initialize()
 		self:SetNWBool('StopThink', true)
 		self:SetNWFloat('ThinkDelay', 0)
 	else
-		local globalHookName = self:GetNWString('global_hook_name')
-
 		-------------------------------------
 		-- Removes NPCs sounds if players do not belong to the quest.
 		-- WARNING:
@@ -205,8 +214,8 @@ function ENT:Initialize()
 		-------------------------------------
 		-- @params wiki - https://wiki.facepunch.com/gmod/GM:EntityEmitSound
 		-------------------------------------
-		hook.Add("EntityEmitSound", globalHookName, function(t)
-			if not IsValid(self) then hook.Remove("EntityEmitSound", globalHookName) return end
+		hook.Add("EntityEmitSound", factory_hook_name, function(t)
+			if not IsValid(self) then hook.Remove("EntityEmitSound", factory_hook_name) return end
 			local ent = t.Entity
 	
 			if self:IsQuestNPC(ent) and table.HasValue(self:GetAllPlayers(), LocalPlayer()) then
@@ -225,6 +234,18 @@ function ENT:Initialize()
 			hook.Run('QSystem.QuestStarted', self, quest)
 		end
 	end)
+end
+
+function ENT:GetStepHookName()
+	return self.StepHookName
+end
+
+function ENT:GetGlobalHookName()
+	return self.GlobalHookName
+end
+
+function ENT:GetFactoryHookName()
+	return self.FactoryHookName
 end
 
 -------------------------------------
@@ -359,12 +380,14 @@ function ENT:Think()
 			step.think(self)
 		end
 
-		if #self.triggers ~= 0 and step.triggers ~= nil then
+		if #self.triggers ~= 0 then
+			local quest = self:GetQuest()
+
 			for _, tdata in pairs(self.triggers) do
 				local entities = {}
 				local name = tdata.name
 				local trigger = tdata.trigger
-				local trigger_functions = step.triggers[name]
+				local trigger_functions = quest.steps[tdata.step].triggers[name]
 				local trigger_think = trigger_functions.think
 				local trigger_onEnter = trigger_functions.onEnter
 				local trigger_onExit = trigger_functions.onExit
@@ -377,20 +400,20 @@ function ENT:Think()
 					entities = ents.FindInSphere(trigger.center, trigger.radius)
 				end
 
-				if trigger_onExit ~= nil then
-					for i = #self.trigger_entities[name], 1, -1 do
-						local ent = self.trigger_entities[name][i]
-						if not table.HasValue(entities, ent) then
+				for i = #self.trigger_entities[name], 1, -1 do
+					local ent = self.trigger_entities[name][i]
+					if not table.HasValue(entities, ent) then
+						if trigger_onExit ~= nil then
 							trigger_onExit(self, ent)
-							table.remove(self.trigger_entities[name], i)
 						end
+						table.remove(self.trigger_entities[name], i)
 					end
 				end
 
-				if trigger_onEnter ~= nil then
-					for _, ent in ipairs(entities) do
-						if not table.HasValue(self.trigger_entities[name], ent) then
-							table.insert(self.trigger_entities[name], ent)
+				for _, ent in ipairs(entities) do
+					if not table.HasValue(self.trigger_entities[name], ent) then
+						table.insert(self.trigger_entities[name], ent)
+						if trigger_onEnter ~= nil then
 							trigger_onEnter(self, ent)
 						end
 					end
@@ -425,15 +448,30 @@ function ENT:OnRemove()
 		self:RemoveAllStructure()
 	end
 
-	local globalHookName = self:GetNWString('global_hook_name')
-	hook.Remove("PlayerUse", globalHookName)
-	hook.Remove("ShouldCollide", globalHookName)
-	hook.Remove("EntityTakeDamage", globalHookName)
-	hook.Remove("OnNPCKilled", globalHookName)
-	hook.Remove("EntityEmitSound", globalHookName)
-	hook.Remove("SetupPlayerVisibility", globalHookName)
+	local factory_hook_name = self:GetFactoryHookName()
+	hook.Remove("PlayerUse", factory_hook_name)
+	hook.Remove("ShouldCollide", factory_hook_name)
+	hook.Remove("EntityTakeDamage", factory_hook_name)
+	hook.Remove("OnNPCKilled", factory_hook_name)
+	hook.Remove("EntityEmitSound", factory_hook_name)
+	hook.Remove("SetupPlayerVisibility", factory_hook_name)
 
 	local quest = self:GetQuest()
+	
+	if quest.steps[step] ~= nil and quest.steps[step].hooks ~= nil then
+		local step_hook_name = self:GetStepHookName()
+		for hook_type, _ in pairs(quest.steps[step].hooks) do
+			hook.Remove(hook_type, step_hook_name)
+		end
+	end
+
+	if quest.global_hooks ~= nil then
+		local global_hook_name = self:GetGlobalHookName()
+		for hook_type, _ in pairs(quest.global_hooks) do
+			hook.Remove(hook_type, global_hook_name)
+		end
+	end
+
 	if quest.isEvent then
 		hook.Run('QSystem.EventStopped', self, quest)
 	else
@@ -451,23 +489,25 @@ function ENT:OnNextStep()
 	local step = self:GetQuestStep()
 	local old_step = self:GetQuestOldStep()
 
-	if #self.points ~= 0 then
-		if quest.steps[step].points ~= nil then
-			for _, data in pairs(self.points) do
-				local func = quest.steps[step].points[data.name]
+	if #self.points ~= 0 and quest.steps[step].points ~= nil then
+		for _, data in pairs(self.points) do
+			if quest.steps[step].points[data.name] ~= nil then
+				local func = quest.steps[data.step].points[data.name]
 				if func ~= nil then
 					func(self, data.points)
 				end
 			end
-
-			net.InvokeAll('qsystem_rpc_function_onPoints', self)
 		end
+
+		net.InvokeAll('qsystem_rpc_function_onPoints', self)
 	end
+
+	local step_hook_name = self:GetStepHookName()
 
 	if old_step ~= nil and #old_step ~= 0 then
 		if quest.steps[old_step].hooks ~= nil then
 			for hook_type, _ in pairs(quest.steps[old_step].hooks) do
-				hook.Remove(hook_type, self)
+				hook.Remove(hook_type, step_hook_name)
 			end
 		end
 	end
@@ -487,9 +527,32 @@ function ENT:OnNextStep()
 	-- 	self:SetNWBool('StopThink', false)
 	-- end
 
+	if step == 'start' then
+		if quest.global_hooks ~= nil then
+			local global_hook_name = self:GetGlobalHookName()
+			for hook_type, func in pairs(quest.global_hooks) do
+				hook.Add(hook_type, global_hook_name, function(...)
+					if not IsValid(self) then
+						hook.Remove(hook_type, global_hook_name)
+						return
+					end
+	
+					func(self, ...)
+				end)
+			end
+		end
+	end
+
 	if quest.steps[step].hooks ~= nil then
 		for hook_type, func in pairs(quest.steps[step].hooks) do
-			hook.Add(hook_type, self, func)
+			hook.Add(hook_type, step_hook_name, function(...)
+				if not IsValid(self) then
+					hook.Remove(hook_type, step_hook_name)
+					return
+				end
+
+				func(self, ...)
+			end)
 		end
 	end
 

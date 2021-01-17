@@ -45,33 +45,63 @@ function ENT:SetStep(step)
 			self:SetNWBool('is_first_start', false)
 		end
 
-		self.triggers = {}
+		for i = #self.triggers, 1, -1 do
+			if not self.triggers[i].global then
+				table.remove(self.triggers, i)
+			end
+		end
+
 		if quest.steps[step].triggers ~= nil then
-			for trigger_name, _ in pairs(quest.steps[step].triggers) do
+			for trigger_name, tdata in pairs(quest.steps[step].triggers) do
+				for _, tdata_2 in ipairs(self.triggers) do
+					if tdata.name == tdata_2.name and tdata_2.global then
+						goto skip
+					end
+				end
+
 				local file_path = 'quest_system/triggers/' .. quest.id .. '/' .. game.GetMap() .. '/' .. trigger_name .. '.json'
 				if file.Exists(file_path, 'DATA') then
 					local trigger = util.JSONToTable(file.Read(file_path, "DATA"))
 					table.insert(self.triggers, {
 						name = trigger_name,
-						trigger = trigger
+						trigger = trigger,
+						global = string.EndsWith(string.lower(trigger_name), 'global'),
+						step = step
 					})
 				end
+
+				::skip::
 			end
 
 			self:SyncTriggers()
 		end
 
-		self.points = {}
+		for i = #self.points, 1, -1 do
+			if not self.points[i].global then
+				table.remove(self.points, i)
+			end
+		end
+
 		if quest.steps[step].points ~= nil then
 			for point_name, _ in pairs(quest.steps[step].points) do
+				for _, pdata in ipairs(self.points) do
+					if point_name == pdata.name and pdata.global then
+						goto skip
+					end
+				end
+
 				local file_path = 'quest_system/points/' .. quest.id .. '/' .. game.GetMap() .. '/' .. point_name .. '.json'
 				if file.Exists(file_path, 'DATA') then
 					local points = util.JSONToTable(file.Read(file_path, "DATA"))
 					table.insert(self.points, {
 						name = point_name,
-						points = points
+						points = points,
+						global = string.EndsWith(string.lower(point_name), 'global'),
+						step = step
 					})
 				end
+
+				::skip::
 			end
 
 			self:SyncPoints()

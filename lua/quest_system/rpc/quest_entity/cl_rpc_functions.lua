@@ -13,9 +13,9 @@ net.RegisterCallback('qsystem_rpc_function_onQuestNPCKilled', function(_, eQuest
 end)
 
 net.RegisterCallback('qsystem_rpc_function_onPoints', function(_, eQuest)
-    local step = eQuest:GetQuestStepTable()
+    local quest = eQuest:GetQuest()
     for _, data in pairs(eQuest.points) do
-        local func = step.points[data.name]
+        local func = quest.steps[data.step].points[data.name]
         if func ~= nil then
             func(eQuest, data.points)
         end
