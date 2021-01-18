@@ -59,20 +59,12 @@ end)
 
 net.Receive('sv_qsystem_dialogue_answer_select', function(len, ply)
     for _, ent in pairs(ents.FindByClass('quest_dialogue')) do
-        print(1, tostring(ent))
         if IsValid(ent) and ent:GetPlayer() == ply then
             local id = net.ReadInt(10)
             local step = ent:GetStep()
 
-            print(2, tostring(id))
-            print(2, tostring(step))
-
             if step.answers[id] ~= nil then
-                print(3)
-
                 local condition = step.answers[id].condition
-
-                print(4, tostring(condition))
                 if condition ~= nil then
                     if not condition(ent) then return end
                 end

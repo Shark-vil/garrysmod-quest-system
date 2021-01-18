@@ -283,6 +283,7 @@ end
 -- @param is_next bool - convey the truth if the dialogue continues (By default assigned automatically)
 -------------------------------------
 function ENT:StartDialogue(ignore_npc_text, is_next)
+    print(3)
     ignore_npc_text = ignore_npc_text or false
     is_next = is_next or false
 
@@ -311,6 +312,7 @@ function ENT:StartDialogue(ignore_npc_text, is_next)
         net.WriteBool(ignore_npc_text)
         net.WriteBool(is_next)
         net.Send(ply)
+        print(4)
     end
 
     -- if not ignore_npc_text then
@@ -337,6 +339,7 @@ function ENT:StartDialogue(ignore_npc_text, is_next)
 
     self.isStarted = true
     self.isFirst = false
+    print(5)
 end
 
 -------------------------------------
