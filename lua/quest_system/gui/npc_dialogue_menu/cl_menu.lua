@@ -204,16 +204,16 @@ OpenDialogueMenu = function(npc_name)
                 AnswerOptionItem.DragMouseRelease = function(self, mouseCode)
                     if step.answers[id] ~= nil then
                         local func = step.answers[id].event
-                        func(LocalPlayer(), npcDialogue, currentDialogue)
+                        func(npcDialogue)
 
                         npcDialogue.isFirstAnswer = true
                         
-                        dont_send = true
-                        MainPanel:Close()
-
                         net.Start('sv_qsystem_dialogue_answer_select')
                         net.WriteInt(id, 10)
                         net.SendToServer()
+
+                        dont_send = true
+                        MainPanel:Close()
                     end
                 end
                 
