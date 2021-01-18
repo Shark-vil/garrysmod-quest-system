@@ -283,9 +283,10 @@ end
 -- @param is_next bool - convey the truth if the dialogue continues (By default assigned automatically)
 -------------------------------------
 function ENT:StartDialogue(ignore_npc_text, is_next)
-    print(3)
     ignore_npc_text = ignore_npc_text or false
     is_next = is_next or false
+
+    local ply = self:GetPlayer()
 
     if SERVER then
         if self:GetNWString('single_replic') ~= '' and (self:NpcIsFear() 
@@ -294,8 +295,6 @@ function ENT:StartDialogue(ignore_npc_text, is_next)
             self:Remove()
             return
         end
-
-        local ply = self:GetPlayer()
         
         if not is_next and self:GetNWString('single_replic') == '' then
             local dialogue = self:GetDialogue()
@@ -306,16 +305,19 @@ function ENT:StartDialogue(ignore_npc_text, is_next)
 
             self:LoadPlayerValues()
         end
-
-        net.Start('cl_qsystem_set_dialogue_id')
-        net.WriteEntity(self)
-        net.WriteBool(ignore_npc_text)
-        net.WriteBool(is_next)
-        net.Send(ply)
-        print(4)
     end
 
-    -- if not ignore_npc_text then
+    timer.Simple(0.5, function()
+        if not IsValid(self) then return end
+
+        if SERVER then
+            net.Start('cl_qsystem_set_dialogue_id')
+            net.WriteEntity(self)
+            net.WriteBool(ignore_npc_text)
+            net.WriteBool(is_next)
+            net.Send(ply)
+        end
+
         local step = self:GetStep()
         local delay = step.delay or 0
         if step.eventDelay ~= nil then
@@ -325,21 +327,14 @@ function ENT:StartDialogue(ignore_npc_text, is_next)
             end)
         end
 
-        -- if SERVER and self:GetDialogue().isBackground then
-        --     timer.Simple(delay + 1, function()
-        --         if not IsValid(self) then return end
-        --         self:Remove()
-        --     end)
-        -- end
-
         if step.event ~= nil then
             step.event(self)
         end
-    -- end
 
-    self.isStarted = true
-    self.isFirst = false
-    print(5)
+        self.isStarted = true
+        self.isFirst = false
+
+    end)
 end
 
 -------------------------------------

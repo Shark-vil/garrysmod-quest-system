@@ -69,10 +69,8 @@ end
 -------------------------------------
 function ENT:Next(step_id, ignore_npc_text)
     ignore_npc_text = ignore_npc_text or false
-    print(1, tostring(ignore_npc_text))
     self:SetStep(step_id)
     timer.Simple(0.5, function()
-        print(2, tostring(ignore_npc_text), tostring(true))
         self:StartDialogue(ignore_npc_text, true)
     end)
 end
