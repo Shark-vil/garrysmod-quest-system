@@ -1,6 +1,7 @@
 local conversation = {
     id = 'free_medic',
     name = 'Вольный медик',
+    autoParent = true,
     isRandomNpc = true,
     randomNumber = 2,
     class = 'npc_citizen',

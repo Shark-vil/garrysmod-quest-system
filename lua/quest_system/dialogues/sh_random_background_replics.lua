@@ -1,6 +1,7 @@
 local conversation = {
     id = 'citizens_random_replics',
     name = 'Гражданин',
+    autoParent = true,
     isBackground = true,
     isRandomNpc = true,
     class = 'npc_citizen',

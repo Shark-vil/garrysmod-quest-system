@@ -58,6 +58,10 @@ function QuestDialogue:IsValidParentNPCDialogue(npc, ply, data)
         if result ~= nil and result == false then nice = false end
     end
 
+    if not data.autoParent then
+        nice = false
+    end
+
     return nice
 end
 
@@ -153,8 +157,8 @@ function QuestDialogue:ParentToNPC(id, npc, ply, ignore_valid, ignore_random)
             return
         end
 
-        if not ignore_random and data.randomNumber ~= nil and data.randomNumber > 0 then
-            if math.random(1, data.randomNumber) ~= 1 then 
+        if not ignore_random and dialogue.randomNumber ~= nil and dialogue.randomNumber > 0 then
+            if math.random(1, dialogue.randomNumber) ~= 1 then 
                 return
             end
         end

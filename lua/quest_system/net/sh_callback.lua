@@ -1,4 +1,4 @@
-if net.Invoke ~= nil then return end
+if snet.Invoke ~= nil then return end
 
 local storage = {}
 
@@ -39,7 +39,7 @@ else
     net.Receive('cl_network_rpc_callback', network_callback)
 end
 
-net.Invoke = function(name, ply, ...)
+snet.Invoke = function(name, ply, ...)
     if SERVER then
         net.Start('cl_network_rpc_callback')
         net.WriteString(name)
@@ -53,7 +53,7 @@ net.Invoke = function(name, ply, ...)
     end
 end
 
-net.InvokeAll = function(name, ...)
+snet.InvokeAll = function(name, ...)
     if SERVER then
         net.Start('cl_network_rpc_callback')
         net.WriteString(name)
@@ -62,7 +62,7 @@ net.InvokeAll = function(name, ...)
     end
 end
 
-net.RegisterCallback = function(name, func, onRemove, adminOnly)
+snet.RegisterCallback = function(name, func, onRemove, adminOnly)
     adminOnly = adminOnly or false
     onRemove = onRemove or false
     storage[name] = {

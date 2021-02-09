@@ -1,5 +1,6 @@
 util.AddNetworkString('sv_qsystem_startquest')
 util.AddNetworkString('sv_qsystem_stopquest')
+util.AddNetworkString('cl_qsystem_set_quest_tracking')
 
 net.Receive('sv_qsystem_startquest', function(len, ply)
     if ply:QSystemIsSpam() then

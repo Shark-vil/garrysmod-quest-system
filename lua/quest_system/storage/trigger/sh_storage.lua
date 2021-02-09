@@ -60,7 +60,7 @@ if SERVER then
         local fileData = storage:Read(id, name)
 
         if fileData ~= nil then
-            net.Invoke('triggers_read' .. name, ply, fileData)
+            snet.Invoke('triggers_read' .. name, ply, fileData)
         end
     end)
 end
@@ -68,7 +68,7 @@ end
 function storage:Read(id, name, callback)
     if CLIENT then
         if callback ~= nil and isfunction(callback) then
-            net.RegisterCallback('triggers_read' .. name, callback, true, true)
+            snet.RegisterCallback('triggers_read' .. name, callback, true, true)
 
             net.Start('sv_qsystem_trigger_read')
             net.WriteString(id)

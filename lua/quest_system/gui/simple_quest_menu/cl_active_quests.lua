@@ -1,3 +1,5 @@
+local QuestTracking = NULL
+
 local function OpenMenu()
     local Frame = vgui.Create('DFrame')
     Frame:SetTitle('Список активных заданий')
@@ -19,7 +21,8 @@ local function OpenMenu()
 
         if quest.isEvent or ent:GetPlayer() == LocalPlayer() then       
             if quest.timeQuest ~= nil then
-                quest.description = quest.description .. '\nВремя на выполнение: ' .. quest.timeQuest .. ' сек.'
+                quest.description = quest.description .. 
+                    '\nВремя на выполнение: ' .. quest.timeQuest .. ' сек.'
             end
 
             isZero = false
@@ -59,6 +62,13 @@ local function OpenMenu()
             LabelDescription:SetText(quest.description)
             LabelDescription:SetDark(1)
             LabelDescription:SetWrap(true)
+
+            local ButtonQuestTracking = vgui.Create('DButton', PanelItem)
+            ButtonQuestTracking:SetText('Отслеживать задание')
+            ButtonQuestTracking:Dock(BOTTOM)
+            ButtonQuestTracking.DoClick = function()
+                QuestTracking = ent
+            end
         end
     end
 
@@ -71,3 +81,40 @@ local function OpenMenu()
     end
 end
 concommand.Add('qsystem_active_quests_menu', OpenMenu)
+
+net.Receive('cl_qsystem_set_quest_tracking', function()
+    local ent = net.ReadEntity()
+    if IsValid(ent) then
+        QuestTracking = ent
+    end
+end)
+
+local arrow_color = Color(255, 255, 255, 255)
+local arrow_texture = surface.GetTextureID("vgui/quest_system/mm_arrow")
+local function DrawNavigationArrow()
+    if not IsValid(QuestTracking) then return end
+    local eQuest = QuestTracking
+
+    if eQuest:HasQuester(LocalPlayer()) then
+        local vec = eQuest:GetNWVector('_arrow_target', nil)
+        if vec ~= nil then
+            local local_pos = LocalPlayer():GetPos()
+            local eye_angle = LocalPlayer():EyeAngles()
+            
+            if LocalPlayer():InVehicle() then
+                local veh = LocalPlayer():GetVehicle()
+                eye_angle = eye_angle + veh:EyeAngles()
+            end
+
+            local angTo = (vec - local_pos):Angle()
+            local diffYaw = angTo.y - eye_angle.y
+            local absYaw = math.abs(math.sin(math.rad(diffYaw)))
+
+            surface.SetDrawColor(arrow_color)
+            surface.SetTexture(arrow_texture)
+            surface.DrawTexturedRectRotated(ScrW() / 2, 75, 128, 32 + 64 * absYaw, diffYaw)
+            return
+        end
+    end
+end
+hook.Add("HUDPaint", "QSystem.DrawNavigationArrow", DrawNavigationArrow)

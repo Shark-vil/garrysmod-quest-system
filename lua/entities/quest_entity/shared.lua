@@ -139,7 +139,7 @@ function ENT:Initialize()
 				local step = self:GetQuestStepTable()
 				if step ~= nil and step.onUse ~= nil then
 					if table.HasValue(self.players, ply) then
-						net.InvokeAll('qsystem_rpc_function_onUse', self, ent)
+						snet.InvokeAll('qsystem_rpc_function_onUse', self, ent)
 						step.onUse(self, ent)
 					end
 				end
@@ -158,7 +158,7 @@ function ENT:Initialize()
 					if data.npc == npc then
 						local step = self:GetQuestStepTable()
 						if step ~= nil and step.onQuestNPCKilled ~= nil then
-							net.InvokeAll('qsystem_rpc_function_onQuestNPCKilled', 
+							snet.InvokeAll('qsystem_rpc_function_onQuestNPCKilled', 
 								self, data, npc, attacker, inflictor)
 							step.onQuestNPCKilled(self, data, npc, attacker, inflictor)
 						end
@@ -499,7 +499,7 @@ function ENT:OnNextStep()
 			end
 		end
 
-		net.InvokeAll('qsystem_rpc_function_onPoints', self)
+		snet.InvokeAll('qsystem_rpc_function_onPoints', self)
 	end
 
 	local step_hook_name = self:GetStepHookName()
@@ -569,7 +569,9 @@ end
 -- @params player extension - lua/quest_system/extension/player_quest/sh_extension.lua
 -------------------------------------
 function ENT:Notify(title, desc, lifetime, image, bgcolor)
-	self:GetPlayer():QuestNotify(title, desc, lifetime, image, bgcolor)
+	local ply = self:GetPlayer()
+	if not IsValid(ply) then return end
+	ply:QuestNotify(title, desc, lifetime, image, bgcolor)
 end
 
 -------------------------------------
@@ -579,7 +581,9 @@ end
 -------------------------------------
 function ENT:NotifyOnlyRegistred(title, desc, lifetime, image, bgcolor)
 	for _, ply in pairs(self.players) do
-		ply:QuestNotify(title, desc, lifetime, image, bgcolor)
+		if IsValid(ply) then
+			ply:QuestNotify(title, desc, lifetime, image, bgcolor)
+		end
 	end
 end
 
@@ -590,7 +594,9 @@ end
 -------------------------------------
 function ENT:NotifyAll(title, desc, lifetime, image, bgcolor)
 	for _, ply in pairs(player.GetHumans()) do
-		ply:QuestNotify(title, desc, lifetime, image, bgcolor)
+		if IsValid(ply) then
+			ply:QuestNotify(title, desc, lifetime, image, bgcolor)
+		end
 	end
 end
 
@@ -702,6 +708,11 @@ end
 -------------------------------------
 function ENT:GetVariable(key)
 	return self.values[key]
+end
+
+function ENT:SetArrowVector(vec)
+	if not isvector(vec) then return end
+	self:SetNWVector('_arrow_target', vec)
 end
 
 -------------------------------------

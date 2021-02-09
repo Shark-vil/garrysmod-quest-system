@@ -64,7 +64,7 @@ using('cfg/sh_main_config.lua')
 
 using('sh_main.lua')
 
-using('net/sh_callback.lua')
+-- using('net/sh_callback.lua')
 
 using('extension/player_getting_list/sv_player_lib.lua')
 using('extension/player_quest/sv_extension.lua')

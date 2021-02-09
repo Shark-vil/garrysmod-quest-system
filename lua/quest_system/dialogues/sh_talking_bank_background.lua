@@ -1,6 +1,7 @@
 local conversation = {
     id = 'talking_bank',
     name = 'Банка',
+    autoParent = true,
     isBackground = true,
     model = 'models/props_junk/PopCan01a.mdl',
     condition = function(ply, ent)

@@ -182,7 +182,7 @@ OpenPointsPanelEditor = function(quest, structure_name)
         if spawn_id ~= nil then
             surface.PlaySound('Resource/warning.wav')
         else
-            net.RegisterCallback('spawn_structure_editor', function(ply, id)
+            snet.RegisterCallback('spawn_structure_editor', function(ply, id)
                 spawn_id = id
             end)
             

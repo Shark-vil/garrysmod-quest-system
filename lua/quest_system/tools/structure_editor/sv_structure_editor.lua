@@ -30,7 +30,7 @@ net.Receive('sv_qsystem_structure_spawn', function(len, ply)
     local structure_name = net.ReadString()
     local spawn_id = QuestSystem:SpawnStructure(quest_id, structure_name)
 
-    net.Invoke('spawn_structure_editor', ply, spawn_id)
+    snet.Invoke('spawn_structure_editor', ply, spawn_id)
 end)
 
 net.Receive('sv_qsystem_structure_remove', function(len, ply)
