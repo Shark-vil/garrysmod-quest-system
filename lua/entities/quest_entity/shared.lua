@@ -26,11 +26,11 @@ ENT.GlobalHookName = ''
 ENT.FactoryHookName = ''
 
 function ENT:Initialize()
-    self:SetModel('models/props_junk/PopCan01a.mdl')
+	self:SetModel('models/props_junk/PopCan01a.mdl')
 	self:PhysicsInit(SOLID_NONE)
 	self:SetMoveType(MOVETYPE_NONE)
-    self:SetSolid(SOLID_NONE)
-    self:SetNoDraw(true)
+	self:SetSolid(SOLID_NONE)
+	self:SetNoDraw(true)
 
 	self.StepHookName = 'QuestEntityHook_' 
 	.. tostring(self:EntIndex()) 
@@ -51,7 +51,7 @@ function ENT:Initialize()
 			-------------------------------------
 			-- Disable collision with quest objects for players not belonging to the quest.
 			-------------------------------------
-			-- @params wiki - https://wiki.facepunch.com/gmod/GM:ShouldCollide
+			-- Wiki - https://wiki.facepunch.com/gmod/GM:ShouldCollide
 			-------------------------------------
 			hook.Add('ShouldCollide', factory_hook_name, function(ent1, ent2)
 				if not IsValid(self) then hook.Remove("ShouldCollide", factory_hook_name) return end
@@ -89,7 +89,7 @@ function ENT:Initialize()
 			-------------------------------------
 			-- Disables player damage to NPCs if players do not belong to the quest, and vice versa.
 			-------------------------------------
-			-- @params wiki - https://wiki.facepunch.com/gmod/GM:EntityTakeDamage
+			-- Wiki - https://wiki.facepunch.com/gmod/GM:EntityTakeDamage
 			-------------------------------------
 			hook.Add('EntityTakeDamage', factory_hook_name, function(target, dmginfo)
 				if not IsValid(self) then hook.Remove("EntityTakeDamage", factory_hook_name) return end
@@ -131,7 +131,7 @@ function ENT:Initialize()
 			-------------------------------------
 			-- Calls a step function - onUse - when press E on any (almost) entity.
 			-------------------------------------
-			-- @params wiki - https://wiki.facepunch.com/gmod/GM:PlayerUse
+			-- Wiki - https://wiki.facepunch.com/gmod/GM:PlayerUse
 			-------------------------------------
 			hook.Add("PlayerUse", factory_hook_name, function(ply, ent)
 				if not IsValid(self) then hook.Remove("PlayerUse", factory_hook_name) return end
@@ -150,7 +150,7 @@ function ENT:Initialize()
 			-------------------------------------
 			-- Calls a function for a step if the quest NPC is killed.
 			-------------------------------------
-			-- @params wiki - https://wiki.facepunch.com/gmod/GM:OnNPCKilled
+			-- Wiki - https://wiki.facepunch.com/gmod/GM:OnNPCKilled
 			-------------------------------------
 			hook.Add('OnNPCKilled', factory_hook_name, function(npc, attacker, inflictor)
 				if not IsValid(self) then hook.Remove("OnNPCKilled", factory_hook_name) return end
@@ -171,7 +171,7 @@ function ENT:Initialize()
 		-------------------------------------
 		-- Forces the visibility of all quest entities. Otherwise, clients may receive an empty value.
 		-------------------------------------
-		-- @params wiki - https://wiki.facepunch.com/gmod/GM:SetupPlayerVisibility
+		-- Wiki - https://wiki.facepunch.com/gmod/GM:SetupPlayerVisibility
 		-------------------------------------
 		hook.Add('SetupPlayerVisibility', factory_hook_name, function(pPlayer, pViewEntity)
 			if not IsValid(self) then hook.Remove("SetupPlayerVisibility", factory_hook_name) return end
@@ -212,7 +212,7 @@ function ENT:Initialize()
 		-- WARNING:
 		-- The effectiveness of the hook is questionable. May be removed in the future.
 		-------------------------------------
-		-- @params wiki - https://wiki.facepunch.com/gmod/GM:EntityEmitSound
+		-- Wiki - https://wiki.facepunch.com/gmod/GM:EntityEmitSound
 		-------------------------------------
 		hook.Add("EntityEmitSound", factory_hook_name, function(t)
 			if not IsValid(self) then hook.Remove("EntityEmitSound", factory_hook_name) return end
@@ -260,7 +260,7 @@ end
 -------------------------------------
 -- Checks for the existence of a nested steps value.
 -------------------------------------
--- @params arg - value key
+-- @param arg string - value key
 -------------------------------------
 -- @return bool - will return true if the key exists, otherwise false
 -------------------------------------
@@ -347,8 +347,8 @@ end
 -------------------------------------
 -- Executable a global quest function.
 -------------------------------------
--- @params id - function identifier
--- @params args - any arguments separated by commas
+-- @param id string - function identifier
+-- @param args varargs - any arguments separated by commas
 -------------------------------------
 function ENT:ExecQuestFunction(id, ...)
 	local quest = self:GetQuest()
@@ -370,7 +370,7 @@ end
 -------------------------------------
 -- Calls an step think and triggers function if exists.
 -------------------------------------
--- @params wiki - https://wiki.facepunch.com/gmod/ENTITY:Think
+-- Wiki - https://wiki.facepunch.com/gmod/ENTITY:Think
 -------------------------------------
 function ENT:Think()
 	local step = self:GetQuestStepTable()
@@ -430,7 +430,7 @@ end
 -------------------------------------
 -- Removes all dependencies when the entity is deleted, and also calls the step function - destruct.
 -------------------------------------
--- @params wiki - https://wiki.facepunch.com/gmod/ENTITY:OnRemove
+-- Wiki - https://wiki.facepunch.com/gmod/ENTITY:OnRemove
 -------------------------------------
 function ENT:OnRemove()
 	local step = self:GetQuestStepTable()
@@ -566,7 +566,9 @@ end
 -------------------------------------
 -- Sends a notification to the first player in the list of registered players.
 -------------------------------------
--- @params player extension - lua/quest_system/extension/player_quest/sh_extension.lua
+-- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+-- ЗАПОЛНИТЬ ОПИСАНИЕ ПАРАМЕТРОВ
+-- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 -------------------------------------
 function ENT:Notify(title, desc, lifetime, image, bgcolor)
 	local ply = self:GetPlayer()
@@ -577,7 +579,9 @@ end
 -------------------------------------
 -- Sends notification to all registered players.
 -------------------------------------
--- @params player extension - lua/quest_system/extension/player_quest/sh_extension.lua
+-- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+-- ЗАПОЛНИТЬ ОПИСАНИЕ ПАРАМЕТРОВ
+-- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 -------------------------------------
 function ENT:NotifyOnlyRegistred(title, desc, lifetime, image, bgcolor)
 	for _, ply in pairs(self.players) do
@@ -590,7 +594,9 @@ end
 -------------------------------------
 -- Sends a notification to all players on the server.
 -------------------------------------
--- @params player extension - lua/quest_system/extension/player_quest/sh_extension.lua
+-- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+-- ЗАПОЛНИТЬ ОПИСАНИЕ ПАРАМЕТРОВ
+-- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 -------------------------------------
 function ENT:NotifyAll(title, desc, lifetime, image, bgcolor)
 	for _, ply in pairs(player.GetHumans()) do
@@ -603,9 +609,9 @@ end
 -------------------------------------
 -- Check if the NPC belongs to the quest or not.
 -------------------------------------
--- @params npc - entity to check
--- (Optional) @params type - npc type (if required)
--- (Optional) @params tag - npc tag (if required)
+-- @param npc entity - npc entity
+-- @param type string|nil - npc type
+-- @param tag string|nil - npc tag
 -------------------------------------
 -- @return bool - will return true if NPCs were found according to the conditions, otherwise false
 -------------------------------------
@@ -625,7 +631,7 @@ end
 -------------------------------------
 -- Checks if the player is part of the quest.
 -------------------------------------
--- @params ply - player entity
+-- @param ply entity - player entity
 -------------------------------------
 -- @return bool - will return true if the player belongs to the quest, otherwise false
 -------------------------------------
@@ -643,8 +649,8 @@ end
 -------------------------------------
 -- Get one or more registered NPCs.
 -------------------------------------
--- @params type - npc type
--- (Optional) @params tag extension - npc tag. 
+-- @param type string - npc type
+-- @param tag string|nil - npc tag
 -------------------------------------
 -- @return entity - will return the found entity, otherwise NULL
 -------------------------------------
@@ -672,7 +678,7 @@ end
 -------------------------------------
 -- Check if the Entity belongs to the quest or not.
 -------------------------------------
--- @params item - entity to check
+-- @param item entity - entity to check
 -------------------------------------
 -- @return bool - will return true if entity were found, otherwise false
 -------------------------------------
@@ -686,7 +692,7 @@ end
 -------------------------------------
 -- Get registered item.
 -------------------------------------
--- @params item_id - unique item identifier
+-- @param item_id string - unique item identifier
 -------------------------------------
 -- @return entity - will return the found entity, otherwise NULL
 -------------------------------------
@@ -702,7 +708,7 @@ end
 -------------------------------------
 -- Get quest variable.
 -------------------------------------
--- @params key - variable key
+-- @param key string - variable key
 -------------------------------------
 -- @return string - will return the value of a variable or nil
 -------------------------------------
@@ -718,7 +724,7 @@ end
 -------------------------------------
 -- Check if the weapon is a quest one.
 -------------------------------------
--- @params otherWeapon - weapon entity
+-- @param otherWeapon entity - weapon entity
 -------------------------------------
 -- @return bool - will return true if the weapon is a quest weapon, otherwise false
 -------------------------------------
@@ -735,8 +741,8 @@ end
 -- timer.Simple wrapper. Creates a timer and automatically 
 -- checks the existence of the quest before executing the function.
 -------------------------------------
--- @params func - executable function
--- (Optional) @params delay - timer delay 
+-- @param func function - executable function
+-- @param delay number|nil - timer delay 
 -- (By default it takes a number from the function - self:GetSyncDelay())
 -------------------------------------
 function ENT:TimerCreate(func, delay)

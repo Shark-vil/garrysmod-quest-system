@@ -201,9 +201,9 @@ end
 -------------------------------------
 -- Gives registered players a reward, if it is in the quest configuration.
 -------------------------------------
--- (Optional) @param customPayment number - set the amount of cash reward
+-- @param customPayment number|nil - set the amount of cash reward
 -- (By default, the number is taken from the quest configuration - quest.payment)
--- (Optional) @param addToPayment number - add the specified amount of money to the total.
+-- @param addToPayment number|nil - add the specified amount of money to the total.
 -- Can be used as a bonus.
 -------------------------------------
 function ENT:Reward(customPayment, addToPayment)
@@ -237,9 +237,9 @@ end
 -------------------------------------
 -- Provides compensation to the player if the quest was interrupted or not completed correctly.
 -------------------------------------
--- (Optional) @param customPayment number - set the amount of cash reward
+-- @param customPayment number|nil - set the amount of cash reward
 -- (By default, the number from the quest configuration is taken (quest.payment) and divided by two)
--- (Optional) @param addToPayment number - add the specified amount of money to the total.
+-- @param addToPayment number|nil - add the specified amount of money to the total.
 -- Can be used as a bonus.
 -------------------------------------
 function ENT:Reparation(customPayment, addToPayment)
@@ -376,7 +376,7 @@ end
 -- Makes quest NPCs move towards a given vector.
 -------------------------------------
 -- @param pos vector - destination vector
--- (Optional) @param type string - npc type
+-- @param type string|nil - npc type
 -- @param tag string - npc tag
 -- @param moveType string - type of movement - walk or run
 -------------------------------------
@@ -481,7 +481,7 @@ end
 -------------------------------------
 -- @param npc entity - npc entity
 -- @param type string - type can be - friend or enemy
--- (Optional) @param tag string - tag is a unique identifier for an NPC.
+-- @param tag string|nil - tag is a unique identifier for an NPC.
 -- Can be used to check the state of a specific entity. (Must be unique!)
 -------------------------------------
 function ENT:AddQuestNPC(npc, type, tag)
@@ -618,7 +618,7 @@ end
 -- then the truth will be returned, even if there is only one left alive!
 -------------------------------------
 -- @param type string - npc type
--- (Optional) @param tag string - npc tag
+-- @param tag string|nil - npc tag
 -------------------------------------
 -- @return bool - will return true if one or more npc exists, otherwise false
 -------------------------------------
@@ -651,7 +651,7 @@ end
 -- If the config parameter - HideQuestsOfOtherPlayers - is not false,
 -- then the NPCs will ignore players that do not belong to the quest.
 -------------------------------------
--- (Optional) @param ent entity - player or npc entity
+-- @param ent entity|nil - player or npc entity
 -------------------------------------
 function ENT:SetNPCsBehavior(ent)
 	if table.Count(self.npcs) == 0 then return end
@@ -768,8 +768,8 @@ end
 -------------------------------------
 -- Synchronizes the prohibition of drawing quest objects for other players.
 -------------------------------------
--- (Optional) @param ply entity - player entity (Sent to all players by default)
--- (Optional) @param delay number - delay before sending data to clients
+-- @param ply entity|nil - player entity (Sent to all players by default)
+-- @param delay number|nil - delay before sending data to clients
 -------------------------------------
 function ENT:SyncNoDraw(ply, delay)
 	self:TimerCreate(function()
@@ -784,8 +784,8 @@ end
 -------------------------------------
 -- Synchronizes data on quest items with clients.
 -------------------------------------
--- (Optional) @param ply entity - player entity (Sent to all players by default)
--- (Optional) @param delay number - delay before sending data to clients
+-- @param ply entity|nil - player entity (Sent to all players by default)
+-- @param delay number|nil - delay before sending data to clients
 -------------------------------------
 function ENT:SyncItems(ply, delay)
 	self:TimerCreate(function()
@@ -801,8 +801,8 @@ end
 -------------------------------------
 -- Synchronizes data on quest NPCs with clients.
 -------------------------------------
--- (Optional) @param ply entity - player entity (Sent to all players by default)
--- (Optional) @param delay number - delay before sending data to clients
+-- @param ply entity|nil - player entity (Sent to all players by default)
+-- @param delay number|nil - delay before sending data to clients
 -------------------------------------
 function ENT:SyncNPCs(ply, delay)
 	self:TimerCreate(function()
@@ -819,8 +819,8 @@ end
 -------------------------------------
 -- Synchronizes data about registered players with clients.
 -------------------------------------
--- (Optional) @param ply entity - player entity (Sent to all players by default)
--- (Optional) @param delay number - delay before sending data to clients
+-- @param ply entity|nil - player entity (Sent to all players by default)
+-- @param delay number|nil - delay before sending data to clients
 -------------------------------------
 function ENT:SyncPlayers(ply, delay)
 	self:TimerCreate(function()
@@ -837,8 +837,8 @@ end
 -------------------------------------
 -- Synchronizes data about quest triggers with clients.
 -------------------------------------
--- (Optional) @param ply entity - player entity (Sent to all players by default)
--- (Optional) @param delay number - delay before sending data to clients
+-- @param ply entity|nil - player entity (Sent to all players by default)
+-- @param delay number|nil - delay before sending data to clients
 -------------------------------------
 function ENT:SyncTriggers(ply, delay)
 	self:TimerCreate(function()
@@ -855,8 +855,8 @@ end
 -------------------------------------
 -- Synchronizes data about quest points with clients.
 -------------------------------------
--- (Optional) @param ply entity - player entity (Sent to all players by default)
--- (Optional) @param delay number - delay before sending data to clients
+-- @param ply entity|nil - player entity (Sent to all players by default)
+-- @param delay number|nil - delay before sending data to clients
 -------------------------------------
 function ENT:SyncPoints(ply, delay)
 	self:TimerCreate(function()
@@ -873,8 +873,8 @@ end
 -------------------------------------
 -- Synchronizes data about quest variables with clients.
 -------------------------------------
--- (Optional) @param ply entity - player entity (Sent to all players by default)
--- (Optional) @param delay number - delay before sending data to clients
+-- @param ply entity|nil - player entity (Sent to all players by default)
+-- @param delay number|nil - delay before sending data to clients
 -------------------------------------
 function ENT:SyncValues(ply, delay)
 	self:TimerCreate(function()
@@ -891,8 +891,8 @@ end
 -------------------------------------
 -- Synchronizes data on quest weapons with clients.
 -------------------------------------
--- (Optional) @param ply entity - player entity (Sent to all players by default)
--- (Optional) @param delay number - delay before sending data to clients
+-- @param ply entity|nil - player entity (Sent to all players by default)
+-- @param delay number|nil - delay before sending data to clients
 -------------------------------------
 function ENT:SyncWeapons(ply, delay)
 	self:TimerCreate(function()
@@ -909,8 +909,8 @@ end
 -------------------------------------
 -- Synchronizes data on quest structures with clients.
 -------------------------------------
--- (Optional) @param ply entity - player entity (Sent to all players by default)
--- (Optional) @param delay number - delay before sending data to clients
+-- @param ply entity|nil - player entity (Sent to all players by default)
+-- @param delay number|nil - delay before sending data to clients
 -------------------------------------
 function ENT:SyncStructures(ply, delay)
 	self:TimerCreate(function()
@@ -927,8 +927,7 @@ end
 -------------------------------------
 -- Calls all sync methods in order.
 -------------------------------------
--- (Optional) @param ply entity - player entity (Sent to all players by default)
--- (Optional) @param delay number - delay before sending data to clients
+-- @param ply entity|nil - player entity (Sent to all players by default)
 -------------------------------------
 function ENT:SyncAll(ply)
 	QuestSystem:Debug('Start SyncAll <<<<<<')
@@ -966,7 +965,7 @@ end
 -- Lock or unlock the door entity.
 -------------------------------------
 -- @param ent entity|table - entity or list of entities
--- (Optional) @param lockState string - door state - lock or unlock. (The default is always  - lock)
+-- @param lockState string|nil - door state - lock or unlock. (The default is always  - lock)
 -------------------------------------
 function ENT:DoorLocker(ent, lockState)
 	lockState = lockState or 'lock'
@@ -1005,8 +1004,8 @@ end
 -------------------------------------
 -- Removes registered npc. If no arguments are passed, then all NPCs will be removed.
 -------------------------------------
--- (Optional) @param type string - if not nil, then all NPCs of this type will be deleted
--- (Optional) @param tag string - if not nil, then all NPCs for this tag will be deleted 
+-- @param type string|nil - if not nil, then all NPCs of this type will be deleted
+-- @param tag string|nil - if not nil, then all NPCs for this tag will be deleted 
 -- (The type must not be nil)
 -------------------------------------
 function ENT:RemoveNPC(type, tag)
@@ -1045,7 +1044,7 @@ end
 -------------------------------------
 -- Removes registered items. If no arguments are passed, then all items will be removed.
 -------------------------------------
--- (Optional) @param item_id string - if not nil, then only the item with this identifier will be deleted
+-- @param item_id string|nil - if not nil, then only the item with this identifier will be deleted
 -------------------------------------
 function ENT:RemoveItems(item_id)
 	if #self.items ~= nil then
