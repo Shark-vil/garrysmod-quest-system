@@ -33,7 +33,7 @@ function ENT:Use(activator, caller, useType, value)
         local quest = eQuest:GetQuest()
         if quest.steps[step].onUseItem ~= nil then
             local func = quest.steps[step].onUseItem
-            snet.InvokeAll('qsystem_rpc_function_onUseItem', self, activator, caller, useType, value)
+            snet.EntityInvokeAll('qsystem_rpc_function_onUseItem', self, activator, caller, useType, value)
             func(eQuest, self, activator, caller, useType, value)
         end
     end

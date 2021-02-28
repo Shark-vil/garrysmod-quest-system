@@ -1,4 +1,4 @@
-snet.RegisterCallback('qsystem_on_construct', function(_, ent, step)
+snet.RegisterEntityCallback('qsystem_on_construct', function(_, ent, step)
     local quest = ent:GetQuest()
 
     if step == 'start' then
