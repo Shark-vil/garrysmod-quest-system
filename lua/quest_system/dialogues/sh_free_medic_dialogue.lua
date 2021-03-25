@@ -6,10 +6,12 @@ local conversation = {
     randomNumber = 2,
     class = 'npc_citizen',
     condition = function(ply, npc)
-        -- Only male citizen model
-        local validModel = string.find(npc:GetModel():lower(), ('/male_'))
-        if validModel ~= nil then return true end
-        return false
+        if not bgNPC then
+            local actor = bgNPC:GetActor(npc)
+            if actor then return actor:HasTeam('medic') end
+        end
+
+        return string.find(npc:GetModel():lower(), ('/male_')) ~= nil
     end,
     steps = {
         start = {

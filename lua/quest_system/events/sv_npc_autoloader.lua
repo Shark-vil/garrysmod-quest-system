@@ -7,6 +7,7 @@ hook.Add('PostCleanupMap', 'QSystem.NpcAutoLoader', function()
             npc:SetPos(location.pos)
             npc:SetAngles(location.ang)
             npc:Spawn()
+            npc:Activate()
         end
     end
 end)
@@ -20,6 +21,7 @@ hook.Add('InitPostEntity', 'QSystem.NpcAutoLoader', function()
             npc:SetPos(location.pos)
             npc:SetAngles(location.ang)
             npc:Spawn()
+            npc:Activate()
         end
     end
 end)

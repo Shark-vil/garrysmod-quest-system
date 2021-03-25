@@ -37,6 +37,10 @@ function ENT:SetStep(step)
 	if quest ~= nil and quest.steps[step] ~= nil then
 		local old_step = self:GetQuestStep()
 		if old_step ~= nil and #old_step ~= 0 then
+			if quest.steps[old_step].destruct ~= nil then
+				quest.steps[old_step].destruct(self)
+			end
+
 			self:SetNWString('old_step', old_step)
 		end
 		self:SetNWString('step', step)
@@ -130,7 +134,9 @@ function ENT:SetStep(step)
 	
 			self:TimerCreate(function()
 				if quest.steps[step].construct ~= nil then
-					quest.steps[step].construct(self)
+					if quest.steps[step].construct(self) then
+						return
+					end
 				end
 	
 				self.StopThink = false
@@ -574,10 +580,12 @@ function ENT:SpawnQuestNPC(npc_class, data)
 			end
 
 			npc:Spawn()
+			npc:Activate()
 			timer.Remove(timerName)
 		end)
 	else
 		npc:Spawn()
+		npc:Activate()
 	end
 	self:AddQuestNPC(npc, data.type, data.tag)
 	return npc
@@ -609,6 +617,7 @@ function ENT:SpawnQuestItem(item_class, data)
 		item:SetModel(data.model)
 	end
 	item:Spawn()
+	item:Activate()
 	self:AddQuestItem(item, data.id)
 	return item
 end

@@ -25,7 +25,7 @@ function ENT:Initialize()
         -------------------------------------
         -- Renders the background dialog text above the NPC's head.
         -------------------------------------
-        -- @params wiki - https://wiki.facepunch.com/gmod/GM:PostDrawOpaqueRenderables
+        -- Wiki - https://wiki.facepunch.com/gmod/GM:PostDrawOpaqueRenderables
         -------------------------------------
         hook.Add('PostDrawOpaqueRenderables', self, function()
             local npc = self:GetNPC()
@@ -104,7 +104,7 @@ function ENT:Initialize()
         -- Provides visibility of the entity of the dialogue to clients.
         -- Otherwise, clients may not receive data.
 		-------------------------------------
-		-- @params wiki - https://wiki.facepunch.com/gmod/GM:SetupPlayerVisibility
+		-- Wiki - https://wiki.facepunch.com/gmod/GM:SetupPlayerVisibility
 		-------------------------------------
         hook.Add('SetupPlayerVisibility', self, function(this, pPlayer, pViewEntity)
             AddOriginToPVS(self:GetPos())
@@ -124,7 +124,7 @@ end
 -------------------------------------
 -- An entity deletes itself if one of the conditions is violated.
 -------------------------------------
--- @params wiki - https://wiki.facepunch.com/gmod/ENTITY:Think
+-- Wiki - https://wiki.facepunch.com/gmod/ENTITY:Think
 -------------------------------------
 function ENT:Think()
     if self.isStarted then
@@ -142,7 +142,7 @@ end
 -------------------------------------
 -- Saves data about the first dialogue and unfreezes the player if it is frozen.
 -------------------------------------
--- @params wiki - https://wiki.facepunch.com/gmod/ENTITY:OnRemove
+-- Wiki - https://wiki.facepunch.com/gmod/ENTITY:OnRemove
 -------------------------------------
 function ENT:OnRemove()
     if SERVER then
@@ -214,7 +214,19 @@ end
 -- @return table - step data table
 -------------------------------------
 function ENT:GetStep()
-    return self:GetDialogue().steps[self:GetStepID()]
+    local step = self:GetDialogue().steps[self:GetStepID()]
+
+    if step.answers and isfunction(step.answers) then
+        local func = step.answers
+        step.answers = func(self)
+    end
+
+    if step.text and isfunction(step.text) then
+        local func = step.text
+        step.text = func(self)
+    end
+
+    return step
 end
 
 -------------------------------------
@@ -340,7 +352,7 @@ end
 -------------------------------------
 -- Plays the sound coming from the player's interlocutor.
 -------------------------------------
--- @params wiki - https://wiki.facepunch.com/gmod/Entity:EmitSound
+-- Wiki - https://wiki.facepunch.com/gmod/Entity:EmitSound
 -------------------------------------
 function ENT:VoiceSay(sound_path, soundLevel, pitchPercent, volume, channel, soundFlags, dsp)
     if not IsValid(self) or not IsValid(self:GetNPC()) then return end

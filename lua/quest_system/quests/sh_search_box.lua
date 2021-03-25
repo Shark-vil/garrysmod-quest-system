@@ -24,14 +24,16 @@ local quest = {
             if CLIENT then return end
             if eQuest:QuestNPCIsValid('friend', 'customer') then return end
 
+            eQuest:DisableArrowVector()
+
             local weapon_class = nil
             if isAttack then
                 weapon_class = table.Random({
                     'weapon_pistol',
-                     'weapon_smg1', 
-                     'weapon_smg1', 
-                     'weapon_shotgun', 
-                     'weapon_357'
+                    'weapon_smg1', 
+                    'weapon_smg1', 
+                    'weapon_shotgun', 
+                    'weapon_357'
                 })
             end
 
@@ -56,6 +58,10 @@ local quest = {
                 local quest = eQuest:GetQuest()
                 eQuest:Notify(quest.title, quest.description)
             end,
+            destruct = function(eQuest)
+                if CLIENT then return end
+                eQuest:ForcedTracking()
+            end,
             points = {
                 spawn_points_1 = function(eQuest, positions)
                     if CLIENT then return end
@@ -66,6 +72,10 @@ local quest = {
                         ang = AngleRand()
                     }):SetFreeze(true)
                 end,
+                customer_destination = function(eQuest, positions)
+                    if CLIENT then return end
+                    eQuest:SetArrowVector(positions[1])
+                end
             },
             onUseItem = function(eQuest, item)
                 if CLIENT then return end
@@ -97,7 +107,7 @@ local quest = {
                         eQuest:ExecQuestFunction('f_spawn_enemy_npcs', eQuest, ent)
                     end
                 },
-            }
+            },
         },
         safe_customer = {
             structures = {

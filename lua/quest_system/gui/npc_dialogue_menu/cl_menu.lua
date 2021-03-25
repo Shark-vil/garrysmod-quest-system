@@ -71,14 +71,13 @@ OpenDialoguNpc = function(ignore_npc_text)
     if step.text ~= nil and not ignore_npc_text then
         step.delay = step.delay or 3
 
-        local text = ''
-
+        local text
         if isstring(step.text) then
             text = step.text
-        end
-
-        if istable(step.text) then
-            text = table.Random(step.text)
+        elseif istable(step.text) then
+            text = tostring(table.Random(step.text))
+        else
+            text = '{Text not found}'
         end
 
         local width = ScrW() / 2
@@ -134,7 +133,7 @@ end
 
 OpenDialogueMenu = function(npc_name)    
     local step = npcDialogue:GetStep()
-    if step.answers ~= nil and #step.answers ~= 0 then
+    if step.answers ~= nil then
         local dont_send = false
         local mpx, mpy = ScrW() / 2, 250
         local MainPanel = vgui.Create('DFrame')
@@ -242,14 +241,13 @@ OpenDialogueMenu = function(npc_name)
                     draw.RoundedBox(8, 0, 0, width, height, currentColor)
                 end
 
-                local text = ''
-
+                local text
                 if isstring(data.text) then
                     text = data.text
-                end
-        
-                if istable(data.text) then
-                    text = table.Random(data.text)
+                elseif istable(data.text) then
+                    text = tostring(table.Random(data.text))
+                else
+                    text = '{Text not found}'
                 end
 
                 local str_len = string.len(text)

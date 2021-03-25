@@ -96,8 +96,8 @@ local function DrawNavigationArrow()
     local eQuest = QuestTracking
 
     if eQuest:HasQuester(LocalPlayer()) then
-        local vec = eQuest:GetNWVector('_arrow_target', nil)
-        if vec ~= nil then
+        if eQuest:slibGetVar('arrow_target_enabled') then
+            local vec = eQuest:slibGetVar('arrow_target', Vector(0, 0, 0))
             local local_pos = LocalPlayer():GetPos()
             local eye_angle = LocalPlayer():EyeAngles()
             

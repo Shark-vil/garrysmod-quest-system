@@ -12,7 +12,7 @@ end)
 
 hook.Add('PlayerUse', 'QSystem.OpenNpcDialogueMenu', function(ply, npc)
     if IsValid(npc) then
-        for _, ent in pairs(ents.FindByClass('quest_dialogue')) do
+        for _, ent in ipairs(ents.FindByClass('quest_dialogue')) do
             if IsValid(ent) and ent:GetPlayer() == ply then
                 local dialogue = ent:GetDialogue()
                 if dialogue.isBackground then
@@ -35,6 +35,7 @@ hook.Add('PlayerUse', 'QSystem.OpenNpcDialogueMenu', function(ply, npc)
             local dialogue_ent = ents.Create('quest_dialogue')
             dialogue_ent:SetPos(ply:GetPos())
             dialogue_ent:Spawn()
+            dialogue_ent:Activate()
             dialogue_ent:SetDialogueID(id)
             dialogue_ent:SetStep('start')
             dialogue_ent:SetPlayer(ply)

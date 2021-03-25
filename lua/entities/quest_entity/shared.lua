@@ -499,7 +499,9 @@ function ENT:OnNextStep()
 			end
 		end
 
-		snet.EntityInvokeAll('qsystem_rpc_function_onPoints', self)
+		if SERVER then
+			snet.EntityInvokeAll('qsystem_rpc_function_onPoints', self)
+		end
 	end
 
 	local step_hook_name = self:GetStepHookName()
@@ -716,9 +718,19 @@ function ENT:GetVariable(key)
 	return self.values[key]
 end
 
-function ENT:SetArrowVector(vec)
+function ENT:SetArrowVector(vec, autoEnable)
 	if not isvector(vec) then return end
-	self:SetNWVector('_arrow_target', vec)
+	autoEnable = autoEnable or true
+	if autoEnable then self:EnableArrowVector() end
+	self:slibSetVar('arrow_target', vec)
+end
+
+function ENT:EnableArrowVector()
+	self:slibSetVar('arrow_target_enabled', true)
+end
+
+function ENT:DisableArrowVector()
+	self:slibSetVar('arrow_target_enabled', false)
 end
 
 -------------------------------------

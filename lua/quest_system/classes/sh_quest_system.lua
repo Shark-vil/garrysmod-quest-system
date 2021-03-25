@@ -37,6 +37,7 @@ function QuestSystem:EnableEvent(event_id, step)
         local ent = ents.Create('quest_entity')
         ent:SetQuest(event_id)
         ent:Spawn()
+        ent:Activate()
         timer.Simple(1, function()
             if not IsValid(ent) then return end
             ent:SetStep(step)
@@ -257,6 +258,7 @@ if SERVER then
                 ent:SetPos(prop.pos)
                 ent:SetAngles(prop.ang)
                 ent:Spawn()
+                ent:Activate()
                 ent:SetCustomCollisionCheck(true)
                 local phys = ent:GetPhysicsObject()
                 if IsValid(phys) then

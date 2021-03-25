@@ -119,6 +119,7 @@ if not QuestSystem.cfg.DisableDefaultQuests then
     using('dialogues/sh_free_medic_dialogue.lua')
     using('dialogues/sh_random_background_replics.lua')
     using('dialogues/sh_talking_bank_background.lua')
+    using('dialogues/sh_killer_dialogue.lua')
 end
 
 MsgN('[QuestSystem] Loading scripts completed!')
