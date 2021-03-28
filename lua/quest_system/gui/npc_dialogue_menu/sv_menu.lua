@@ -40,10 +40,7 @@ hook.Add('PlayerUse', 'QSystem.OpenNpcDialogueMenu', function(ply, npc)
             dialogue_ent:SetStep('start')
             dialogue_ent:SetPlayer(ply)
             dialogue_ent:SetNPC(npc)
-
-            timer.Simple(0.6, function()
-                dialogue_ent:StartDialogue()
-            end)
+            dialogue_ent:StartDialogue()
 
             ply.npc_dialogue_delay = RealTime() + 1
         end

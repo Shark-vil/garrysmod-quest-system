@@ -300,36 +300,7 @@ function ENT:StartDialogue(ignore_npc_text, is_next)
 
     local ply = self:GetPlayer()
 
-    if SERVER then
-        if self:GetNWString('single_replic') ~= '' and (self:NpcIsFear() 
-            and not self:GetDialogue().isBackground) 
-        then
-            self:Remove()
-            return
-        end
-        
-        if not is_next and self:GetNWString('single_replic') == '' then
-            local dialogue = self:GetDialogue()
-            if not dialogue.isBackground and not dialogue.notFreeze then
-                ply:Freeze(true)
-                QuestService:WaitingNPCWalk(self:GetNPC(), true)
-            end
-
-            self:LoadPlayerValues()
-        end
-    end
-
-    timer.Simple(0.5, function()
-        if not IsValid(self) then return end
-
-        if SERVER then
-            net.Start('cl_qsystem_set_dialogue_id')
-            net.WriteEntity(self)
-            net.WriteBool(ignore_npc_text)
-            net.WriteBool(is_next)
-            net.Send(ply)
-        end
-
+    local function initStep()
         local step = self:GetStep()
         local delay = step.delay or 0
         if step.eventDelay ~= nil then
@@ -345,8 +316,54 @@ function ENT:StartDialogue(ignore_npc_text, is_next)
 
         self.isStarted = true
         self.isFirst = false
+    end
 
-    end)
+    local max_validator_pass = 5
+    local current_pass = 0
+
+    local function validator()
+        if not IsValid(self) then return end
+
+        current_pass = current_pass + 1
+
+        snet.IsValidForClient(ply, function(_, success)
+            if not success then 
+                if current_pass == max_validator_pass then
+                    self:Remove()
+                    return
+                end
+
+                timer.Simple(0.1, validator)
+                return
+            end
+
+            if self:GetNWString('single_replic') ~= '' and (self:NpcIsFear() 
+                and not self:GetDialogue().isBackground) 
+            then
+                self:Remove()
+                return
+            end
+            
+            if not is_next and self:GetNWString('single_replic') == '' then
+                local dialogue = self:GetDialogue()
+                if not dialogue.isBackground and not dialogue.notFreeze then
+                    ply:Freeze(true)
+                    QuestService:WaitingNPCWalk(self:GetNPC(), true)
+                end
+
+                self:LoadPlayerValues()
+            end
+            
+            snet.EntityInvoke('cl_qsystem_set_dialogue_id', ply, self, ignore_npc_text, is_next)
+            initStep()
+        end, 'dialogue', nil, nil, self)
+    end
+
+    if SERVER then
+        validator()
+    else
+        initStep()
+    end
 end
 
 -------------------------------------

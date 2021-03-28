@@ -1,5 +1,5 @@
 local OpenDialoguNpc, OpenDialogueMenu, LoadAnswerOptions
-local npcDialogue = NULL
+local eDialogue = NULL
 
 local background_texture = Material('quest_system/vgui/dialogue_panel_background.png')
 local background_color = Color(10, 69, 20, 200)
@@ -9,14 +9,14 @@ local rectline_color = Color(87, 255, 118)
 
 local cam_anim = 0
 local cam_delay = 0
-hook.Add("CalcView", "QSystem.NpcDialogueCamera", function(ply, pos, angles, fov)
-    if IsValid(npcDialogue) and IsValid(npcDialogue:GetNPC()) 
+hook.Add("CalcView", "QSystem.DialogueNPCCamera", function(ply, pos, angles, fov)
+    if IsValid(eDialogue) and IsValid(eDialogue:GetNPC()) 
         and cam_delay < CurTime()
     then
-        local dialogue = npcDialogue:GetDialogue()
+        local dialogue = eDialogue:GetDialogue()
 
         if not dialogue.isBackground and not dialogue.notLook then
-            local npc = npcDialogue:GetNPC()
+            local npc = eDialogue:GetNPC()
             local n_origin = npc:EyePos() - (npc:GetAngles():Forward() * -35) - Vector(0, 0, 10)
             local n_angles = npc:EyeAngles() - Angle(0, 180, 0)
 
@@ -40,18 +40,18 @@ hook.Add("CalcView", "QSystem.NpcDialogueCamera", function(ply, pos, angles, fov
     cam_anim = 0
 end)
 
-hook.Add('PreDrawPlayerHands', 'QSystem.NpcDialogueCamera', function()
-    if IsValid(npcDialogue) then
-        local dialogue = npcDialogue:GetDialogue()
+hook.Add('PreDrawPlayerHands', 'QSystem.eDialogueCamera', function()
+    if IsValid(eDialogue) then
+        local dialogue = eDialogue:GetDialogue()
         if not dialogue.isBackground and not dialogue.notLook then
             return true
         end
     end
 end)
 
-hook.Add('PreDrawViewModel', 'QSystem.NpcDialogueCamera', function()
-    if IsValid(npcDialogue) then
-        local dialogue = npcDialogue:GetDialogue()
+hook.Add('PreDrawViewModel', 'QSystem.eDialogueCamera', function()
+    if IsValid(eDialogue) then
+        local dialogue = eDialogue:GetDialogue()
         if not dialogue.isBackground and not dialogue.notLook then
             return true
         end
@@ -59,9 +59,9 @@ hook.Add('PreDrawViewModel', 'QSystem.NpcDialogueCamera', function()
 end)
 
 OpenDialoguNpc = function(ignore_npc_text)
-    local step = npcDialogue:GetStep()
-    local dialogue = npcDialogue:GetDialogue()
-    local name = tostring(npcDialogue:GetNPC())
+    local step = eDialogue:GetStep()
+    local dialogue = eDialogue:GetDialogue()
+    local name = tostring(eDialogue:GetNPC())
     if isstring(dialogue.name) then
         name = dialogue.name
     elseif istable(dialogue.name) then
@@ -95,7 +95,7 @@ OpenDialoguNpc = function(ignore_npc_text)
             MainPanel:MakePopup()
         end
         MainPanel.Paint = function(self, width, height)
-            if not IsValid(npcDialogue) then self:Close() return end
+            if not IsValid(eDialogue) then self:Close() return end
 
             if background_texture ~= nil then
                 surface.SetDrawColor(255, 255, 255, 255)
@@ -121,7 +121,7 @@ OpenDialoguNpc = function(ignore_npc_text)
         TextAnswer:SetAutoStretchVertical(true)
 
         timer.Simple(step.delay, function()
-            if IsValid(npcDialogue) and IsValid(MainPanel) then
+            if IsValid(eDialogue) and IsValid(MainPanel) then
                 MainPanel:Close()
                 OpenDialogueMenu(name)
             end
@@ -132,7 +132,7 @@ OpenDialoguNpc = function(ignore_npc_text)
 end
 
 OpenDialogueMenu = function(npc_name)    
-    local step = npcDialogue:GetStep()
+    local step = eDialogue:GetStep()
     if step.answers ~= nil then
         local dont_send = false
         local mpx, mpy = ScrW() / 2, 250
@@ -174,7 +174,7 @@ OpenDialogueMenu = function(npc_name)
             surface.DrawRect(0, height - horizontal_line_size, 2, horizontal_line_size)
             surface.DrawRect(width - 2, height - horizontal_line_size, 2, horizontal_line_size)
 
-            if not IsValid(npcDialogue) then
+            if not IsValid(eDialogue) then
                 self:Close() 
             end
         end
@@ -187,7 +187,7 @@ OpenDialogueMenu = function(npc_name)
             local skip = false
             local condition = step.answers[id].condition
             if condition ~= nil then
-                if not condition(npcDialogue) then skip = true end
+                if not condition(eDialogue) then skip = true end
             end
 
             if not skip then
@@ -203,9 +203,9 @@ OpenDialogueMenu = function(npc_name)
                 AnswerOptionItem.DragMouseRelease = function(self, mouseCode)
                     if step.answers[id] ~= nil then
                         local func = step.answers[id].event
-                        func(npcDialogue)
+                        func(eDialogue)
 
-                        npcDialogue.isFirstAnswer = true
+                        eDialogue.isFirstAnswer = true
                         
                         net.Start('sv_qsystem_dialogue_answer_select')
                         net.WriteInt(id, 10)
@@ -281,21 +281,22 @@ OpenDialogueMenu = function(npc_name)
     end
 end
 
-net.Receive('cl_qsystem_set_dialogue_id', function()
-    local ent = net.ReadEntity()
-    local ignore_npc_text = net.ReadBool()
-    local is_next = net.ReadBool()
+snet.RegisterCallback('cl_qsystem_set_dialogue_id', function(ply, ent, ignore_npc_text, is_next)
+    eDialogue = ent
+    eDialogue:StartDialogue(ignore_npc_text)
 
-    if IsValid(ent) then
-        npcDialogue = ent
-        npcDialogue:StartDialogue(ignore_npc_text)
-
-        local dialogue = ent:GetDialogue()
-        if not dialogue.isBackground then
-            if not is_next and not dialogue.notLook then
-                cam_delay = CurTime() + 1
-            end
-            OpenDialoguNpc(ignore_npc_text)
+    local dialogue = ent:GetDialogue()
+    if not dialogue.isBackground then
+        if not is_next and not dialogue.notLook then
+            cam_delay = CurTime() + 1
         end
+        OpenDialoguNpc(ignore_npc_text)
     end
+end)
+
+snet.RegisterValidator('dialogue', function(ply, uid, ent)
+    if IsValid(ent) and IsValid(ent:GetPlayer()) and IsValid(ent:GetNPC()) then
+        return ( ent:GetDialogueID() ~= '' and ent:GetStepID() ~= '' )
+    end
+    return false
 end)
