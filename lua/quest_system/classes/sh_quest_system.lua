@@ -34,18 +34,25 @@ function QuestSystem:EnableEvent(event_id, step)
     local event = QuestSystem:GetQuest(event_id)
     step = step or 'start'
     if event ~= nil and event.steps[step] ~= nil then
-        local ent = ents.Create('quest_entity')
-        ent:SetQuest(event_id)
-        ent:Spawn()
-        ent:Activate()
+        local eQuest = ents.Create('quest_entity')
+        eQuest:SetQuest(event_id)
+        eQuest:Spawn()
+        eQuest:Activate()
+
+        if not event.notAddAllPlayers then
+            for _, ply in ipairs(player.GetAll()) do
+                eQuest:AddPlayer(ply)
+            end
+        end
+
         timer.Simple(1, function()
-            if not IsValid(ent) then return end
-            ent:SetStep(step)
+            if not IsValid(eQuest) then return end
+            eQuest:SetStep(step)
         end)
 
-        QuestSystem.activeEvents[event_id] = ent
+        QuestSystem.activeEvents[event_id] = eQuest
 
-        return ent
+        return eQuest
     end
     return NULL
 end
