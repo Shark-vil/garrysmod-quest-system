@@ -24,8 +24,6 @@ local quest = {
             if CLIENT then return end
             if eQuest:QuestNPCIsValid('friend', 'customer') then return end
 
-            eQuest:DisableArrowVector()
-
             local weapon_class = nil
             if isAttack then
                 weapon_class = table.Random({
@@ -160,6 +158,7 @@ local quest = {
                     eQuest:Reward()
                 end
                 eQuest:Complete()
+                eQuest:DisableArrowVector()
             end,
         },
         failed = {
@@ -167,6 +166,7 @@ local quest = {
                 if CLIENT then return end
                 eQuest:Notify('Провалено', 'Заказчик мёртв, вы не получите награду за выполнение.')
                 eQuest:Failed()
+                eQuest:DisableArrowVector()
             end,
         }
     }
