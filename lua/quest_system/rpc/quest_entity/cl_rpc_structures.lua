@@ -1,4 +1,4 @@
-snet.RegisterCallback('qsystem_sync_structures', function(_, ent, structures)
+snet.Callback('qsystem_sync_structures', function(_, ent, structures)
     ent.structures = structures
     QuestSystem:Debug('SyncStructures (' .. table.Count(structures) .. ') - ' .. table.ToString(structures))
-end)
+end).Validator(SNET_ENTITY_VALIDATOR).Register()

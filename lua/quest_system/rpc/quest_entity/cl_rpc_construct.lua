@@ -1,4 +1,4 @@
-snet.RegisterCallback('qsystem_on_construct', function(_, ent, step)
+snet.Callback('qsystem_on_construct', function(_, ent, step)
     local quest = ent:GetQuest()
 
     if step == 'start' then
@@ -18,4 +18,4 @@ snet.RegisterCallback('qsystem_on_construct', function(_, ent, step)
     if quest ~= nil and quest.steps[step].construct ~= nil then
         quest.steps[step].construct(ent)
     end
-end)
+end).Validator(SNET_ENTITY_VALIDATOR).Register()

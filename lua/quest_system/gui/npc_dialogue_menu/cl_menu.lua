@@ -281,7 +281,7 @@ OpenDialogueMenu = function(npc_name)
     end
 end
 
-snet.RegisterCallback('cl_qsystem_set_dialogue_id', function(ply, ent, ignore_npc_text, is_next)
+snet.Callback('cl_qsystem_set_dialogue_id', function(ply, ent, ignore_npc_text, is_next)
     eDialogue = ent
     eDialogue:StartDialogue(ignore_npc_text)
 
@@ -292,7 +292,7 @@ snet.RegisterCallback('cl_qsystem_set_dialogue_id', function(ply, ent, ignore_np
         end
         OpenDialoguNpc(ignore_npc_text)
     end
-end)
+end).Validator(SNET_ENTITY_VALIDATOR).Register()
 
 snet.RegisterValidator('dialogue', function(ply, uid, ent)
     if IsValid(ent) and IsValid(ent:GetPlayer()) and IsValid(ent:GetNPC()) then

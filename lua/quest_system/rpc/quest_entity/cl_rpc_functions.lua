@@ -1,18 +1,18 @@
-snet.RegisterCallback('qsystem_rpc_function_onUse', function(_, eQuest, ent)
+snet.Callback('qsystem_rpc_function_onUse', function(_, eQuest, ent)
     local step = eQuest:GetQuestStepTable()
     if step.onUse ~= nil then
         step.onUse(eQuest, ent)
     end
-end)
+end).Validator(SNET_ENTITY_VALIDATOR).Register()
 
-snet.RegisterCallback('qsystem_rpc_function_onQuestNPCKilled', function(_, eQuest, data, npc, attacker, inflictor)
+snet.Callback('qsystem_rpc_function_onQuestNPCKilled', function(_, eQuest, data, npc, attacker, inflictor)
     local step = eQuest:GetQuestStepTable()
     if step.onQuestNPCKilled ~= nil then
         step.onQuestNPCKilled(eQuest, data, npc, attacker, inflictor)
     end
-end)
+end).Validator(SNET_ENTITY_VALIDATOR).Register()
 
-snet.RegisterCallback('qsystem_rpc_function_onPoints', function(_, eQuest)
+snet.Callback('qsystem_rpc_function_onPoints', function(_, eQuest)
     local quest = eQuest:GetQuest()
     for _, data in pairs(eQuest.points) do
         local func = quest.steps[data.step].points[data.name]
@@ -20,9 +20,9 @@ snet.RegisterCallback('qsystem_rpc_function_onPoints', function(_, eQuest)
             func(eQuest, data.points)
         end
     end
-end)
+end).Validator(SNET_ENTITY_VALIDATOR).Register()
 
-snet.RegisterCallback('qsystem_rpc_function_onUseItem', function(_, item, activator, caller, useType, value)
+snet.Callback('qsystem_rpc_function_onUseItem', function(_, item, activator, caller, useType, value)
     local eQuest = item:GetQuestEntity()
     local step = eQuest:GetQuestStep()
     local quest = eQuest:GetQuest()
@@ -30,4 +30,4 @@ snet.RegisterCallback('qsystem_rpc_function_onUseItem', function(_, item, activa
         local func = quest.steps[step].onUseItem
         func(eQuest, item, activator, caller, useType, value)
     end
-end)
+end).Validator(SNET_ENTITY_VALIDATOR).Register()

@@ -130,7 +130,7 @@ function ENT:SetStep(step)
 
 	self:TimerCreate(function()
 		self:TimerCreate(function()
-			snet.EntityInvokeAll('qsystem_on_construct', self, step)
+			snet.InvokeAll('qsystem_on_construct', self, step)
 	
 			self:TimerCreate(function()
 				if quest.steps[step].construct ~= nil then
@@ -142,7 +142,7 @@ function ENT:SetStep(step)
 				self.StopThink = false
 				self:SetNWBool('StopThink', self.StopThink)
 
-				snet.EntityInvokeAll('qsystem_on_next_step', self, step)
+				snet.InvokeAll('qsystem_on_next_step', self, step)
 				self:OnNextStep()
 			end)
 		end)
@@ -763,9 +763,9 @@ end
 function ENT:SyncNoDraw(ply, delay)
 	self:TimerCreate(function()
 		if ply then 
-			snet.EntityInvoke('qsystem_sync_nodraw', ply, self)
+			snet.Invoke('qsystem_sync_nodraw', ply, self)
 		else 
-			snet.EntityInvokeAll('qsystem_sync_nodraw', self)
+			snet.InvokeAll('qsystem_sync_nodraw', self)
 		end
 	end, delay)
 end
@@ -780,9 +780,9 @@ function ENT:SyncItems(ply, delay)
 	self:TimerCreate(function()
 		QuestSystem:Debug('SyncItems (' .. table.Count(self.items) .. ') - ' .. table.ToString(self.items))
 		if ply then 
-			snet.EntityInvoke('qsystem_sync_items', ply, self, self.items)
+			snet.Invoke('qsystem_sync_items', ply, self, self.items)
 		else 
-			snet.EntityInvokeAll('qsystem_sync_items', self, self.items)
+			snet.InvokeAll('qsystem_sync_items', self, self.items)
 		end
 	end, delay)
 end
@@ -798,9 +798,9 @@ function ENT:SyncNPCs(ply, delay)
 		QuestSystem:Debug('SyncNPCs (' .. table.Count(self.npcs) .. ') - ' .. table.ToString(self.npcs))
 
 		if ply then 
-			snet.EntityInvoke('qsystem_sync_npcs', ply, self, self.npcs)
+			snet.Invoke('qsystem_sync_npcs', ply, self, self.npcs)
 		else 
-			snet.EntityInvokeAll('qsystem_sync_npcs', self, self.npcs)
+			snet.InvokeAll('qsystem_sync_npcs', self, self.npcs)
 		end
 	end, delay)
 end
@@ -816,9 +816,9 @@ function ENT:SyncPlayers(ply, delay)
 		QuestSystem:Debug('SyncPlayers (' .. table.Count(self.players) .. ') - ' .. table.ToString(self.players))
 
 		if ply then 
-			snet.EntityInvoke('qsystem_sync_players', ply, self, self.players)
+			snet.Invoke('qsystem_sync_players', ply, self, self.players)
 		else 
-			snet.EntityInvokeAll('qsystem_sync_players', self, self.players)
+			snet.InvokeAll('qsystem_sync_players', self, self.players)
 		end
 	end, delay)
 end
@@ -834,9 +834,9 @@ function ENT:SyncTriggers(ply, delay)
 		QuestSystem:Debug('SyncTriggers (' .. table.Count(self.triggers) .. ') - ' .. table.ToString(self.triggers))
 
 		if ply then 
-			snet.EntityInvoke('qsystem_sync_triggers', ply, self, self.triggers)
+			snet.Invoke('qsystem_sync_triggers', ply, self, self.triggers)
 		else 
-			snet.EntityInvokeAll('qsystem_sync_triggers', self, self.triggers)
+			snet.InvokeAll('qsystem_sync_triggers', self, self.triggers)
 		end
 	end, delay)
 end
@@ -852,9 +852,9 @@ function ENT:SyncPoints(ply, delay)
 		QuestSystem:Debug('SyncPoints (' .. table.Count(self.points) .. ') - ' .. table.ToString(self.points))
 
 		if ply then 
-			snet.EntityInvoke('qsystem_sync_points', ply, self, self.points)
+			snet.Invoke('qsystem_sync_points', ply, self, self.points)
 		else 
-			snet.EntityInvokeAll('qsystem_sync_points', self, self.points)
+			snet.InvokeAll('qsystem_sync_points', self, self.points)
 		end
 	end, delay)
 end
@@ -870,9 +870,9 @@ function ENT:SyncValues(ply, delay)
 		QuestSystem:Debug('SyncValues (' .. table.Count(self.values) .. ') - ' .. table.ToString(self.values))
 
 		if ply then 
-			snet.EntityInvoke('qsystem_sync_values', ply, self, self.values)
+			snet.Invoke('qsystem_sync_values', ply, self, self.values)
 		else 
-			snet.EntityInvokeAll('qsystem_sync_values', self, self.values)
+			snet.InvokeAll('qsystem_sync_values', self, self.values)
 		end
 	end, delay)
 end
@@ -888,9 +888,9 @@ function ENT:SyncWeapons(ply, delay)
 		QuestSystem:Debug('SyncWeapons (' .. table.Count(self.weapons) .. ') - ' .. table.ToString(self.weapons))
 
 		if ply then 
-			snet.EntityInvoke('qsystem_sync_weapons', ply, self, self.weapons)
+			snet.Invoke('qsystem_sync_weapons', ply, self, self.weapons)
 		else 
-			snet.EntityInvokeAll('qsystem_sync_weapons', self, self.weapons)
+			snet.InvokeAll('qsystem_sync_weapons', self, self.weapons)
 		end
 	end, delay)
 end
@@ -906,9 +906,9 @@ function ENT:SyncStructures(ply, delay)
 		QuestSystem:Debug('SyncStructures (' .. table.Count(self.structures) .. ') - ' .. table.ToString(self.structures))
 
 		if ply then 
-			snet.EntityInvoke('qsystem_sync_structures', ply, self, self.structures)
+			snet.Invoke('qsystem_sync_structures', ply, self, self.structures)
 		else 
-			snet.EntityInvokeAll('qsystem_sync_structures', self, self.structures)
+			snet.InvokeAll('qsystem_sync_structures', self, self.structures)
 		end
 	end, delay)
 end

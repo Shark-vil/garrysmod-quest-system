@@ -1,4 +1,4 @@
-snet.RegisterCallback('qsystem_sync_nodraw', function(_, ent)
+snet.Callback('qsystem_sync_nodraw', function(_, ent)
     if not QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then return end
     if not IsValid(ent) then return end
 
@@ -62,4 +62,4 @@ snet.RegisterCallback('qsystem_sync_nodraw', function(_, ent)
             end
         end
     end
-end)
+end).Validator(SNET_ENTITY_VALIDATOR).Register()

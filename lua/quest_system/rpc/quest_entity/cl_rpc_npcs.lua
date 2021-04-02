@@ -1,4 +1,4 @@
-snet.RegisterCallback('qsystem_sync_npcs', function(_, ent, npcs)
+snet.Callback('qsystem_sync_npcs', function(_, ent, npcs)
     ent.npcs = npcs
     QuestSystem:Debug('SyncNPCs (' .. table.Count(npcs) .. ') - ' .. table.ToString(npcs))
-end)
+end).Validator(SNET_ENTITY_VALIDATOR).Register()

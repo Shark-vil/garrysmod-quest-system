@@ -139,7 +139,7 @@ function ENT:Initialize()
 				local step = self:GetQuestStepTable()
 				if step ~= nil and step.onUse ~= nil then
 					if table.HasValue(self.players, ply) then
-						snet.EntityInvokeAll('qsystem_rpc_function_onUse', self, ent)
+						snet.InvokeAll('qsystem_rpc_function_onUse', self, ent)
 						step.onUse(self, ent)
 					end
 				end
@@ -158,7 +158,7 @@ function ENT:Initialize()
 					if data.npc == npc then
 						local step = self:GetQuestStepTable()
 						if step ~= nil and step.onQuestNPCKilled ~= nil then
-							snet.EntityInvokeAll('qsystem_rpc_function_onQuestNPCKilled', 
+							snet.InvokeAll('qsystem_rpc_function_onQuestNPCKilled', 
 								self, data, npc, attacker, inflictor)
 							step.onQuestNPCKilled(self, data, npc, attacker, inflictor)
 						end
@@ -500,7 +500,7 @@ function ENT:OnNextStep()
 		end
 
 		if SERVER then
-			snet.EntityInvokeAll('qsystem_rpc_function_onPoints', self)
+			snet.InvokeAll('qsystem_rpc_function_onPoints', self)
 		end
 	end
 

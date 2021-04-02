@@ -1,6 +1,5 @@
 util.AddNetworkString('sv_qsystem_close_npc_dialogue_menu')
 util.AddNetworkString('sv_qsystem_dialogue_answer_select')
-util.AddNetworkString('cl_qsystem_set_dialogue_id')
 
 hook.Add('PlayerSpawnedNPC', 'QSystem.SetNpcDialogue', function(ply, ent)
     QuestDialogue:AutoParentToNPC(ent, ply)

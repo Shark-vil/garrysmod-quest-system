@@ -354,7 +354,7 @@ function ENT:StartDialogue(ignore_npc_text, is_next)
                 self:LoadPlayerValues()
             end
             
-            snet.EntityInvoke('cl_qsystem_set_dialogue_id', ply, self, ignore_npc_text, is_next)
+            snet.Invoke('cl_qsystem_set_dialogue_id', ply, self, ignore_npc_text, is_next)
             initStep()
         end, 'dialogue', nil, nil, self)
     end
