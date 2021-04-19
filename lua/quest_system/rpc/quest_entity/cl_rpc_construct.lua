@@ -3,10 +3,19 @@ snet.Callback('qsystem_on_construct', function(_, ent, step, quest_data)
 
     if not quest then
         if not quest_data then return end
+
         list.Set('QuestSystem', quest_data.id, quest_data)
-        
         quest = list.Get('QuestSystem')[quest_data.id]
-        if not quest then return end
+    elseif quest_data then
+        local current_quest_data = list.Get('QuestSystem')[quest.id]
+        for k, v in pairs(quest_data) do
+            if current_quest_data[k] == nil then
+                current_quest_data[k] = v
+            end
+        end
+
+        list.Set('QuestSystem', quest.id, current_quest_data)
+        quest = list.Get('QuestSystem')[quest.id]
     end
 
     if step == 'start' then
