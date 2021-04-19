@@ -46,23 +46,19 @@ local quest = {
          },
          points = {
             spawn_combines = function(eQuest, positions)
-               for _, pos in pairs(positions) do
-                  local model = table.Random({
-                     'models/Combine_Soldier.mdl',
-                     'models/Combine_Soldier_PrisonGuard.mdl',
-                     'models/Combine_Super_Soldier.mdl'
-                  })
-
-                  local weapon_class = table.Random({
-                     'weapon_ar2',
-                     'weapon_shotgun',
-                  })
-                  
+               for _, pos in pairs(positions) do                  
                   eQuest:SpawnQuestNPC('npc_combine_s', {
                      type = 'enemy',
                      pos = pos,
-                     model = model,
-                     weapon_class = weapon_class
+                     model = array.Random( {
+                        'models/Combine_Soldier.mdl',
+                        'models/Combine_Soldier_PrisonGuard.mdl',
+                        'models/Combine_Super_Soldier.mdl'
+                     } ),
+                     weapon_class = array.Random( {
+                        'weapon_ar2',
+                        'weapon_shotgun',
+                     } )
                   })
                end
 
@@ -71,11 +67,8 @@ local quest = {
          },
          hooks = {
             OnNPCKilled = function(eQuest, npc, attacker, inflictor)
-               local combines = eQuest:GetQuestNpc('enemy')
-               for _, npc in pairs(combines) do
-                  if IsValid(npc) and npc:Health() > 0 then
-                     return
-                  end
+               for _, npc in pairs(eQuest:GetQuestNpc('enemy')) do
+                  if slib.IsAlive(npc) then return end
                end
 
                eQuest:NextStep('complete')
