@@ -5,16 +5,15 @@ local quest = {
     payment = 500,
     isEvent = true,
     npcNotReactionOtherPlayer = true,
-    -- timeToNextStep = 20,
-    -- nextStep = 'spawn_combines',
-    -- nextStepCheck = function(eQuest)
-    --     if #eQuest.players ~= 0 then
-    --         return true
-    --     else
-    --         eQuest:NotifyAll('Событие отменено', 'Событие не состоялось из-за нехватки игроков в зоне ивента.')
-    --         return false
-    --     end
-    -- end,
+    timeToNextStep = 20,
+    nextStep = 'spawn_combines',
+    nextStepCheck = function(eQuest)
+        local count = #eQuest.players
+        if count == 0 then
+            eQuest:NotifyAll('Событие отменено', 'Событие не состоялось из-за нехватки игроков в зоне ивента.')
+        end
+        return count ~= 0
+    end,
     timeQuest = 120,
     failedText = {
         title = 'Задание провалено',
@@ -26,10 +25,6 @@ local quest = {
                 if SERVER then
                     local quest = eQuest:GetQuest()
                     eQuest:NotifyAll(quest.title, quest.description, 6)
-
-                    eQuest:TimerCreate(function()
-                        eQuest:NextStep('spawn_combines')
-                    end, 20)
                 end
             end,
             triggers = {
@@ -49,13 +44,7 @@ local quest = {
         spawn_combines = {
             construct = function(eQuest)
                 if CLIENT then return end
-                if #eQuest.players ~= 0 then
-                    eQuest:NotifyOnlyRegistred('Враг близко', 'Убейте прибивших противников')
-                else
-                    eQuest:NotifyAll('Событие отменено', 'Событие не состоялось из-за нехватки игроков в зоне ивента.')
-                    eQuest:Failed()
-                    return true
-                end
+                eQuest:NotifyOnlyRegistred('Враг близко', 'Убейте прибивших противников')
             end,
             structures = {
                 barricades = true
