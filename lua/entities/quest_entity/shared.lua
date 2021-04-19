@@ -57,8 +57,6 @@ function ENT:Initialize()
 				if not IsValid(self) then hook.Remove("ShouldCollide", factory_hook_name) return end
 
 				if ent2:IsPlayer() then
-					local quest = self:GetQuest()
-
 					for id, spawn_id in pairs(self.structures) do
 						local props = QuestSystem:GetStructure(spawn_id)
 						if table.HasValue(props, ent1) and not table.HasValue(self.players, ent2) then

@@ -292,14 +292,16 @@ function DFCL:New( ui_name )
     --]]
     function public:PanelsState( panels, keyboard_state, mouse_state )
         for _, panel in pairs( panels ) do
-            if ( not IsValid( panel ) ) then continue; end;
+            if ( not IsValid( panel ) ) then goto skip; end;
 
             if ( not table.HasValue( private.panels, panel ) ) then
-                continue;
+                goto skip;
             end;
 
             panel:SetKeyboardInputEnabled( keyboard_state );
             panel:SetMouseInputEnabled( mouse_state );
+
+            ::skip::
         end;
     end;
 
@@ -313,14 +315,16 @@ function DFCL:New( ui_name )
     --]]
     function public:PanelAllState( keyboard_state, mouse_state )
         for _, panel in pairs( private.panels ) do
-            if ( not IsValid( panel ) ) then continue; end;
+            if ( not IsValid( panel ) ) then goto skip; end;
 
             if ( self:IsIgnorePanel( panel ) ) then
-                continue;
+                goto skip;
             end;
 
             panel:SetKeyboardInputEnabled( keyboard_state );
             panel:SetMouseInputEnabled( mouse_state );
+
+            ::skip::
         end;
     end;
 
@@ -426,20 +430,24 @@ function DFCL:New( ui_name )
 
             for _, panel in pairs( private.focusPanels ) do
                 if ( not IsValid( panel ) or not panel:HasFocus() ) then 
-                    continue; 
+                    goto skip; 
                 end;
 
                 table.insert( focusPanels, panel );
+                
+                ::skip::
             end;
 
             for _, panel in pairs( private.panels ) do
                 if ( not IsValid( panel ) or not panel:HasFocus() ) then 
-                    continue; 
+                    goto skip; 
                 end;
 
                 if ( table.HasValue( private.focusNames, panel:GetName() ) ) then
                     table.insert( focusPanels, panel );
                 end;
+
+                ::skip::
             end;
 
             public:PanelStateReset()
