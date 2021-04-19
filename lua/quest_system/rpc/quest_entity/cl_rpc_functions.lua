@@ -14,10 +14,16 @@ end).Validator(SNET_ENTITY_VALIDATOR).Register()
 
 snet.Callback('qsystem_rpc_function_onPoints', function(_, eQuest)
     local quest = eQuest:GetQuest()
+    if not eQuest.points then return end
+
     for _, data in pairs(eQuest.points) do
-        local func = quest.steps[data.step].points[data.name]
-        if func ~= nil then
-            func(eQuest, data.points)
+        local steps = quest.steps
+        if not steps  then return end
+
+        local step = quest.steps[data.step]
+        if step and step.points and step.points[data.name] then
+            local func = step.points[data.name]
+            if func then func(eQuest, data.points) end
         end
     end
 end).Validator(SNET_ENTITY_VALIDATOR).Register()
@@ -26,7 +32,7 @@ snet.Callback('qsystem_rpc_function_onUseItem', function(_, item, activator, cal
     local eQuest = item:GetQuestEntity()
     local step = eQuest:GetQuestStep()
     local quest = eQuest:GetQuest()
-    if quest.steps[step].onUseItem ~= nil then
+    if quest.steps and quest.steps[step] and quest.steps[step].onUseItem then
         local func = quest.steps[step].onUseItem
         func(eQuest, item, activator, caller, useType, value)
     end

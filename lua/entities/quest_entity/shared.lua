@@ -487,13 +487,11 @@ function ENT:OnNextStep()
 	local step = self:GetQuestStep()
 	local old_step = self:GetQuestOldStep()
 
-	if #self.points ~= 0 and quest.steps[step].points ~= nil then
+	if #self.points ~= 0 and quest.steps and quest.steps[step] and quest.steps[step].points then
 		for _, data in pairs(self.points) do
 			if quest.steps[step].points[data.name] ~= nil then
 				local func = quest.steps[data.step].points[data.name]
-				if func ~= nil then
-					func(self, data.points)
-				end
+				if func then func(self, data.points) end
 			end
 		end
 
@@ -504,8 +502,8 @@ function ENT:OnNextStep()
 
 	local step_hook_name = self:GetStepHookName()
 
-	if old_step ~= nil and #old_step ~= 0 then
-		if quest.steps[old_step].hooks ~= nil then
+	if old_step and #old_step ~= 0 then
+		if quest.steps and quest.steps[old_step] and quest.steps[old_step].hooks then
 			for hook_type, _ in pairs(quest.steps[old_step].hooks) do
 				hook.Remove(hook_type, step_hook_name)
 			end
@@ -528,7 +526,7 @@ function ENT:OnNextStep()
 	-- end
 
 	if step == 'start' then
-		if quest.global_hooks ~= nil then
+		if quest.global_hooks then
 			local global_hook_name = self:GetGlobalHookName()
 			for hook_type, func in pairs(quest.global_hooks) do
 				hook.Add(hook_type, global_hook_name, function(...)
@@ -543,7 +541,7 @@ function ENT:OnNextStep()
 		end
 	end
 
-	if quest.steps[step].hooks ~= nil then
+	if quest.steps and quest.steps[step] and quest.steps[step].hooks then
 		for hook_type, func in pairs(quest.steps[step].hooks) do
 			hook.Add(hook_type, step_hook_name, function(...)
 				if not IsValid(self) then
