@@ -112,7 +112,7 @@ if not QuestSystem.cfg.DisableDefaultQuests then
     using('quests/sh_player_killer.lua')
     using('quests/sh_mobs_attack.lua')
 
-    using('quests_events/sh_kill_combine.lua')
+    using('quests_events/kill_combine/sv_quest.lua')
 
     using('dialogues/sh_free_medic_dialogue.lua')
     using('dialogues/sh_random_background_replics.lua')
