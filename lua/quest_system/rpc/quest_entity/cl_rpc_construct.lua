@@ -1,5 +1,13 @@
-snet.Callback('qsystem_on_construct', function(_, ent, step)
+snet.Callback('qsystem_on_construct', function(_, ent, step, quest_data)
     local quest = ent:GetQuest()
+
+    if not quest then
+        if not quest_data then return end
+        list.Set('QuestSystem', quest_data.id, quest_data)
+        
+        quest = list.Get('QuestSystem')[quest_data.id]
+        if not quest then return end
+    end
 
     if step == 'start' then
         if quest.isEvent then

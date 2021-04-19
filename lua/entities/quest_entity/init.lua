@@ -33,6 +33,7 @@ function ENT:SetStep(step)
 	self:SetNWBool('StopThink', self.StopThink)
 
 	local quest = self:GetQuest()
+	if not quest.steps then return end
 
 	if quest ~= nil and quest.steps[step] ~= nil then
 		local old_step = self:GetQuestStep()
@@ -55,7 +56,7 @@ function ENT:SetStep(step)
 			end
 		end
 
-		if quest.steps[step].triggers ~= nil then
+		if quest.steps[step] and quest.steps[step].triggers then
 			for trigger_name, tdata in pairs(quest.steps[step].triggers) do
 				for _, tdata_2 in ipairs(self.triggers) do
 					if tdata.name == tdata_2.name and tdata_2.global then
@@ -86,7 +87,7 @@ function ENT:SetStep(step)
 			end
 		end
 
-		if quest.steps[step].points ~= nil then
+		if quest.steps[step] and quest.steps[step].points then
 			for point_name, _ in pairs(quest.steps[step].points) do
 				for _, pdata in ipairs(self.points) do
 					if point_name == pdata.name and pdata.global then
@@ -111,7 +112,7 @@ function ENT:SetStep(step)
 			self:SyncPoints()
 		end
 
-		if quest.steps[step].structures ~= nil then
+		if quest.steps[step] and quest.steps[step].structures then
 			for structure_id, method in pairs(quest.steps[step].structures) do
 				local spawn_id = QuestSystem:SpawnStructure(quest.id, structure_id)
 				if spawn_id ~= nil then
@@ -130,10 +131,11 @@ function ENT:SetStep(step)
 
 	self:TimerCreate(function()
 		self:TimerCreate(function()
-			snet.InvokeAll('qsystem_on_construct', self, step)
+			self.quest_data_normalize = self.quest_data_normalize or snet.GetNormalizeDataTable(quest)
+			snet.InvokeAll('qsystem_on_construct', self, step, self.quest_data_normalize)
 	
 			self:TimerCreate(function()
-				if quest.steps[step].construct ~= nil then
+				if quest.steps[step] and quest.steps[step].construct then
 					if quest.steps[step].construct(self) then
 						return
 					end

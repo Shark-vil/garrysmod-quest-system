@@ -484,10 +484,12 @@ function ENT:OnNextStep()
 	QuestSystem:Debug('> OnNextStep execute')
 	
 	local quest = self:GetQuest()
+	if not quest.steps then return end
+
 	local step = self:GetQuestStep()
 	local old_step = self:GetQuestOldStep()
 
-	if #self.points ~= 0 and quest.steps and quest.steps[step] and quest.steps[step].points then
+	if #self.points ~= 0 and quest.steps[step] and quest.steps[step].points then
 		for _, data in pairs(self.points) do
 			if quest.steps[step].points[data.name] ~= nil then
 				local func = quest.steps[data.step].points[data.name]
@@ -503,7 +505,7 @@ function ENT:OnNextStep()
 	local step_hook_name = self:GetStepHookName()
 
 	if old_step and #old_step ~= 0 then
-		if quest.steps and quest.steps[old_step] and quest.steps[old_step].hooks then
+		if quest.steps[old_step] and quest.steps[old_step].hooks then
 			for hook_type, _ in pairs(quest.steps[old_step].hooks) do
 				hook.Remove(hook_type, step_hook_name)
 			end
@@ -541,7 +543,7 @@ function ENT:OnNextStep()
 		end
 	end
 
-	if quest.steps and quest.steps[step] and quest.steps[step].hooks then
+	if quest.steps[step] and quest.steps[step].hooks then
 		for hook_type, func in pairs(quest.steps[step].hooks) do
 			hook.Add(hook_type, step_hook_name, function(...)
 				if not IsValid(self) then
