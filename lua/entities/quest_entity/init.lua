@@ -147,9 +147,29 @@ function ENT:SetStep(step)
 			end)
 		end)
 	
-		if step == 'start' then	
-			if quest.timeQuest then
-				timer.Simple(quest.timeQuest, function()
+		if step == 'start' then
+			if quest.timeToNextStep ~= nil and quest.nextStep ~= nil then
+				self:TimerCreate(function()
+					if quest.nextStepCheck ~= nil then
+						if quest.nextStepCheck(self) then
+							self:NextStep(quest.nextStep)
+						else
+							self:Failed()
+						end
+					else
+						self:NextStep(quest.nextStep)
+					end
+				end, quest.timeToNextStep)
+			end
+	
+			if quest.timeQuest ~= nil then
+				local time = quest.timeQuest
+	
+				if quest.timeToNextStep ~= nil then
+					time = time + quest.timeToNextStep
+				end
+	
+				timer.Simple(time, function()
 					if IsValid(self) then
 						local failedText = quest.failedText or {
 							title = 'Quest failed',

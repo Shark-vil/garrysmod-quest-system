@@ -4,9 +4,22 @@ local quest = {
     description = 'Где-то высадился отряд вражеских комбайнов. Найдите и устраните их!',
     payment = 500,
     isEvent = true,
-    notAddAllPlayers = true,
     npcNotReactionOtherPlayer = true,
+    -- timeToNextStep = 20,
+    -- nextStep = 'spawn_combines',
+    -- nextStepCheck = function(eQuest)
+    --     if #eQuest.players ~= 0 then
+    --         return true
+    --     else
+    --         eQuest:NotifyAll('Событие отменено', 'Событие не состоялось из-за нехватки игроков в зоне ивента.')
+    --         return false
+    --     end
+    -- end,
     timeQuest = 120,
+    failedText = {
+        title = 'Задание провалено',
+        text = 'Время выполнения истекло.'
+    },
     steps = {
         start = {
             construct = function(eQuest)
