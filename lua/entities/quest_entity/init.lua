@@ -150,6 +150,12 @@ function ENT:SetStep(step)
 		end)
 	
 		if step == 'start' then
+			if quest.isEvent then
+				hook.Run('QSystem.EventStarted', self, quest)
+			else
+				hook.Run('QSystem.QuestStarted', self, quest)
+			end
+
 			if quest.timeToNextStep ~= nil and quest.nextStep ~= nil then
 				self:TimerCreate(function()
 					if quest.nextStepCheck ~= nil then

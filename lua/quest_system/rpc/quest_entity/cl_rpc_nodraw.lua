@@ -4,7 +4,7 @@ snet.Callback('qsystem_sync_nodraw', function(_, ent)
 
     -- NPC
     do
-        local npcs = ent.npcs
+        local npcs = ent.npcs or {}
         local noDraw = table.HasValue(ent.players, LocalPlayer())
 
         for _, data in pairs(npcs) do
@@ -35,7 +35,7 @@ snet.Callback('qsystem_sync_nodraw', function(_, ent)
 
     -- Items
     do
-        local items = ent.items
+        local items = ent.items or {}
         local noDraw = table.HasValue(ent.players, LocalPlayer())
 
         for _, data in pairs(items) do
@@ -48,7 +48,7 @@ snet.Callback('qsystem_sync_nodraw', function(_, ent)
 
     -- Structures
     do
-        local structures = ent.structures
+        local structures = ent.structures or {}
         local noDraw = table.HasValue(ent.players, LocalPlayer())
 
         for id, spawn_id in pairs(structures) do

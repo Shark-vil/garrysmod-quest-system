@@ -221,17 +221,6 @@ function ENT:Initialize()
 			end
 		end)
 	end
-
-	timer.Simple(1, function()
-		if not IsValid(self) then return end
-
-		local quest = self:GetQuest()
-		if quest.isEvent then
-			hook.Run('QSystem.EventStarted', self, quest)
-		else
-			hook.Run('QSystem.QuestStarted', self, quest)
-		end
-	end)
 end
 
 function ENT:GetStepHookName()
@@ -623,6 +612,20 @@ function ENT:IsQuestNPC(npc, type, tag)
 				if tag ~= nil and data.tag ~= tag then return false end
 				return true
 			end
+		end
+	end
+	return false
+end
+
+function ENT:IsAliveQuestNPC(npcType, npcTag)
+	for _, data in pairs(self.npcs) do
+		local npc = data.npc
+		if npcTag then
+			if data.tag == npcTag and IsValid(npc) and npc:Health() > 0 then return true end
+		elseif npcType then
+			if data.type == npcType and IsValid(npc) and npc:Health() > 0 then return true end
+		else
+			if IsValid(npc) and npc:Health() > 0 then return true end
 		end
 	end
 	return false
