@@ -6,6 +6,10 @@ local background_color = Color(10, 69, 20, 200)
 local pick_color = Color(43, 181, 69, 150)
 local nopick_color = Color(0, 0, 0, 0)
 local rectline_color = Color(87, 255, 118)
+local Color_Font = Color(0, 0, 0)
+local Color_Default = Color(224, 224, 224)
+local Color_Focus = Color(143, 206, 167)
+local Color_Click = Color(45, 112, 59)
 
 local cam_anim = 0
 local cam_delay = 0
@@ -67,10 +71,8 @@ OpenDialoguNpc = function(ignore_npc_text)
 	elseif istable(dialogue.name) then
 		name = table.Random(dialogue.name)
 	end
-	
-	if step.text ~= nil and not ignore_npc_text then
-		step.delay = step.delay or 3
 
+	if step.text ~= nil and not ignore_npc_text then
 		local text
 		if isstring(step.text) then
 			text = step.text
@@ -89,10 +91,17 @@ OpenDialoguNpc = function(ignore_npc_text)
 		MainPanel:ShowCloseButton(false)
 		MainPanel:SetDraggable(false)
 		MainPanel:SetSize(width, height)
-		MainPanel:SetPos(pos_x, pos_y) 
+		MainPanel:SetPos(pos_x, pos_y)
 		MainPanel:SetTitle('')
 		if not dialogue.notFreeze then
 				MainPanel:MakePopup()
+		end
+		MainPanel.OnKeyCodePressed = function(self, keyCode)
+			if keyCode == KEY_TAB then
+				net.Start('sv_qsystem_close_npc_dialogue_menu')
+				net.SendToServer()
+				self:Close()
+			end
 		end
 		MainPanel.Paint = function(self, width, height)
 			if not IsValid(eDialogue) then self:Close() return end
@@ -120,30 +129,50 @@ OpenDialoguNpc = function(ignore_npc_text)
 		TextAnswer:SetWrap(true)
 		TextAnswer:SetAutoStretchVertical(true)
 
-		print(1)
+		if not step.delay or not isnumber(step.delay) then
+			local NextButton = vgui.Create('DButton', MainPanel)
+			NextButton:SetText('Далее')
+			NextButton:SetPos(width - 110, height - 30)
+			NextButton:SetWidth(90)
+			NextButton:SetTextColor(Color_Font)
+			NextButton.sgui_sound_switch_hovered = 'buttons/lightswitch2.wav'
+			NextButton.DoClick = function(self)
+				if IsValid(eDialogue) and IsValid(MainPanel) then
+					if step.answers then
+						OpenDialogueMenu(name)
+					else
+						net.Start('sv_qsystem_dialogue_answer_onclick')
+						net.SendToServer()
+					end
 
-		local NextButton = vgui.Create('DButton', MainPanel)
-		NextButton:Text('Next')
-		NextButton:SetPos(pos_x + width - 50, pos_y + height - 30)
-		NextButton.DoClick = function(self)
-			if IsValid(eDialogue) and IsValid(MainPanel) then
-				MainPanel:Close()
-				OpenDialogueMenu(name)
+					MainPanel:Close()
+				end
 			end
-		end
+			NextButton.Paint = function(self, w, h)
+				local ButtonColor
 
-		-- timer.Simple(step.delay, function()
-		-- 	if IsValid(eDialogue) and IsValid(MainPanel) then
-		-- 		MainPanel:Close()
-		-- 		OpenDialogueMenu(name)
-		-- 	end
-		-- end)
+				if not self:IsPressedPanel() then
+					ButtonColor = self:IsHovered() and Color_Focus or Color_Default
+				else
+					ButtonColor = Color_Click
+				end
+
+				draw.RoundedBox(0, 0, 0, w, h, ButtonColor)
+			end
+		else
+			timer.Simple(step.delay, function()
+				if IsValid(eDialogue) and IsValid(MainPanel) then
+					MainPanel:Close()
+					OpenDialogueMenu(name)
+				end
+			end)
+		end
 	else
 		OpenDialogueMenu(name)
 	end
 end
 
-OpenDialogueMenu = function(npc_name)    
+OpenDialogueMenu = function(npc_name)
 	local step = eDialogue:GetStep()
 	if step.answers ~= nil then
 		local dont_send = false
@@ -305,7 +334,7 @@ end).Validator(SNET_ENTITY_VALIDATOR).Register()
 
 snet.RegisterValidator('dialogue', function(ply, uid, ent)
 	if IsValid(ent) and IsValid(ent:GetPlayer()) and IsValid(ent:GetNPC()) then
-		return ( ent:GetDialogueID() ~= '' and ent:GetStepID() ~= '' )
+		return ent:GetDialogueID() ~= '' and ent:GetStepID() ~= ''
 	end
 	return false
 end)
