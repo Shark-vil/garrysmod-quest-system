@@ -1,10 +1,10 @@
-ENT.Type = "anim"  
-ENT.Base = "base_gmodentity"     
-ENT.PrintName = "Quest Entity"  
-ENT.Author = ""  
-ENT.Contact = ""  
-ENT.Purpose	= ""  
-ENT.Instructions = ""  
+ENT.Type = 'anim'
+ENT.Base = 'base_gmodentity'
+ENT.PrintName = 'Quest Entity'
+ENT.Author = ''
+ENT.Contact = ''
+ENT.Purpose	= ''
+ENT.Instructions = ''
 
 ENT.Spawnable = false
 ENT.AdminSpawnable = false
@@ -32,16 +32,16 @@ function ENT:Initialize()
 	self:SetSolid(SOLID_NONE)
 	self:SetNoDraw(true)
 
-	self.StepHookName = 'QuestEntityHook_' 
-	.. tostring(self:EntIndex()) 
+	self.StepHookName = 'QuestEntityHook_'
+	.. tostring(self:EntIndex())
 	.. tostring(string.Replace(CurTime(), '.', ''))
 
-	self.GlobalHookName = 'QuestEntityGlobalHook_' 
-	.. tostring(self:EntIndex()) 
+	self.GlobalHookName = 'QuestEntityGlobalHook_'
+	.. tostring(self:EntIndex())
 	.. tostring(string.Replace(CurTime(), '.', ''))
 
-	self.FactoryHookName = 'QuestEntityFactoryHook_' 
-	.. tostring(self:EntIndex()) 
+	self.FactoryHookName = 'QuestEntityFactoryHook_'
+	.. tostring(self:EntIndex())
 	.. tostring(string.Replace(CurTime(), '.', ''))
 
 	local factory_hook_name = self.FactoryHookName
@@ -54,7 +54,7 @@ function ENT:Initialize()
 			-- Wiki - https://wiki.facepunch.com/gmod/GM:ShouldCollide
 			-------------------------------------
 			hook.Add('ShouldCollide', factory_hook_name, function(ent1, ent2)
-				if not IsValid(self) then hook.Remove("ShouldCollide", factory_hook_name) return end
+				if not IsValid(self) then hook.Remove('ShouldCollide', factory_hook_name) return end
 
 				if ent2:IsPlayer() then
 					for id, spawn_id in pairs(self.structures) do
@@ -66,19 +66,19 @@ function ENT:Initialize()
 
 					for _, data in pairs(self.items) do
 						local item = data.item
-						if IsValid(item) and item:GetCustomCollisionCheck() then
-							if ent1 == item and not table.HasValue(self.players, ent2) then
-								return false
-							end
+						if IsValid(item) and item:GetCustomCollisionCheck() and ent1 == item and
+							not table.HasValue(self.players, ent2)
+						then
+							return false
 						end
 					end
 
 					for _, data in pairs(self.npcs) do
 						local npc = data.npc
-						if IsValid(npc) and npc:GetCustomCollisionCheck() then
-							if ent1 == npc and not table.HasValue(self.players, ent2) then
-								return false
-							end
+						if IsValid(npc) and npc:GetCustomCollisionCheck() and ent1 == npc and
+							not table.HasValue(self.players, ent2)
+						then
+							return false
 						end
 					end
 				end
@@ -90,7 +90,7 @@ function ENT:Initialize()
 			-- Wiki - https://wiki.facepunch.com/gmod/GM:EntityTakeDamage
 			-------------------------------------
 			hook.Add('EntityTakeDamage', factory_hook_name, function(target, dmginfo)
-				if not IsValid(self) then hook.Remove("EntityTakeDamage", factory_hook_name) return end
+				if not IsValid(self) then hook.Remove('EntityTakeDamage', factory_hook_name) return end
 
 				local attaker = dmginfo:GetAttacker()
 				if attaker:IsWeapon() then
@@ -101,10 +101,8 @@ function ENT:Initialize()
 					if attaker ~= nil and attaker:IsPlayer() then
 						for _, data in pairs(self.npcs) do
 							local npc = data.npc
-							if IsValid(npc) and IsValid(attaker) then
-								if not table.HasValue(self.players, attaker) then
-									return true
-								end
+							if IsValid(npc) and IsValid(attaker) and not table.HasValue(self.players, attaker) then
+								return true
 							end
 						end
 					end
@@ -131,15 +129,13 @@ function ENT:Initialize()
 			-------------------------------------
 			-- Wiki - https://wiki.facepunch.com/gmod/GM:PlayerUse
 			-------------------------------------
-			hook.Add("PlayerUse", factory_hook_name, function(ply, ent)
-				if not IsValid(self) then hook.Remove("PlayerUse", factory_hook_name) return end
-				
+			hook.Add('PlayerUse', factory_hook_name, function(ply, ent)
+				if not IsValid(self) then hook.Remove('PlayerUse', factory_hook_name) return end
+
 				local step = self:GetQuestStepTable()
-				if step ~= nil and step.onUse ~= nil then
-					if table.HasValue(self.players, ply) then
-						snet.InvokeAll('qsystem_rpc_function_onUse', self, ent)
-						step.onUse(self, ent)
-					end
+				if step ~= nil and step.onUse ~= nil and table.HasValue(self.players, ply) then
+					snet.InvokeAll('qsystem_rpc_function_onUse', self, ent)
+					step.onUse(self, ent)
 				end
 			end)
 		end
@@ -151,12 +147,12 @@ function ENT:Initialize()
 			-- Wiki - https://wiki.facepunch.com/gmod/GM:OnNPCKilled
 			-------------------------------------
 			hook.Add('OnNPCKilled', factory_hook_name, function(npc, attacker, inflictor)
-				if not IsValid(self) then hook.Remove("OnNPCKilled", factory_hook_name) return end
+				if not IsValid(self) then hook.Remove('OnNPCKilled', factory_hook_name) return end
 				for _, data in pairs(self.npcs) do
 					if data.npc == npc then
 						local step = self:GetQuestStepTable()
 						if step ~= nil and step.onQuestNPCKilled ~= nil then
-							snet.InvokeAll('qsystem_rpc_function_onQuestNPCKilled', 
+							snet.InvokeAll('qsystem_rpc_function_onQuestNPCKilled',
 								self, data, npc, attacker, inflictor)
 							step.onQuestNPCKilled(self, data, npc, attacker, inflictor)
 						end
@@ -172,7 +168,7 @@ function ENT:Initialize()
 		-- Wiki - https://wiki.facepunch.com/gmod/GM:SetupPlayerVisibility
 		-------------------------------------
 		hook.Add('SetupPlayerVisibility', factory_hook_name, function(pPlayer, pViewEntity)
-			if not IsValid(self) then hook.Remove("SetupPlayerVisibility", factory_hook_name) return end
+			if not IsValid(self) then hook.Remove('SetupPlayerVisibility', factory_hook_name) return end
 			AddOriginToPVS(self:GetPos())
 
 			local entities = {}
@@ -190,7 +186,7 @@ function ENT:Initialize()
 					table.insert(entities, prop)
 				end
 			end
-			
+
 			for _, data in pairs(self.weapons) do
 				table.insert(entities, data.weapon)
 			end
@@ -212,10 +208,10 @@ function ENT:Initialize()
 		-------------------------------------
 		-- Wiki - https://wiki.facepunch.com/gmod/GM:EntityEmitSound
 		-------------------------------------
-		hook.Add("EntityEmitSound", factory_hook_name, function(t)
-			if not IsValid(self) then hook.Remove("EntityEmitSound", factory_hook_name) return end
+		hook.Add('EntityEmitSound', factory_hook_name, function(t)
+			if not IsValid(self) then hook.Remove('EntityEmitSound', factory_hook_name) return end
 			local ent = t.Entity
-	
+
 			if self:IsQuestNPC(ent) and table.HasValue(self:GetAllPlayers(), LocalPlayer()) then
 				return false
 			end
@@ -434,15 +430,15 @@ function ENT:OnRemove()
 	end
 
 	local factory_hook_name = self:GetFactoryHookName()
-	hook.Remove("PlayerUse", factory_hook_name)
-	hook.Remove("ShouldCollide", factory_hook_name)
-	hook.Remove("EntityTakeDamage", factory_hook_name)
-	hook.Remove("OnNPCKilled", factory_hook_name)
-	hook.Remove("EntityEmitSound", factory_hook_name)
-	hook.Remove("SetupPlayerVisibility", factory_hook_name)
+	hook.Remove('PlayerUse', factory_hook_name)
+	hook.Remove('ShouldCollide', factory_hook_name)
+	hook.Remove('EntityTakeDamage', factory_hook_name)
+	hook.Remove('OnNPCKilled', factory_hook_name)
+	hook.Remove('EntityEmitSound', factory_hook_name)
+	hook.Remove('SetupPlayerVisibility', factory_hook_name)
 
 	local quest = self:GetQuest()
-	
+
 	if quest.steps[step] ~= nil and quest.steps[step].hooks ~= nil then
 		local step_hook_name = self:GetStepHookName()
 		for hook_type, _ in pairs(quest.steps[step].hooks) do
@@ -469,7 +465,7 @@ end
 -------------------------------------
 function ENT:OnNextStep()
 	QuestSystem:Debug('> OnNextStep execute')
-	
+
 	local quest = self:GetQuest()
 	if not quest.steps then return end
 
@@ -491,21 +487,18 @@ function ENT:OnNextStep()
 
 	local step_hook_name = self:GetStepHookName()
 
-	if old_step and #old_step ~= 0 then
-		if quest.steps[old_step] and quest.steps[old_step].hooks then
-			for hook_type, _ in pairs(quest.steps[old_step].hooks) do
-				hook.Remove(hook_type, step_hook_name)
-			end
+	if old_step and #old_step ~= 0 and quest.steps[old_step] and quest.steps[old_step].hooks then
+		for hook_type, _ in pairs(quest.steps[old_step].hooks) do
+			hook.Remove(hook_type, step_hook_name)
 		end
 	end
 
-	
 	if SERVER then
 		self:SyncNPCs()
 		self:SyncItems()
 		self:SetNPCsBehavior()
 
-		if QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then				
+		if QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then
 			self:SyncNoDraw()
 		end
 	end
@@ -514,19 +507,17 @@ function ENT:OnNextStep()
 	-- 	self:SetNWBool('StopThink', false)
 	-- end
 
-	if step == 'start' then
-		if quest.global_hooks then
-			local global_hook_name = self:GetGlobalHookName()
-			for hook_type, func in pairs(quest.global_hooks) do
-				hook.Add(hook_type, global_hook_name, function(...)
-					if not IsValid(self) then
-						hook.Remove(hook_type, global_hook_name)
-						return
-					end
-	
-					func(self, ...)
-				end)
-			end
+	if step == 'start' and quest.global_hooks then
+		local global_hook_name = self:GetGlobalHookName()
+		for hook_type, func in pairs(quest.global_hooks) do
+			hook.Add(hook_type, global_hook_name, function(...)
+				if not IsValid(self) then
+					hook.Remove(hook_type, global_hook_name)
+					return
+				end
+
+				func(self, ...)
+			end)
 		end
 	end
 
@@ -603,7 +594,7 @@ end
 -- @return bool - will return true if NPCs were found according to the conditions, otherwise false
 -------------------------------------
 function ENT:IsQuestNPC(npc, type, tag)
-	if IsValid(npc) then 
+	if IsValid(npc) then
 		for _, data in pairs(self.npcs) do
 			if data.npc == npc then
 				if type ~= nil and data.type ~= type then return false end
@@ -637,7 +628,7 @@ end
 -- @return bool - will return true if the player belongs to the quest, otherwise false
 -------------------------------------
 function ENT:IsQuestPlayer(ply)
-	if IsValid(ply) and ply:IsPlayer() then 
+	if IsValid(ply) and ply:IsPlayer() then
 		for _, questPlayer in pairs(self.players) do
 			if questPlayer == ply then
 				return true
