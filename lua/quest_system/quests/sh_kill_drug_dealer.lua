@@ -6,12 +6,8 @@ local quest = {
 	steps = {
 		start = {
 			construct = function(eQuest)
-				if SERVER then
-					eQuest:GiveQuestWeapon('weapon_crowbar')
-				else
-					local quest = eQuest:GetQuest()
-					eQuest:Notify(quest.title, quest.description)
-				end
+				if CLIENT then return end
+				eQuest:GiveQuestWeapon('weapon_crowbar')
 			end,
 			triggers = {
 				spawn_dealer_trigger = {

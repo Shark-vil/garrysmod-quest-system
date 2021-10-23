@@ -2,6 +2,7 @@ local quest = {
 	id = 'player_killer',
 	title = 'Охотник за головами',
 	description = 'Убейте случайного игрока, которого предложит заказчик.',
+	disableNotify = true,
 	payment = 500,
 	--[[
 	-- An example of creating restrictions for quests (also works with dialogues) 

@@ -6,11 +6,6 @@ local quest = {
 	timeQuest = 600,
 	steps = {
 		start = {
-			construct = function(eQuest)
-				if SERVER then return end
-				local quest = eQuest:GetQuest()
-				eQuest:Notify(quest.title, quest.description)
-			end,
 			triggers = {
 				spawn_zombie_trigger_1 = {
 					onEnter = function(eQuest, ent)
@@ -36,20 +31,16 @@ local quest = {
 			points = {
 				spawn_zombie = function(eQuest, positions)
 					if CLIENT then return end
-					local index = 1
+					local index = 0
 
 					for _, pos in pairs(positions) do
-						if index > 5 and math.random(0, 1) == 1 then
-							goto skip
-						end
+						index = index + 1
+						if index > 5 and math.random(0, 1) == 1 then continue end
 
 						eQuest:SpawnQuestNPC(table.Random({'npc_zombie', 'npc_headcrab', 'npc_fastzombie'}), {
 							pos = pos,
 							type = 'enemy'
 						})
-
-						::skip::
-						index = index + 1
 					end
 				end,
 			},

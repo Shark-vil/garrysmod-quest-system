@@ -14,7 +14,7 @@ local quest = {
 	end,
 	global_hooks = {
 		PlayerDeath = function(eQuest, ply)
-			eQuest:ExecQuestFunction('f_left_zone', eQuest, ply)
+			eQuest:QuestFunction('f_left_zone', eQuest, ply)
 		end
 	},
 	functions = {
@@ -69,7 +69,7 @@ local quest = {
 			eQuest:SetVariable('max_mobs', max_mobs)
 
 			for i = 1, max_spawn do
-				eQuest:ExecQuestFunction('f_spawn_zombie', eQuest, table.Random(positions))
+				eQuest:QuestFunction('f_spawn_zombie', eQuest, table.Random(positions))
 			end
 		end,
 		f_next_step = function(eQuest, data, next_step_id)
@@ -84,7 +84,7 @@ local quest = {
 				eQuest:NextStep(next_step_id)
 			else
 				if max_mobs - mob_killed > max_spawn then
-					eQuest:ExecQuestFunction('f_spawn_zombie', eQuest, table.Random(positions))
+					eQuest:QuestFunction('f_spawn_zombie', eQuest, table.Random(positions))
 				end
 			end
 
@@ -144,11 +144,8 @@ local quest = {
 				end
 
 				eQuest:TimerCreate(function()
-						eQuest:NextStep('spawn_mobs_wave_1')
+					eQuest:NextStep('spawn_mobs_wave_1')
 				end, 20)
-
-				local quest = eQuest:GetQuest()
-				eQuest:Notify(quest.title, quest.description)
 
 				local weapons = {'weapon_357', 'weapon_pistol', 'weapon_crossbow', 'weapon_crowbar', 'weapon_frag', 'weapon_ar2', 'weapon_rpg', 'weapon_slam', 'weapon_shotgun', 'weapon_smg1',}
 
@@ -185,7 +182,7 @@ local quest = {
 			triggers = {
 				quest_zone_global = {
 					onExit = function(eQuest, ent)
-						eQuest:ExecQuestFunction('f_left_zone', eQuest, ent)
+						eQuest:QuestFunction('f_left_zone', eQuest, ent)
 					end
 				},
 			}
@@ -204,18 +201,18 @@ local quest = {
 			end,
 			points = {
 				mob_spawners_1 = function(eQuest, positions)
-					eQuest:ExecQuestFunction('f_spawn_zombie_points', eQuest, positions, 10, 10)
+					eQuest:QuestFunction('f_spawn_zombie_points', eQuest, positions, 10, 10)
 				end,
 			},
 			onQuestNPCKilled = function(eQuest, data, npc, attacker, inflictor)
-				eQuest:ExecQuestFunction('f_next_step', eQuest, data, 'delay_spawn_mobs_wave_2')
+				eQuest:QuestFunction('f_next_step', eQuest, data, 'delay_spawn_mobs_wave_2')
 			end,
 			think = function(eQuest)
-				eQuest:ExecQuestFunction('f_respawn_npc_if_bad_attack', eQuest)
+				eQuest:QuestFunction('f_respawn_npc_if_bad_attack', eQuest)
 			end,
 			hooks = {
 				EntityTakeDamage = function(eQuest, target, dmginfo)
-					eQuest:ExecQuestFunction('f_take_damage_reset_last_attack', eQuest, target, dmginfo)
+					eQuest:QuestFunction('f_take_damage_reset_last_attack', eQuest, target, dmginfo)
 				end,
 			}
 		},
@@ -262,18 +259,18 @@ local quest = {
 			end,
 			points = {
 				mob_spawners_1 = function(eQuest, positions)
-					eQuest:ExecQuestFunction('f_spawn_zombie_points', eQuest, positions, 15, 40)
+					eQuest:QuestFunction('f_spawn_zombie_points', eQuest, positions, 15, 40)
 				end,
 			},
 			onQuestNPCKilled = function(eQuest, data, npc, attacker, inflictor)
-				eQuest:ExecQuestFunction('f_next_step', eQuest, data, 'delay_spawn_mobs_wave_3')
+				eQuest:QuestFunction('f_next_step', eQuest, data, 'delay_spawn_mobs_wave_3')
 			end,
 			think = function(eQuest)
-				eQuest:ExecQuestFunction('f_respawn_npc_if_bad_attack', eQuest)
+				eQuest:QuestFunction('f_respawn_npc_if_bad_attack', eQuest)
 			end,
 			hooks = {
 				EntityTakeDamage = function(eQuest, target, dmginfo)
-					eQuest:ExecQuestFunction('f_take_damage_reset_last_attack', eQuest, target, dmginfo)
+					eQuest:QuestFunction('f_take_damage_reset_last_attack', eQuest, target, dmginfo)
 				end,
 			}
 		},
@@ -306,18 +303,18 @@ local quest = {
 			end,
 			points = {
 				mob_spawners_1 = function(eQuest, positions)
-					eQuest:ExecQuestFunction('f_spawn_zombie_points', eQuest, positions, 20, 50)
+					eQuest:QuestFunction('f_spawn_zombie_points', eQuest, positions, 20, 50)
 				end,
 			},
 			onQuestNPCKilled = function(eQuest, data, npc, attacker, inflictor)
-				eQuest:ExecQuestFunction('f_next_step', eQuest, data, 'complete')
+				eQuest:QuestFunction('f_next_step', eQuest, data, 'complete')
 			end,
 			think = function(eQuest)
-				eQuest:ExecQuestFunction('f_respawn_npc_if_bad_attack', eQuest)
+				eQuest:QuestFunction('f_respawn_npc_if_bad_attack', eQuest)
 			end,
 			hooks = {
 				EntityTakeDamage = function(eQuest, target, dmginfo)
-					eQuest:ExecQuestFunction('f_take_damage_reset_last_attack', eQuest, target, dmginfo)
+					eQuest:QuestFunction('f_take_damage_reset_last_attack', eQuest, target, dmginfo)
 				end,
 			}
 		},
@@ -328,7 +325,7 @@ local quest = {
 					return
 				end
 
-				eQuest:ExecQuestFunction('f_move_player_to_old_position', eQuest)
+				eQuest:QuestFunction('f_move_player_to_old_position', eQuest)
 				eQuest:Notify('Завершено', 'Вы продержались все волны, так держать!')
 				eQuest:Reward()
 				eQuest:Complete()
@@ -341,7 +338,7 @@ local quest = {
 					return
 				end
 
-				eQuest:ExecQuestFunction('f_move_player_to_old_position', eQuest)
+				eQuest:QuestFunction('f_move_player_to_old_position', eQuest)
 				eQuest:Notify('Провалено', 'Вы вышли за пределы игровой зоны.')
 				eQuest:Failed()
 			end,

@@ -333,7 +333,7 @@ end
 -- @param id string - function identifier
 -- @param args varargs - any arguments separated by commas
 -------------------------------------
-function ENT:ExecQuestFunction(id, ...)
+function ENT:QuestFunction(id, ...)
 	local quest = self:GetQuest()
 	if quest ~= nil and quest.functions ~= nil then
 		local func = quest.functions[id]
@@ -507,17 +507,30 @@ function ENT:OnNextStep()
 	-- 	self:SetNWBool('StopThink', false)
 	-- end
 
-	if step == 'start' and quest.global_hooks then
-		local global_hook_name = self:GetGlobalHookName()
-		for hook_type, func in pairs(quest.global_hooks) do
-			hook.Add(hook_type, global_hook_name, function(...)
-				if not IsValid(self) then
-					hook.Remove(hook_type, global_hook_name)
-					return
-				end
+	if step == 'start' then
+		if SERVER and not quest.disableNotify then
+			local quest_title = quest.title or ''
+			local quest_description = quest.description or ''
 
-				func(self, ...)
-			end)
+			if quest.isEvent then
+				eQuest:NotifyAll(quest_title, quest_description)
+			else
+				eQuest:Notify(quest_title, quest_description)
+			end
+		end
+
+		if quest.global_hooks then
+			local global_hook_name = self:GetGlobalHookName()
+			for hook_type, func in pairs(quest.global_hooks) do
+				hook.Add(hook_type, global_hook_name, function(...)
+					if not IsValid(self) then
+						hook.Remove(hook_type, global_hook_name)
+						return
+					end
+
+					func(self, ...)
+				end)
+			end
 		end
 	end
 

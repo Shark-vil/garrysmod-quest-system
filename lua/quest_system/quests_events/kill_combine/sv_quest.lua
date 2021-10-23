@@ -23,10 +23,6 @@ local quest = {
 	},
 	steps = {
 		start = {
-			construct = function(eQuest)
-				local quest = eQuest:GetQuest()
-				eQuest:NotifyAll(quest.title, quest.description, 6)
-			end,
 			triggers = {
 				spawn_combines_trigger = {
 					onEnter = function(eQuest, ent)

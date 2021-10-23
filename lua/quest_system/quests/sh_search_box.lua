@@ -45,11 +45,6 @@ local quest = {
 	},
 	steps = {
 		start = {
-			construct = function(eQuest)
-				if SERVER then return end
-				local quest = eQuest:GetQuest()
-				eQuest:Notify(quest.title, quest.description)
-			end,
 			destruct = function(eQuest)
 				if CLIENT then return end
 				eQuest:ForcedTracking()
@@ -94,12 +89,12 @@ local quest = {
 			triggers = {
 				spawn_npc_trigger = {
 					onEnter = function(eQuest, ent)
-						eQuest:ExecQuestFunction('f_spawn_enemy_npcs', eQuest, ent)
+						eQuest:QuestFunction('f_spawn_enemy_npcs', eQuest, ent)
 					end
 				},
 				spawn_npc_trigger_2 = {
 					onEnter = function(eQuest, ent)
-						eQuest:ExecQuestFunction('f_spawn_enemy_npcs', eQuest, ent)
+						eQuest:QuestFunction('f_spawn_enemy_npcs', eQuest, ent)
 					end
 				},
 			},
@@ -121,17 +116,17 @@ local quest = {
 					end
 				end,
 				customer = function(eQuest, positions)
-					eQuest:ExecQuestFunction('f_spawn_customer', eQuest, table.Random(positions), true)
+					eQuest:QuestFunction('f_spawn_customer', eQuest, table.Random(positions), true)
 				end,
 			},
 			onQuestNPCKilled = function(eQuest, data, npc, attacker, inflictor)
-				eQuest:ExecQuestFunction('f_loss_conditions', eQuest)
+				eQuest:QuestFunction('f_loss_conditions', eQuest)
 			end,
 		},
 		give_box = {
 			points = {
 				customer = function(eQuest, positions)
-					eQuest:ExecQuestFunction('f_spawn_customer', eQuest, table.Random(positions))
+					eQuest:QuestFunction('f_spawn_customer', eQuest, table.Random(positions))
 				end,
 			},
 			onUse = function(eQuest, ent)
@@ -143,7 +138,7 @@ local quest = {
 				end
 			end,
 			onQuestNPCKilled = function(eQuest)
-				eQuest:ExecQuestFunction('f_loss_conditions', eQuest)
+				eQuest:QuestFunction('f_loss_conditions', eQuest)
 			end,
 		},
 		complete = {
