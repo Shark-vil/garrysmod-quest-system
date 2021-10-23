@@ -23,7 +23,6 @@ local conversation = {
 				'Я слушаю.',
 				'Чего хотели?'
 			},
-			delay = 3,
 			event = function(eDialogue)
 				if CLIENT and eDialogue.isFirst then
 					eDialogue:VoiceSay('vo/canals/matt_go_nag01.wav')
@@ -81,14 +80,12 @@ local conversation = {
 		},
 		few_money = {
 			text = 'Ага, а деньги то есть?... Чего, и всего? Этого мало. Зайди когда на руках будет хотяб сотня...',
-			delay = 6,
 			eventDelay = function(eDialogue)
 				if SERVER then eDialogue:Next('start', true) end
 			end
 		},
 		rejection_health = {
 			text = 'Я тебя уже подлатал, у меня и другие клиенты есть. Можешь зайти позднее.',
-			delay = 5,
 			eventDelay = function(eDialogue)
 				if SERVER then eDialogue:Next('start', true) end
 			end
@@ -119,7 +116,6 @@ local conversation = {
 		},
 		failed_health = {
 			text = 'Ты не выглядишь таким уж помятым. Обойдёшься.',
-			delay = 4,
 			eventDelay = function(eDialogue)
 				if SERVER then eDialogue:Next('start', true) end
 			end

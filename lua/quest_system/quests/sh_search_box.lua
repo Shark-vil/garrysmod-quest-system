@@ -55,20 +55,20 @@ local quest = {
 				eQuest:ForcedTracking()
 			end,
 			points = {
-					spawn_points_1 = function(eQuest, positions)
-						if CLIENT then return end
+				spawn_points_1 = function(eQuest, positions)
+					if CLIENT then return end
 
-						eQuest:SpawnQuestItem('quest_item', {
-							id = 'box',
-							model = 'models/props_junk/cardboard_box004a.mdl',
-							pos = table.Random(positions),
-							ang = AngleRand()
-						}):SetFreeze(true)
-					end,
-					customer_destination = function(eQuest, positions)
-						if CLIENT then return end
-						eQuest:SetArrowVector(positions[1])
-					end
+					eQuest:SpawnQuestItem('quest_item', {
+						id = 'box',
+						model = 'models/props_junk/cardboard_box004a.mdl',
+						pos = table.Random(positions),
+						ang = AngleRand()
+					}):SetFreeze(true)
+				end,
+				customer_destination = function(eQuest, positions)
+					if CLIENT then return end
+					eQuest:SetArrowVector(positions[1])
+				end
 			},
 			onUseItem = function(eQuest, item)
 				if CLIENT then return end

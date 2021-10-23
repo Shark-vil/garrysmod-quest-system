@@ -1,5 +1,6 @@
 util.AddNetworkString('sv_qsystem_close_npc_dialogue_menu')
 util.AddNetworkString('sv_qsystem_dialogue_answer_select')
+util.AddNetworkString('sv_qsystem_dialogue_answer_onclick')
 
 hook.Add('PlayerSpawnedNPC', 'QSystem.SetNpcDialogue', function(ply, ent)
 	QuestDialogue:AutoParentToNPC(ent, ply)
@@ -65,6 +66,18 @@ net.Receive('sv_qsystem_dialogue_answer_select', function(len, ply)
 				ent.isFirstAnswer = true
 			end
 
+			break
+		end
+	end
+end)
+
+net.Receive('sv_qsystem_dialogue_answer_onclick', function(len, ply)
+	for _, ent in pairs(ents.FindByClass('quest_dialogue')) do
+		if IsValid(ent) and ent:GetPlayer() == ply then
+			local step = ent:GetStep()
+			if step.eventDelay ~= nil and not step.delay then
+				step.eventDelay(ent)
+			end
 			break
 		end
 	end
