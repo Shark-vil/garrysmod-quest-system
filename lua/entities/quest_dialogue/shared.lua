@@ -1,10 +1,10 @@
-ENT.Type = "anim"
-ENT.Base = "base_gmodentity"
-ENT.PrintName = "Dialogue Entity"
-ENT.Author = ""
-ENT.Contact = ""
-ENT.Purpose = ""
-ENT.Instructions = ""
+ENT.Type = 'anim'
+ENT.Base = 'base_gmodentity'
+ENT.PrintName = 'Dialogue Entity'
+ENT.Author = ''
+ENT.Contact = ''
+ENT.Purpose = ''
+ENT.Instructions = ''
 ENT.Spawnable = false
 ENT.AdminSpawnable = false
 ENT.conversation = nil
@@ -91,7 +91,7 @@ function ENT:Initialize()
 
 							for i = 1, lengthLines do
 								local text = lines[i]
-								draw.SimpleTextOutlined(text, "QuestSystemDialogueBackgroundText", 0, ypos, Color(255, 255, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color(0, 0, 0))
+								draw.SimpleTextOutlined(text, 'QuestSystemDialogueBackgroundText', 0, ypos, Color(255, 255, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color(0, 0, 0))
 								ypos = ypos + 15
 							end
 
@@ -131,7 +131,7 @@ end
 -------------------------------------
 function ENT:Think()
 	if SERVER and self.isStarted and (
-		not IsValid(self:GetNPC()) or not IsValid(self:GetPlayer()) or 
+		not IsValid(self:GetNPC()) or not IsValid(self:GetPlayer()) or
 		( self:NpcIsFear() and not self:GetDialogue().isBackground )
 	) then
 		self:Remove()
@@ -284,7 +284,7 @@ function ENT:GetPlayerValue(value_name)
 			file_path = file_path .. '/' .. value_name .. '.txt'
 
 			if file.Exists(file_path, 'DATA') then
-				local value = file.Read(file_path, "DATA")
+				value = file.Read(file_path, 'DATA')
 				self:SetNWString('var_' .. value_name, value)
 				return value
 			end

@@ -1,5 +1,5 @@
-AddCSLuaFile( "cl_init.lua" )
-AddCSLuaFile( "shared.lua" )
+AddCSLuaFile('cl_init.lua')
+AddCSLuaFile('shared.lua')
 include('shared.lua')
 
 -------------------------------------
@@ -8,8 +8,8 @@ include('shared.lua')
 -- @param id string - dialogue id
 -------------------------------------
 function ENT:SetDialogueID(id)
-    self:SetNWString('id', id)
-    hook.Run('QSystem.ParentDialogueId', self, id)
+	self:SetNWString('id', id)
+	hook.Run('QSystem.ParentDialogueId', self, id)
 end
 
 -------------------------------------
@@ -18,8 +18,8 @@ end
 -- @param step_id string - dialogue step id
 -------------------------------------
 function ENT:SetStep(step_id)
-    self:SetNWString('step_id', step_id)
-    hook.Run('QSystem.ParentDialogueStepId', self, step_id)
+	self:SetNWString('step_id', step_id)
+	hook.Run('QSystem.ParentDialogueStepId', self, step_id)
 end
 
 -------------------------------------
@@ -28,8 +28,8 @@ end
 -- @param ply entity - player entity
 -------------------------------------
 function ENT:SetPlayer(ply)
-    self:SetNWEntity('player', ply)
-    hook.Run('QSystem.ParentDialoguePlayer', self, ply)
+	self:SetNWEntity('player', ply)
+	hook.Run('QSystem.ParentDialoguePlayer', self, ply)
 end
 
 -------------------------------------
@@ -39,8 +39,8 @@ end
 -- @param npc entity - entity of the interlocutor
 -------------------------------------
 function ENT:SetNPC(npc)
-    self:SetNWEntity('npc', npc)
-    hook.Run('QSystem.ParentDialogueNPC', self, npc)
+	self:SetNWEntity('npc', npc)
+	hook.Run('QSystem.ParentDialogueNPC', self, npc)
 end
 
 -------------------------------------
@@ -55,10 +55,10 @@ end
 -- @param delay number - window activity time
 -------------------------------------
 function ENT:SingleReplic(name, text, delay, is_background)
-    self:SetNWString('single_replic', text)
-    self:SetNWString('single_replic_name', name)
-    self:SetNWFloat('single_replic_delay', delay)
-    self:SetNWBool('single_replic_is_background', is_background)
+	self:SetNWString('single_replic', text)
+	self:SetNWString('single_replic_name', name)
+	self:SetNWFloat('single_replic_delay', delay)
+	self:SetNWBool('single_replic_is_background', is_background)
 end
 
 -------------------------------------
@@ -68,35 +68,36 @@ end
 -- @param ignore_npc_text bool - if true, the NPC replic will be skipped
 -------------------------------------
 function ENT:Next(step_id, ignore_npc_text)
-    ignore_npc_text = ignore_npc_text or false
-    self:SetStep(step_id)
+	ignore_npc_text = ignore_npc_text or false
+	self:SetStep(step_id)
 
-    timer.Simple(0.5, function()
-        self:StartDialogue(ignore_npc_text, true)
-    end)
+	timer.Simple(0.5, function()
+		self:StartDialogue(ignore_npc_text, true)
+	end)
 end
 
 -------------------------------------
 -- Loads custom network variables, if they exist.
 -------------------------------------
 function ENT:LoadPlayerValues()
-    local ply = self:GetPlayer()
-    if IsValid(ply) then
-        local file_path = 'quest_system/dialogue/'.. ply:PlayerId()
-        file_path = file_path .. '/' .. self:GetDialogueID()
-        file_path = file_path .. '/'
+	local ply = self:GetPlayer()
 
-        local files_values = file.Find(file_path .. '*', 'DATA')
-        for _, file_name in pairs(files_values) do
-            local value_name = string.Split(file_name, '.')
-            local value = self:GetNWString('var_' .. value_name[1])
+	if IsValid(ply) then
+		local file_path = 'quest_system/dialogue/' .. ply:PlayerId()
+		file_path = file_path .. '/' .. self:GetDialogueID()
+		file_path = file_path .. '/'
+		local files_values = file.Find(file_path .. '*', 'DATA')
 
-            if value == nil or #value == 0 then
-                value = file.Read(file_path .. file_name, "DATA")
-                self:SetNWString('var_' .. value_name[1], value)
-            end
-        end
-    end
+		for _, file_name in pairs(files_values) do
+			local value_name = string.Split(file_name, '.')
+			local value = self:GetNWString('var_' .. value_name[1])
+
+			if value == nil or #value == 0 then
+				value = file.Read(file_path .. file_name, 'DATA')
+				self:SetNWString('var_' .. value_name[1], value)
+			end
+		end
+	end
 end
 
 -------------------------------------
@@ -109,34 +110,33 @@ end
 -- @return bool - returns true if the variable was saved, false otherwise
 -------------------------------------
 function ENT:SavePlayerValue(value_name, value, not_autoload)
-    local ply = self:GetPlayer()
-    if IsValid(ply) then
-        local file_path = 'quest_system/dialogue/'.. ply:PlayerId()
-        
-        if not file.Exists(file_path, 'DATA') then
-            file.CreateDir(file_path)
-        end
+	local ply = self:GetPlayer()
 
-        file_path = file_path .. '/' .. self:GetDialogueID()
+	if IsValid(ply) then
+		local file_path = 'quest_system/dialogue/' .. ply:PlayerId()
 
-        if not file.Exists(file_path, 'DATA') then
-            file.CreateDir(file_path)
-        end
+		if not file.Exists(file_path, 'DATA') then
+			file.CreateDir(file_path)
+		end
 
-        file_path = file_path .. '/' .. value_name .. '.txt'
+		file_path = file_path .. '/' .. self:GetDialogueID()
 
-        value = tostring(value)
+		if not file.Exists(file_path, 'DATA') then
+			file.CreateDir(file_path)
+		end
 
-        file.Write(file_path, value)
+		file_path = file_path .. '/' .. value_name .. '.txt'
+		value = tostring(value)
+		file.Write(file_path, value)
 
-        if not not_autoload then
-            self:SetNWString('var_' .. value_name, value)
-        end
+		if not not_autoload then
+			self:SetNWString('var_' .. value_name, value)
+		end
 
-        return true
-    end
+		return true
+	end
 
-    return false
+	return false
 end
 
 -------------------------------------
@@ -148,33 +148,33 @@ end
 -- @return bool - returns true if the variable was removed, false otherwise
 -------------------------------------
 function ENT:RemovePlayerValue(value_name, player_id)
+	if player_id == nil then
+		local ply = self:GetPlayer()
 
-    if player_id == nil then
-        local ply = self:GetPlayer()
-        if IsValid(ply)  then
-            player_id = ply:PlayerId()
-        end
-    end
+		if IsValid(ply) then
+			player_id = ply:PlayerId()
+		end
+	end
 
-    if player_id ~= nil then
-        local file_path = 'quest_system/dialogue/'.. player_id
-        file_path = file_path .. '/' .. self:GetDialogueID()
-        file_path = file_path .. '/' .. value_name .. '.txt'
+	if player_id ~= nil then
+		local file_path = 'quest_system/dialogue/' .. player_id
+		file_path = file_path .. '/' .. self:GetDialogueID()
+		file_path = file_path .. '/' .. value_name .. '.txt'
 
-        if file.Exists(file_path, 'DATA') then
-            file.Remove(file_path)
-            return true
-        end
-    end
+		if file.Exists(file_path, 'DATA') then
+			file.Remove(file_path)
+			return true
+		end
+	end
 
-    return false
+	return false
 end
 
 -------------------------------------
 -- Stops the dialog by deleting the dialog entity.
 -------------------------------------
 function ENT:Stop()
-    self:Remove()
+	self:Remove()
 end
 
 -------------------------------------
@@ -183,15 +183,12 @@ end
 -- @return bool - will return true if the NPC is in a state of fear, otherwise false
 -------------------------------------
 function ENT:NpcIsFear()
-    local npc = self:GetNPC()
-    if IsValid(npc) and npc:IsNPC() then
-        local schedule = npc:GetCurrentSchedule()
-        if npc:IsCurrentSchedule(SCHED_RUN_FROM_ENEMY) 
-            or npc:IsCurrentSchedule(SCHED_WAKE_ANGRY)
-            or schedule == 159
-        then
-            return true
-        end
-    end
-    return false
+	local npc = self:GetNPC()
+
+	if IsValid(npc) and npc:IsNPC() then
+		local schedule = npc:GetCurrentSchedule()
+		if npc:IsCurrentSchedule(SCHED_RUN_FROM_ENEMY) or npc:IsCurrentSchedule(SCHED_WAKE_ANGRY) or schedule == 159 then return true end
+	end
+
+	return false
 end
