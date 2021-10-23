@@ -1,9 +1,9 @@
-AddCSLuaFile( "cl_init.lua" )
-AddCSLuaFile( "shared.lua" )
+AddCSLuaFile('cl_init.lua')
+AddCSLuaFile('shared.lua')
 include('shared.lua')
 
 function ENT:Initialize()
-    self:SetModel('models/Eli.mdl')
+	self:SetModel('models/Eli.mdl')
 	self:SetSolid(SOLID_BBOX)
 	self:PhysicsInit(SOLID_BBOX)
 	self:SetHullType(HULL_HUMAN)
@@ -21,7 +21,7 @@ function ENT:Initialize()
 	-------------------------------------
 	-- @params wiki - https://wiki.facepunch.com/gmod/GM:OnEntityCreated
 	-------------------------------------
-	hook.Add("OnEntityCreated", self, function(this, ent)
+	hook.Add('OnEntityCreated', self, function(this, ent)
 		if ent:IsNPC() then
 			ent:AddEntityRelationship(self, D_NU, 99)
 		end
@@ -34,7 +34,7 @@ end
 -- @params wiki - https://wiki.facepunch.com/gmod/Entity:Use(function)
 -------------------------------------
 function ENT:Use(activator, caller, useType, value)
-    if useType == USE_ON and activator:IsPlayer() then
-        activator:ConCommand('qsystem_open_simple_quest_menu')
-    end
+	if useType == USE_ON and activator:IsPlayer() then
+		activator:ConCommand('qsystem_open_simple_quest_menu')
+	end
 end

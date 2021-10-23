@@ -1,5 +1,5 @@
-AddCSLuaFile( "cl_init.lua" )
-AddCSLuaFile( "shared.lua" )
+AddCSLuaFile('cl_init.lua')
+AddCSLuaFile('shared.lua')
 include('shared.lua')
 
 -------------------------------------
@@ -27,7 +27,7 @@ end
 -- @param step string - step id
 -------------------------------------
 function ENT:SetStep(step)
-	QuestSystem:Debug('SetStep - ' ..step)
+	QuestSystem:Debug('SetStep - ' .. step)
 
 	self.StopThink = true
 	self:SetNWBool('StopThink', self.StopThink)
@@ -66,7 +66,7 @@ function ENT:SetStep(step)
 
 				local file_path = 'quest_system/triggers/' .. quest.id .. '/' .. game.GetMap() .. '/' .. trigger_name .. '.json'
 				if file.Exists(file_path, 'DATA') then
-					local trigger = util.JSONToTable(file.Read(file_path, "DATA"))
+					local trigger = util.JSONToTable(file.Read(file_path, 'DATA'))
 					table.insert(self.triggers, {
 						name = trigger_name,
 						trigger = trigger,
@@ -97,7 +97,7 @@ function ENT:SetStep(step)
 
 				local file_path = 'quest_system/points/' .. quest.id .. '/' .. game.GetMap() .. '/' .. point_name .. '.json'
 				if file.Exists(file_path, 'DATA') then
-					local points = util.JSONToTable(file.Read(file_path, "DATA"))
+					local points = util.JSONToTable(file.Read(file_path, 'DATA'))
 					table.insert(self.points, {
 						name = point_name,
 						points = points,
@@ -133,14 +133,12 @@ function ENT:SetStep(step)
 		self:TimerCreate(function()
 			self.quest_data_normalize = self.quest_data_normalize or snet.GetNormalizeDataTable(quest)
 			snet.InvokeAll('qsystem_on_construct', self, step, self.quest_data_normalize)
-	
+
 			self:TimerCreate(function()
-				if quest.steps[step] and quest.steps[step].construct then
-					if quest.steps[step].construct(self) then
-						return
-					end
+				if quest.steps[step] and quest.steps[step].construct and quest.steps[step].construct(self) then
+					return
 				end
-	
+
 				self.StopThink = false
 				self:SetNWBool('StopThink', self.StopThink)
 
@@ -148,7 +146,7 @@ function ENT:SetStep(step)
 				self:OnNextStep()
 			end)
 		end)
-	
+
 		if step == 'start' then
 			if quest.isEvent then
 				hook.Run('QSystem.EventStarted', self, quest)
@@ -169,21 +167,21 @@ function ENT:SetStep(step)
 					end
 				end, quest.timeToNextStep)
 			end
-	
+
 			if quest.timeQuest ~= nil then
 				local time = quest.timeQuest
-	
+
 				if quest.timeToNextStep ~= nil then
 					time = time + quest.timeToNextStep
 				end
-	
+
 				timer.Simple(time, function()
 					if IsValid(self) then
 						local failedText = quest.failedText or {
 							title = 'Quest failed',
 							text = 'The execution time has expired.'
 						}
-	
+
 						self:NotifyOnlyRegistred(failedText.title, failedText.text)
 						self:Failed()
 					end
@@ -233,12 +231,9 @@ function ENT:Reward(customPayment, addToPayment)
 				payment = new_payment
 			end
 
-			if ply.addMoney ~= nil then
-				if engine.ActiveGamemode() == 'darkrp' then
-					ply:addMoney(payment)
-					DarkRP.notify(ply, 4, 4, 'Ваша награда за выполнение квеста - ' 
-						.. DarkRP.formatMoney(payment))
-				end
+			if ply.addMoney ~= nil and engine.ActiveGamemode() == 'darkrp' then
+				ply:addMoney(payment)
+				DarkRP.notify(ply, 4, 4, 'Ваша награда за выполнение квеста - ' .. DarkRP.formatMoney(payment))
 			end
 
 			hook.Run('QSystem.PostReward', self, ply, payment)
@@ -337,7 +332,7 @@ function ENT:Complete()
 			if SERVER then self:Remove() end
 			return
 		end
-	
+
 		local ply = self:GetPlayer()
 		local quest_id = self:GetQuestId()
 		ply:DisableQuest(quest_id)
@@ -355,7 +350,7 @@ function ENT:Failed()
 			if SERVER then self:Remove() end
 			return
 		end
-	
+
 		local ply = self:GetPlayer()
 		local quest_id = self:GetQuestId()
 		ply:DisableQuest(quest_id)
@@ -378,7 +373,7 @@ function ENT:MoveEnemyToRandomPlayer()
 
 			for _, data in pairs(self.npcs) do
 				if IsValid(data.npc) then
-					data.npc:SetSaveValue("m_vecLastPosition", player_pos)
+					data.npc:SetSaveValue('m_vecLastPosition', player_pos)
 					data.npc:SetSchedule(SCHED_FORCED_GO)
 				end
 			end
@@ -396,8 +391,9 @@ end
 -------------------------------------
 function ENT:MoveQuestNpcToPosition(pos, type, tag, moveType)
 	moveType = moveType or 'walk'
-	local function MoveToPosition(npc, pos)
-		npc:SetSaveValue("m_vecLastPosition", pos)
+
+	local function MoveToPosition(npc)
+		npc:SetSaveValue('m_vecLastPosition', pos)
 		if moveType == 'walk' then
 			npc:SetSchedule(SCHED_FORCED_GO)
 		else
@@ -410,7 +406,7 @@ function ENT:MoveQuestNpcToPosition(pos, type, tag, moveType)
 				timer.Remove(timerName)
 				return
 			end
-			
+
 			for _, ply in pairs(self.players) do
 				if ply:GetPos():Distance(npc:GetPos()) < 800 then
 					npc:ClearSchedule()
@@ -428,15 +424,15 @@ function ENT:MoveQuestNpcToPosition(pos, type, tag, moveType)
 		if IsValid(data.npc) then
 			if type ~= nil and tag ~= nil then
 				if type == data.type and tag == data.tag then
-					MoveToPosition(data.npc, pos)
+					MoveToPosition(data.npc)
 					break
 				end
 			elseif type ~= nil then
 				if type == data.type then
-					MoveToPosition(data.npc, pos)
+					MoveToPosition(data.npc)
 				end
 			else
-				MoveToPosition(data.npc, pos)
+				MoveToPosition(data.npc)
 			end
 		end
 	end
@@ -500,7 +496,7 @@ end
 -------------------------------------
 function ENT:AddQuestNPC(npc, type, tag)
 	tag = tag or 'none'
-	
+
 	table.insert(self.npcs, {
 		type = type,
 		tag = tag,
@@ -538,7 +534,7 @@ end
 -- 			util.BlastDamage(npc, npc, npc:GetPos(), 350, 250)
 -- 			local effectdata = EffectData()
 -- 			effectdata:SetOrigin(npc:GetPos())
--- 			util.Effect("Explosion", effectdata)
+-- 			util.Effect('Explosion', effectdata)
 -- 		end)
 -- 	end
 -- }
@@ -643,18 +639,14 @@ function ENT:QuestNPCIsValid(type, tag)
 	local allowAlive = false
 	for _, data in pairs(self.npcs) do
 		if type ~= nil and tag ~= nil then
-			if data.type == type and data.tag == tag then
-				if IsValid(data.npc) and data.npc:Health() > 0 then
-					allowAlive = true
-					break
-				end
+			if data.type == type and data.tag == tag and IsValid(data.npc) and data.npc:Health() > 0 then
+				allowAlive = true
+				break
 			end
 		elseif type ~= nil then
-			if data.type == type then
-				if IsValid(data.npc) and data.npc:Health() > 0 then
-					allowAlive = true
-					break
-				end
+			if data.type == type and IsValid(data.npc) and data.npc:Health() > 0 then
+				allowAlive = true
+				break
 			end
 		else
 			ErrorNoHalt('This function must take at least 1 argument!')
@@ -742,8 +734,8 @@ function ENT:SetNPCsBehavior(ent)
 	if ent ~= nil then
 		restictionByOtherNPC(ent)
 	else
-		for _, ent in pairs(ents.GetAll()) do
-			restictionByOtherNPC(ent)
+		for _, _ent in pairs(ents.GetAll()) do
+			restictionByOtherNPC(_ent)
 		end
 	end
 end
@@ -790,9 +782,9 @@ end
 -------------------------------------
 function ENT:SyncNoDraw(ply, delay)
 	self:TimerCreate(function()
-		if ply then 
+		if ply then
 			snet.Invoke('qsystem_sync_nodraw', ply, self)
-		else 
+		else
 			snet.InvokeAll('qsystem_sync_nodraw', self)
 		end
 	end, delay)
@@ -807,9 +799,9 @@ end
 function ENT:SyncItems(ply, delay)
 	self:TimerCreate(function()
 		QuestSystem:Debug('SyncItems (' .. table.Count(self.items) .. ') - ' .. table.ToString(self.items))
-		if ply then 
+		if ply then
 			snet.Invoke('qsystem_sync_items', ply, self, self.items)
-		else 
+		else
 			snet.InvokeAll('qsystem_sync_items', self, self.items)
 		end
 	end, delay)
@@ -825,9 +817,9 @@ function ENT:SyncNPCs(ply, delay)
 	self:TimerCreate(function()
 		QuestSystem:Debug('SyncNPCs (' .. table.Count(self.npcs) .. ') - ' .. table.ToString(self.npcs))
 
-		if ply then 
+		if ply then
 			snet.Invoke('qsystem_sync_npcs', ply, self, self.npcs)
-		else 
+		else
 			snet.InvokeAll('qsystem_sync_npcs', self, self.npcs)
 		end
 	end, delay)
@@ -843,9 +835,9 @@ function ENT:SyncPlayers(ply, delay)
 	self:TimerCreate(function()
 		QuestSystem:Debug('SyncPlayers (' .. table.Count(self.players) .. ') - ' .. table.ToString(self.players))
 
-		if ply then 
+		if ply then
 			snet.Invoke('qsystem_sync_players', ply, self, self.players)
-		else 
+		else
 			snet.InvokeAll('qsystem_sync_players', self, self.players)
 		end
 	end, delay)
@@ -861,9 +853,9 @@ function ENT:SyncTriggers(ply, delay)
 	self:TimerCreate(function()
 		QuestSystem:Debug('SyncTriggers (' .. table.Count(self.triggers) .. ') - ' .. table.ToString(self.triggers))
 
-		if ply then 
+		if ply then
 			snet.Invoke('qsystem_sync_triggers', ply, self, self.triggers)
-		else 
+		else
 			snet.InvokeAll('qsystem_sync_triggers', self, self.triggers)
 		end
 	end, delay)
@@ -879,9 +871,9 @@ function ENT:SyncPoints(ply, delay)
 	self:TimerCreate(function()
 		QuestSystem:Debug('SyncPoints (' .. table.Count(self.points) .. ') - ' .. table.ToString(self.points))
 
-		if ply then 
+		if ply then
 			snet.Invoke('qsystem_sync_points', ply, self, self.points)
-		else 
+		else
 			snet.InvokeAll('qsystem_sync_points', self, self.points)
 		end
 	end, delay)
@@ -897,9 +889,9 @@ function ENT:SyncValues(ply, delay)
 	self:TimerCreate(function()
 		QuestSystem:Debug('SyncValues (' .. table.Count(self.values) .. ') - ' .. table.ToString(self.values))
 
-		if ply then 
+		if ply then
 			snet.Invoke('qsystem_sync_values', ply, self, self.values)
-		else 
+		else
 			snet.InvokeAll('qsystem_sync_values', self, self.values)
 		end
 	end, delay)
@@ -915,9 +907,9 @@ function ENT:SyncWeapons(ply, delay)
 	self:TimerCreate(function()
 		QuestSystem:Debug('SyncWeapons (' .. table.Count(self.weapons) .. ') - ' .. table.ToString(self.weapons))
 
-		if ply then 
+		if ply then
 			snet.Invoke('qsystem_sync_weapons', ply, self, self.weapons)
-		else 
+		else
 			snet.InvokeAll('qsystem_sync_weapons', self, self.weapons)
 		end
 	end, delay)
@@ -933,9 +925,9 @@ function ENT:SyncStructures(ply, delay)
 	self:TimerCreate(function()
 		QuestSystem:Debug('SyncStructures (' .. table.Count(self.structures) .. ') - ' .. table.ToString(self.structures))
 
-		if ply then 
+		if ply then
 			snet.Invoke('qsystem_sync_structures', ply, self, self.structures)
-		else 
+		else
 			snet.InvokeAll('qsystem_sync_structures', self, self.structures)
 		end
 	end, delay)
@@ -995,19 +987,19 @@ function ENT:DoorLocker(ent, lockState)
 	end
 
 	for _, door in pairs(doors) do
-		if lockState == 'lock' and door.qsystemDoorIsLock ~= true 
+		if lockState == 'lock' and door.qsystemDoorIsLock ~= true
 			or lockState == 'unlock' and door.qsystemDoorIsLock ~= false
 		then
 			local doorsValidClass = {
-				"func_door",
-				"func_door_rotating",
-				"prop_door_rotating",
-				"func_movelinear",
-				"prop_dynamic",
+				'func_door',
+				'func_door_rotating',
+				'prop_door_rotating',
+				'func_movelinear',
+				'prop_dynamic',
 			}
-		
+
 			if table.HasValue(doorsValidClass, door:GetClass()) then
-				door:Fire(lockState)		
+				door:Fire(lockState)
 				if lockState == 'lock' then
 					door.qsystemDoorIsLock = true
 				else
