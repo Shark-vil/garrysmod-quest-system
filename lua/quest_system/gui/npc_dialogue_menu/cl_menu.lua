@@ -1,4 +1,4 @@
-local OpenDialoguNpc, OpenDialogueMenu, LoadAnswerOptions
+local OpenDialoguNpc, OpenDialogueMenu
 local eDialogue = NULL
 
 local background_texture = Material('quest_system/vgui/dialogue_panel_background.png')
@@ -13,8 +13,8 @@ local Color_Click = Color(45, 112, 59)
 
 local cam_anim = 0
 local cam_delay = 0
-hook.Add("CalcView", "QSystem.DialogueNPCCamera", function(ply, pos, angles, fov)
-	if IsValid(eDialogue) and IsValid(eDialogue:GetNPC()) 
+hook.Add('CalcView', 'QSystem.DialogueNPCCamera', function(ply, pos, angles, fov)
+	if IsValid(eDialogue) and IsValid(eDialogue:GetNPC())
 		and cam_delay < CurTime()
 	then
 		local dialogue = eDialogue:GetDialogue()
@@ -103,24 +103,24 @@ OpenDialoguNpc = function(ignore_npc_text)
 				self:Close()
 			end
 		end
-		MainPanel.Paint = function(self, width, height)
+		MainPanel.Paint = function(self, _width, _height)
 			if not IsValid(eDialogue) then self:Close() return end
 
 			if background_texture ~= nil then
 				surface.SetDrawColor(255, 255, 255, 255)
 				surface.SetMaterial(background_texture)
-				surface.DrawTexturedRect(0, 0 , width, height)
+				surface.DrawTexturedRect(0, 0 , _width, _height)
 			else
-				draw.RoundedBox(2, 0, 0, width, height, background_color)
+				draw.RoundedBox(2, 0, 0, _width, _height, background_color)
 			end
 
-			draw.DrawText(name, "QuestSystemDialogueNpcName", 30, 10, Color(255, 255, 255, 255))
+			draw.DrawText(name, 'QuestSystemDialogueNpcName', 30, 10, Color(255, 255, 255, 255))
 
 			surface.SetDrawColor(rectline_color)
-			surface.DrawLine(20, 30, 20 + (width - 40), 30)
+			surface.DrawLine(20, 30, 20 + (_width - 40), 30)
 		end
 
-		local TextAnswer = vgui.Create("DLabel", MainPanel)
+		local TextAnswer = vgui.Create('DLabel', MainPanel)
 		TextAnswer:SetFont('QuestSystemDialogueText')
 		TextAnswer:SetTextColor(Color(255, 255, 255))
 		TextAnswer:SetWidth(width - 35)
@@ -181,7 +181,7 @@ OpenDialogueMenu = function(npc_name)
 		MainPanel:ShowCloseButton(false)
 		MainPanel:SetDraggable(false)
 		MainPanel:SetSize(mpx, mpy)
-		MainPanel:SetPos((ScrW() - mpx) / 2, ScrH() - 10 - mpy) 
+		MainPanel:SetPos((ScrW() - mpx) / 2, ScrH() - 10 - mpy)
 		MainPanel:SetTitle(npc_name)
 		MainPanel:MakePopup()
 		MainPanel.OnClose = function(self)
@@ -215,11 +215,11 @@ OpenDialogueMenu = function(npc_name)
 			surface.DrawRect(width - 2, height - horizontal_line_size, 2, horizontal_line_size)
 
 			if not IsValid(eDialogue) then
-				self:Close() 
+				self:Close()
 			end
 		end
 
-		local AnswerOptions = vgui.Create("DScrollPanel", MainPanel)
+		local AnswerOptions = vgui.Create('DScrollPanel', MainPanel)
 		AnswerOptions:Dock(FILL)
 		AnswerOptions:DockMargin(5, 5, 5, 5)
 
@@ -229,7 +229,7 @@ OpenDialogueMenu = function(npc_name)
 			if condition ~= nil and not condition(eDialogue) then skip = true end
 
 			if not skip then
-				local AnswerOptionItem = AnswerOptions:Add("DPanel")
+				local AnswerOptionItem = AnswerOptions:Add('DPanel')
 				AnswerOptionItem:Dock(TOP)
 				AnswerOptionItem:DockMargin(0, 0, 5, 5)
 				AnswerOptionItem.OnCursorEntered = function(self)
@@ -306,7 +306,7 @@ OpenDialogueMenu = function(npc_name)
 				end
 				AnswerOptionItem:SetHeight(height)
 
-				local TextAnswer = vgui.Create("DLabel", AnswerOptionItem)
+				local TextAnswer = vgui.Create('DLabel', AnswerOptionItem)
 				TextAnswer:SetFont('QuestSystemDialogueText')
 				TextAnswer:SetTextColor(Color(255, 255, 255))
 				TextAnswer:SetWidth(mpx - 25)
