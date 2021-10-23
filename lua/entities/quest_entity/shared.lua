@@ -422,10 +422,8 @@ end
 function ENT:OnRemove()
 	local step = self:GetQuestStepTable()
 
-	if step ~= nil then
-		if step.destruct ~= nil then
-			step.destruct(self)
-		end
+	if step ~= nil and step.destruct ~= nil then
+		step.destruct(self)
 	end
 
 	if SERVER then
