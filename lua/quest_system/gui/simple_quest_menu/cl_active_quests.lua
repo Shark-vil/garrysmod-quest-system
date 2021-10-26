@@ -1,8 +1,21 @@
+local lang = slib.language({
+	['default'] = {
+		['title'] = 'List of active quests',
+		['timeQuest'] = 'Quest time: {time} sec.',
+		['tracking'] = 'Track quest',
+	},
+	['russian'] = {
+		['title'] = 'Список активных заданий',
+		['timeQuest'] = 'Время на выполнение: {time} сек.',
+		['tracking'] = 'Отслеживать задание',
+	}
+})
+
 local QuestTracking = NULL
 
 local function OpenMenu()
 	local Frame = vgui.Create('DFrame')
-	Frame:SetTitle('Список активных заданий')
+	Frame:SetTitle(lang['title'])
 	Frame:SetSize(500, 450)
 	Frame:MakePopup()
 	Frame:Center()
@@ -21,8 +34,11 @@ local function OpenMenu()
 		local quest = ent:GetQuest()
 
 		if quest.isEvent or ent:GetPlayer() == LocalPlayer() then
+			local description = quest.description
+
 			if quest.timeQuest ~= nil then
-				quest.description = quest.description .. '\nВремя на выполнение: ' .. quest.timeQuest .. ' сек.'
+				description = quest.description .. '\n'
+					.. string.Replace(lang['timeQuest'], '{time}', quest.timeQuest)
 			end
 
 			isZero = false
@@ -62,12 +78,12 @@ local function OpenMenu()
 			LabelDescription:Dock(TOP)
 			LabelDescription:DockMargin(5, 0, 0, 0)
 			LabelDescription:SetFont('DermaDefault')
-			LabelDescription:SetText(quest.description)
+			LabelDescription:SetText(description)
 			LabelDescription:SetDark(1)
 			LabelDescription:SetWrap(true)
 
 			local ButtonQuestTracking = vgui.Create('DButton', PanelItem)
-			ButtonQuestTracking:SetText('Отслеживать задание')
+			ButtonQuestTracking:SetText(lang['tracking'])
 			ButtonQuestTracking:Dock(BOTTOM)
 
 			ButtonQuestTracking.DoClick = function()
@@ -108,8 +124,8 @@ local function DrawNavigationArrow()
 		local eye_angle = LocalPlayer():EyeAngles()
 
 		if LocalPlayer():InVehicle() then
-				local veh = LocalPlayer():GetVehicle()
-				eye_angle = eye_angle + veh:EyeAngles()
+			local veh = LocalPlayer():GetVehicle()
+			eye_angle = eye_angle + veh:EyeAngles()
 		end
 
 		local angTo = (vec - local_pos):Angle()

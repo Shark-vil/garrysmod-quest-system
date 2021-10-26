@@ -1,5 +1,4 @@
-concommand.Add('qsystem_compile_quests', function(ply, cmd, args)
-	if not ply:IsAdmin() and not ply:IsSuperAdmin() then return end
+scommand.Create('qsystem_compile_quests').OnServer(function(ply, cmd, args)
 	local quest_id = args[1]
 	local point_dir_path = 'quest_system/points/' .. quest_id .. '/'
 	local _, points_maps = file.Find(point_dir_path .. '*', 'DATA')
@@ -106,4 +105,4 @@ end, function(cmd, args)
 	end
 
 	return autoComplete
-end)
+end).Access( { isAdmin = true } ).Register()

@@ -188,16 +188,3 @@ function meta:SetQuestStep(quest_id, step)
 
 	return false
 end
-
-concommand.Add('qsystem_players_reset_delay', function(ply)
-	if IsValid(ply) and ply:IsAdmin() and ply:IsSuperAdmin() then
-		for _, human in pairs(player.GetAll()) do
-			local file_path = 'quest_system/players_data/' .. human:PlayerId() .. '/delay.json'
-
-			if file.Exists(file_path, 'DATA') then
-				human:SetNWFloat('quest_delay', 0)
-				file.Delete(file_path)
-			end
-		end
-	end
-end)

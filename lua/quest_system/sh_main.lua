@@ -1,28 +1,22 @@
 if SERVER then
 	local function ActivateRandomEvent(id)
-		local event
+		local event = QuestSystem:GetQuest(id)
+		if not event then event = table.Random(QuestSystem:GetAllEvents()) end
+		if not event then return end
 
-		if not id or not isstring(id) or #(string.Replace(id, ' ', '')) == 0 then
-			event = table.Random(QuestSystem:GetAllEvents())
-		else
-			event = QuestSystem:GetQuest(id)
-		end
-
-		local activeEvent = QuestSystem.activeEvents[event.id]
-
-		if event ~= nil and (activeEvent == nil or not IsValid(activeEvent)) then
+		local active_event = QuestSystem.activeEvents[event.id]
+		if not active_event or not IsValid(active_event) then
 			QuestSystem:EnableEvent(event.id)
 		end
 	end
 
-	concommand.Add('qsystem_activate_random_event', function(ply, cmd, args)
-		if IsValid(ply) and not ply:IsAdmin() and not ply:IsSuperAdmin() then return end
+	scommand.Create('qsystem_activate_event').OnServer(function(ply, cmd, args)
 		ActivateRandomEvent(args[1])
-	end, function(cmd, stringargs)
+	end).AutoComplete(function(cmd, stringargs)
 		local tbl = {}
 		for id, _ in pairs(QuestSystem:GetAllEvents()) do tbl[ #tbl + 1] = cmd .. ' ' .. id end
 		return tbl
-	end)
+	end).Access( { isAdmin = true } ).Register()
 
 	local current_time = 0
 	hook.Add('Think', 'QSystemActivateRandomEvents', function()

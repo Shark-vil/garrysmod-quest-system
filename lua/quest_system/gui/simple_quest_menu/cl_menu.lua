@@ -1,6 +1,23 @@
+local lang = slib.language({
+	['default'] = {
+		['title'] = 'Quest board',
+		['timeQuest'] = 'Quest time: {time} sec.',
+		['takke'] = 'Take the quest',
+		['revoke'] = 'Revoke the quest',
+		['empty'] = 'No active quests',
+	},
+	['russian'] = {
+		['title'] = 'Доска заданий',
+		['timeQuest'] = 'Время на выполнение: {time} сек.',
+		['takke'] = 'Взять задание',
+		['revoke'] = 'Отозвать задание',
+		['empty'] = 'Нету активных заданий',
+	}
+})
+
 local function OpenMenu()
 	local Frame = vgui.Create('DFrame')
-	Frame:SetTitle('Доска заданий')
+	Frame:SetTitle(lang['title'])
 	Frame:SetSize(500, 450)
 	Frame:MakePopup()
 	Frame:Center()
@@ -16,9 +33,14 @@ local function OpenMenu()
 	local isZero = true
 
 	for id, quest in pairs(quests) do
-		if not quest.isEvent and not quest.hide and QuestSystem:CheckRestiction(LocalPlayer(), quest.restriction) then
+		if not quest.isEvent and not quest.hide
+			and QuestSystem:CheckRestiction(LocalPlayer(), quest.restriction)
+		then
+			local description = quest.description
+
 			if quest.timeQuest ~= nil then
-				quest.description = quest.description .. '\nВремя на выполнение: ' .. quest.timeQuest .. ' сек.'
+				description = quest.description .. '\n'
+					.. string.Replace(lang['timeQuest'], '{time}', quest.timeQuest)
 			end
 
 			isZero = false
@@ -58,13 +80,13 @@ local function OpenMenu()
 			LabelDescription:Dock(TOP)
 			LabelDescription:DockMargin(5, 0, 0, 0)
 			LabelDescription:SetFont('DermaDefault')
-			LabelDescription:SetText(quest.description)
+			LabelDescription:SetText(description)
 			LabelDescription:SetDark(1)
 			LabelDescription:SetWrap(true)
 
 			if LocalPlayer():QuestIsActive(id) then
 				local ButtonQuestDisable = vgui.Create('DButton', PanelItem)
-				ButtonQuestDisable:SetText('Отозвать задание')
+				ButtonQuestDisable:SetText(lang['revoke'])
 				ButtonQuestDisable:Dock(BOTTOM)
 
 				ButtonQuestDisable.DoClick = function()
@@ -75,7 +97,7 @@ local function OpenMenu()
 				end
 			else
 				local ButtonQuestEnable = vgui.Create('DButton', PanelItem)
-				ButtonQuestEnable:SetText('Взять задание')
+				ButtonQuestEnable:SetText(lang['takke'])
 				ButtonQuestEnable:Dock(BOTTOM)
 
 				ButtonQuestEnable.DoClick = function()
@@ -91,7 +113,7 @@ local function OpenMenu()
 	if isZero then
 		local LabelDescription = vgui.Create('DLabel', Frame)
 		LabelDescription:SetFont('DermaLarge')
-		LabelDescription:SetText('Нету активных заданий')
+		LabelDescription:SetText(lang['empty'])
 		LabelDescription:SizeToContents()
 		LabelDescription:Center()
 	end

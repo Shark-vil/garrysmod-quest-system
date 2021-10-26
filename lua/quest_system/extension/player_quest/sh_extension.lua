@@ -177,3 +177,14 @@ function meta:QuestNotify(title, desc, lifetime, image, bgcolor)
 		NotifyPanel:AddItem(bg)
 	end
 end
+
+scommand.Create('qsystem_players_reset_all_quests_delay').OnServer(function(ply)
+	for _, human in pairs(player.GetAll()) do
+		local file_path = 'quest_system/players_data/' .. human:PlayerId() .. '/delay.json'
+
+		if file.Exists(file_path, 'DATA') then
+			human:SetNWFloat('quest_delay', 0)
+			file.Delete(file_path)
+		end
+	end
+end).Access( { isAdmin = true } ).Register()
