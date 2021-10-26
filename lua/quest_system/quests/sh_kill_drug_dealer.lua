@@ -1,4 +1,4 @@
-local lang = slib.language({
+local language_data = {
 	['default'] = {
 		['title'] = 'Kill drug dealer',
 		['description'] = 'There was an order to kill a drug dealer. Use the scrap given to you for this, if you do not have it.',
@@ -25,7 +25,9 @@ local lang = slib.language({
 		['complete'] = 'Наркоторговец был устранён. Наш заказчик будет доволен.',
 		['compensation'] = 'Наркоторговец был устранён, но не вами. Вы получите компенсацию за задание.',
 	}
-})
+}
+
+local lang = slib.language(language_data)
 
 local quest = {
 	id = 'kill_drug_dealer',
@@ -40,6 +42,10 @@ local quest = {
 			end,
 			triggers = {
 				spawn_dealer_trigger = {
+					construct = function(eQuest, center)
+						if CLIENT then return end
+						eQuest:SetArrowVector(center)
+					end,
 					onEnter = function(eQuest, ent)
 						if CLIENT or ent ~= eQuest:GetPlayer() then return end
 						eQuest:NextStep('spawn')
@@ -52,7 +58,7 @@ local quest = {
 				barricades = true
 			},
 			construct = function(eQuest)
-				if CLIENT then return end
+				if SERVER then return end
 				eQuest:Notify(lang['spawn_construct_tilte'], lang['spawn_construct_description'])
 			end,
 			points = {
@@ -65,6 +71,8 @@ local quest = {
 						type = 'enemy'
 					})
 
+					eQuest:SetArrowVector(npc)
+
 					QuestDialogue:SingleReplic(eQuest:GetPlayer(), npc,
 						lang['spawn_dealer_name'], lang['spawn_dealer_text'], 6)
 				end,
@@ -75,7 +83,8 @@ local quest = {
 				if not eQuest:QuestNPCIsValid('enemy') then
 					if eQuest:GetPlayer() == attacker then
 						if not eQuest:IsQuestWeapon(attacker:GetActiveWeapon()) then
-							eQuest:Notify(lang['failed_title'], lang['failed_description'])
+							local player_language = eQuest:GetPlayer():slibLanguage(language_data)
+							eQuest:Notify(player_language['failed_title'], player_language['failed_description'])
 							eQuest:Failed()
 						else
 							eQuest:NextStep('complete')
@@ -88,16 +97,22 @@ local quest = {
 		},
 		complete = {
 			construct = function(eQuest)
-				if CLIENT then return end
-				eQuest:Notify(lang['success_title'], lang['complete'])
+				if CLIENT then
+					eQuest:Notify(lang['success_title'], lang['complete'])
+					return
+				end
+
 				eQuest:Reward()
 				eQuest:Complete()
 			end,
 		},
 		compensation = {
 			construct = function(eQuest)
-				if CLIENT then return end
-				eQuest:Notify(lang['success_title'], lang['compensation'])
+				if CLIENT then
+					eQuest:Notify(lang['success_title'], lang['compensation'])
+					return
+				end
+
 				eQuest:Reparation()
 				eQuest:Complete()
 			end,

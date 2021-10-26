@@ -2,12 +2,16 @@ local lang = slib.language({
 	['default'] = {
 		['title'] = 'List of active quests',
 		['timeQuest'] = 'Quest time: {time} sec.',
+		['stop_tracking'] = 'Stop tracking',
 		['tracking'] = 'Track quest',
+		['empty'] = 'No active quests',
 	},
 	['russian'] = {
 		['title'] = 'Список активных заданий',
 		['timeQuest'] = 'Время на выполнение: {time} сек.',
 		['tracking'] = 'Отслеживать задание',
+		['stop_tracking'] = 'Прекратить отслеживание',
+		['empty'] = 'Нету активных заданий',
 	}
 })
 
@@ -28,6 +32,7 @@ local function OpenMenu()
 	ScrollPanel:Dock(FILL)
 
 	local quests = ents.FindByClass('quest_entity')
+	local LastButtonQuestTracking
 	local isZero = true
 
 	for _, ent in pairs(quests) do
@@ -83,11 +88,26 @@ local function OpenMenu()
 			LabelDescription:SetWrap(true)
 
 			local ButtonQuestTracking = vgui.Create('DButton', PanelItem)
-			ButtonQuestTracking:SetText(lang['tracking'])
+			if IsValid(QuestTracking) and QuestTracking == ent then
+				ButtonQuestTracking:SetText(lang['stop_tracking'])
+				LastButtonQuestTracking = ButtonQuestTracking
+			else
+				ButtonQuestTracking:SetText(lang['tracking'])
+			end
 			ButtonQuestTracking:Dock(BOTTOM)
+			ButtonQuestTracking.DoClick = function(self)
+				if IsValid(QuestTracking) and QuestTracking == ent then
+					QuestTracking = NULL
+					self:SetText(lang['tracking'])
+				else
+					QuestTracking = ent
+					self:SetText(lang['stop_tracking'])
 
-			ButtonQuestTracking.DoClick = function()
-				QuestTracking = ent
+					if IsValid(LastButtonQuestTracking) and LastButtonQuestTracking ~= self then
+						LastButtonQuestTracking:SetText(lang['tracking'])
+						LastButtonQuestTracking = self
+					end
+				end
 			end
 		end
 	end
@@ -95,7 +115,7 @@ local function OpenMenu()
 	if isZero then
 		local LabelDescription = vgui.Create('DLabel', Frame)
 		LabelDescription:SetFont('DermaLarge')
-		LabelDescription:SetText('Нету активных заданий')
+		LabelDescription:SetText(lang['empty'])
 		LabelDescription:SizeToContents()
 		LabelDescription:Center()
 	end
@@ -119,7 +139,14 @@ local function DrawNavigationArrow()
 	local eQuest = QuestTracking
 
 	if eQuest:HasQuester(LocalPlayer()) and eQuest:slibGetVar('arrow_target_enabled') then
-		local vec = eQuest:slibGetVar('arrow_target', Vector(0, 0, 0))
+		local target = eQuest:slibGetVar('arrow_target', Vector(0, 0, 0))
+		local vec = target
+
+		if not isvector(vec) then
+			if not isentity(target) or not IsValid(target) then return end
+			vec = target:GetPos()
+		end
+
 		local local_pos = LocalPlayer():GetPos()
 		local eye_angle = LocalPlayer():EyeAngles()
 

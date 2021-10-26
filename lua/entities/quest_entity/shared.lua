@@ -403,20 +403,23 @@ function ENT:Think()
 				local trigger_think = trigger_functions.think
 				local trigger_onEnter = trigger_functions.onEnter
 				local trigger_onExit = trigger_functions.onExit
+				local center
 
 				self.trigger_entities[name] = self.trigger_entities[name] or {}
 
 				if trigger.type == 'box' then
 					entities = ents.FindInBox(trigger.vec1, trigger.vec2)
+					center = (trigger.vec1 + trigger.vec2) / 2
 				elseif trigger.type == 'sphere' then
 					entities = ents.FindInSphere(trigger.center, trigger.radius)
+					center = trigger.center
 				end
 
 				for i = #self.trigger_entities[name], 1, -1 do
 					local ent = self.trigger_entities[name][i]
 					if not table.HasValue(entities, ent) then
 						if trigger_onExit ~= nil then
-							trigger_onExit(self, ent)
+							trigger_onExit(self, ent, center, trigger)
 						end
 						table.remove(self.trigger_entities[name], i)
 					end
@@ -426,13 +429,13 @@ function ENT:Think()
 					if not table.HasValue(self.trigger_entities[name], ent) then
 						table.insert(self.trigger_entities[name], ent)
 						if trigger_onEnter ~= nil then
-							trigger_onEnter(self, ent)
+							trigger_onEnter(self, ent, center, trigger)
 						end
 					end
 				end
 
 				if trigger_think ~= nil then
-					trigger_think(self, entities)
+					trigger_think(self, entities, center, trigger)
 				end
 			end
 		end
@@ -511,6 +514,27 @@ function ENT:OnNextStep()
 
 		if SERVER then
 			snet.InvokeAll('qsystem_rpc_function_onPoints', self)
+		end
+	end
+
+	if #self.triggers ~= 0 then
+		for _, tdata in pairs(self.triggers) do
+			local name = tdata.name
+			local trigger = tdata.trigger
+			local trigger_functions = quest.steps[tdata.step].triggers[name]
+			local trigger_construct = trigger_functions.construct
+
+			if trigger_construct then
+				local center
+
+				if trigger.type == 'box' then
+					center = (trigger.vec1 + trigger.vec2) / 2
+				elseif trigger.type == 'sphere' then
+					center = trigger.center
+				end
+
+				trigger_construct(self, center, trigger)
+			end
 		end
 	end
 
@@ -793,11 +817,11 @@ function ENT:GetVariable(key)
 	return self.values[key]
 end
 
-function ENT:SetArrowVector(vec, autoEnable)
-	if not isvector(vec) then return end
-	autoEnable = autoEnable or true
+function ENT:SetArrowVector(target, autoEnable)
+	if not isvector(target) and (not isentity(target) or not IsValid(target)) then return end
+	if autoEnable == nil then autoEnable = true end
 	if autoEnable then self:EnableArrowVector() end
-	self:slibSetVar('arrow_target', vec)
+	self:slibSetVar('arrow_target', target)
 end
 
 function ENT:EnableArrowVector()

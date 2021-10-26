@@ -61,3 +61,10 @@ net.Receive('sv_qsystem_stopquest', function(len, ply)
 	ply:DisableQuest(id)
 	ply:RemoveQuest(id)
 end)
+
+hook.Add('PlayerSay', 'QuestSystem.OpenQuestsMenu', function( ply, text )
+	if string.lower(string.Trim(text)) == '/quests' then
+		ply:ConCommand('qsystem_active_quests_menu')
+		return ''
+	end
+end )
