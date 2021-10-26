@@ -30,7 +30,7 @@ function storage:Save(id, name, data)
 
 	if id == nil or string.len(id) == 0 then return end
 	if name == nil or string.len(name) == 0 then return end
-	if data == nil or table.Count(data) == 0 then return end
+	if data == nil or not istable(data) then return end
 
 	local file_path = 'quest_system/triggers/' .. id
 

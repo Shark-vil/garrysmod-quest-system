@@ -1,8 +1,8 @@
 AddCSLuaFile()
 
-SWEP.PrintName = "Trigger creator"
-SWEP.Author = "Shark_vil"
-SWEP.Purpose = "Create trigger for selected event."
+SWEP.PrintName = 'Trigger creator'
+SWEP.Author = 'Shark_vil'
+SWEP.Purpose = 'Create trigger for selected event.'
 SWEP.Category = 'Quest System Tools'
 
 SWEP.AdminOnly = true
@@ -12,20 +12,20 @@ SWEP.SlotPos = 4
 
 SWEP.Spawnable = false
 
-SWEP.ViewModel = Model( "models/weapons/c_toolgun.mdl" )
-SWEP.WorldModel = Model( "models/weapons/w_toolgun.mdl" )
+SWEP.ViewModel = Model( 'models/weapons/c_toolgun.mdl' )
+SWEP.WorldModel = Model( 'models/weapons/w_toolgun.mdl' )
 SWEP.ViewModelFOV = 54
 SWEP.UseHands = true
 
 SWEP.Primary.ClipSize = -1
 SWEP.Primary.DefaultClip = -1
 SWEP.Primary.Automatic = false
-SWEP.Primary.Ammo = "none"
+SWEP.Primary.Ammo = 'none'
 
 SWEP.Secondary.ClipSize = -1
 SWEP.Secondary.DefaultClip = -1
 SWEP.Secondary.Automatic = false
-SWEP.Secondary.Ammo = "none"
+SWEP.Secondary.Ammo = 'none'
 
 SWEP.DrawAmmo = false
 
@@ -60,27 +60,27 @@ function SWEP:Initialize()
 			render.SetColorMaterial()
 
 			if vec1 ~= nil then
-				render.DrawSphere( vec1, 10, 30, 30, Color( 58, 23, 255, 100 ) )	
+				render.DrawSphere( vec1, 10, 30, 30, Color( 58, 23, 255, 100 ) )
 			end
 
 			if vec2 ~= nil then
-				render.DrawSphere( vec2, 10, 30, 30, Color( 255, 23, 23, 100 ) )	
+				render.DrawSphere( vec2, 10, 30, 30, Color( 255, 23, 23, 100 ) )
 			end
 
 			if vec1 ~= nil and vec2 ~= nil then
 				local center = (vec1 + vec2) / 2
-				render.SetMaterial(Material("color"))
-				render.DrawWireframeBox(center, 
-					Angle(0, 0, 0), 
-					center - vec1, 
-					center - vec2, 
+				render.SetMaterial(Material('color'))
+				render.DrawWireframeBox(center,
+					Angle(0, 0, 0),
+					center - vec1,
+					center - vec2,
 					Color(255, 255, 255)
 				)
 
-				render.DrawBox(center, 
-					Angle(0, 0, 0), 
-					center - vec1, 
-					center - vec2, 
+				render.DrawBox(center,
+					Angle(0, 0, 0),
+					center - vec1,
+					center - vec2,
 					Color(135, 135, 135, 100)
 				)
 			end
@@ -91,11 +91,11 @@ function SWEP:Initialize()
 			render.SetColorMaterial()
 
 			if center ~= nil then
-				render.DrawSphere( center, 10, 30, 30, Color( 58, 23, 255, 100 ) )	
+				render.DrawSphere( center, 10, 30, 30, Color( 58, 23, 255, 100 ) )
 			end
 
 			if center ~= nil and radius ~= nil then
-				render.SetMaterial(Material("color"))
+				render.SetMaterial(Material('color'))
 				render.DrawWireframeSphere(center, radius, 30, 30, Color(255, 255, 255, 100))
 				render.DrawSphere(center, radius, 30, 30, Color(135, 135, 135, 100))
 			end
@@ -105,7 +105,7 @@ end
 
 function SWEP:SetTriggerPosition(value)
 	local current_trigger = self.CurrentTrigger
-	
+
 	if current_trigger.type == 'box' then
 		if current_trigger.vec1 == nil then
 			current_trigger.vec1 = value
@@ -126,7 +126,7 @@ end
 
 function SWEP:ClearTriggerPosition()
 	local current_trigger = self.CurrentTrigger
-	
+
 	if current_trigger.type == 'box' then
 		current_trigger.vec1 = nil
 		current_trigger.vec2 = nil
@@ -140,15 +140,9 @@ function SWEP:ClearTriggerPosition()
 	surface.PlaySound('common/wpn_denyselect.wav')
 end
 
-function SWEP:GetPlayerOwner()
-	local owner = nil
-	if self.Owner:IsPlayer() then owner = self.Owner end
-	return owner
-end
-
 function SWEP:IsReloadDelay()
 	self.ReloadDelay = self.ReloadDelay or 0
-	if self.ReloadDelay > CurTime() then 
+	if self.ReloadDelay > CurTime() then
 		self.ReloadDelay = CurTime() + 0.3
 		return true
 	end
@@ -164,25 +158,23 @@ function SWEP:PrimaryAttack()
 	if SERVER then self:CallOnClient('PrimaryAttack') return end
 	if not IsFirstTimePredicted() then return end
 
-	local owner = self:GetPlayerOwner()
-	if owner ~= nil then
-		local tr = util.TraceLine( {
-			start = owner:GetShootPos(),
-			endpos = owner:GetShootPos() + owner:GetAimVector() * self.Distance,
-			filter = function(ent)
-				if IsValid(ent) and ent:IsPlayer() then 
-					return false
-				end
-				return true
+	local owner = self:GetOwner()
+	local tr = util.TraceLine( {
+		start = owner:GetShootPos(),
+		endpos = owner:GetShootPos() + owner:GetAimVector() * self.Distance,
+		filter = function(ent)
+			if IsValid(ent) and ent:IsPlayer() then
+				return false
 			end
-		} )
-
-		local hit_vector = tr.HitPos
-
-		if hit_vector ~= nil then
-			self:SetTriggerPosition(hit_vector)
-			surface.PlaySound('common/wpn_select.wav')
+			return true
 		end
+	} )
+
+	local hit_vector = tr.HitPos
+
+	if hit_vector ~= nil then
+		self:SetTriggerPosition(hit_vector)
+		surface.PlaySound('common/wpn_select.wav')
 	end
 end
 
@@ -200,7 +192,7 @@ function SWEP:Reload()
 	else
 		index = index + 1
 	end
-	
+
 	self.CurrentTriggerIndex = index
 	self.CurrentTrigger = triggers[self.CurrentTriggerIndex]
 end

@@ -513,9 +513,9 @@ function ENT:OnNextStep()
 			local quest_description = quest.description or ''
 
 			if quest.isEvent then
-				eQuest:NotifyAll(quest_title, quest_description)
+				self:NotifyAll(quest_title, quest_description)
 			else
-				eQuest:Notify(quest_title, quest_description)
+				self:Notify(quest_title, quest_description)
 			end
 		end
 

@@ -1,58 +1,10 @@
 local weapon_class = 'weapon_quest_structure_tool'
 
-concommand.Add('qsystem_open_structure_editor', function(ply)
+sgui.RouteRegister('qsystem/editor/quest/structures', function(quest)
 	net.Start('sv_qsystem_open_structure_editor')
 	net.SendToServer()
-end)
 
-local OpenPointsPanelEditor, OpenQuestSelectPanel, OpenPointsSelectPanel
-
-net.Receive('cl_qsystem_open_structure_editor', function(len, ply)
-	OpenQuestSelectPanel()
-end)
-
-local allQuests
-
-OpenQuestSelectPanel = function()
-	local notsend = false
-	local frame = vgui.Create('DFrame')
-	frame:SetPos(20, 20)
-	frame:SetSize(550, 350)
-	frame:SetTitle('Select quest')
-	frame:MakePopup()
-	frame:Center()
-
-	frame.OnClose = function()
-		if notsend then return end
-		net.Start('sv_qsystem_close_structure_editor')
-		net.SendToServer()
-	end
-
-	allQuests = QuestSystem:GetAllQuest()
-	local QuestList = vgui.Create('DListView', frame)
-	QuestList:Dock(FILL)
-	QuestList:SetMultiSelect(false)
-	QuestList:AddColumn('Id')
-	QuestList:AddColumn('Title')
-
-	for _, quest in pairs(allQuests) do
-		for _, step in pairs(quest.steps) do
-			if step.structures ~= nil then
-				QuestList:AddLine(quest.id, quest.title)
-				break
-			end
-		end
-	end
-
-	QuestList.OnRowSelected = function(lst, index, pnl)
-		OpenPointsSelectPanel(allQuests[pnl:GetColumnText(1)])
-		notsend = true
-		frame:Close()
-	end
-end
-
-OpenPointsSelectPanel = function(quest)
-	local notsend = false
+	local is_back = true
 	local frame = vgui.Create('DFrame')
 	frame:SetPos(20, 20)
 	frame:SetSize(550, 350)
@@ -61,8 +13,11 @@ OpenPointsSelectPanel = function(quest)
 	frame:Center()
 
 	frame.OnClose = function(self)
-		if notsend then return end
-		OpenQuestSelectPanel()
+		if not is_back then return end
+		net.Start('sv_qsystem_close_structure_editor')
+		net.SendToServer()
+
+		sgui.route('qsystem/editor/quest', quest)
 	end
 
 	local QuestList = vgui.Create('DListView', frame)
@@ -101,15 +56,17 @@ OpenPointsSelectPanel = function(quest)
 	end
 
 	QuestList.OnRowSelected = function(lst, index, pnl)
+		if not LocalPlayer():HasWeapon(weapon_class) then return end
+
 		timer.Simple(0.1, function()
-			OpenPointsPanelEditor(quest, pnl:GetColumnText(1))
-			notsend = true
+			sgui.route('qsystem/editor/quest/structures/select', quest, pnl:GetColumnText(1))
+			is_back = false
 			frame:Close()
 		end)
 	end
-end
+end)
 
-OpenPointsPanelEditor = function(quest, structure_name)
+sgui.RouteRegister('qsystem/editor/quest/structures/select', function(quest, structure_name)
 	local weapon = LocalPlayer():GetWeapon(weapon_class)
 
 	QuestSystem:GetStorage('structure'):Read(quest.id, structure_name, function(ply, data)
@@ -176,7 +133,7 @@ OpenPointsPanelEditor = function(quest, structure_name)
 		end
 
 		weapon:ClearZonePositions()
-		OpenPointsSelectPanel(quest)
+		sgui.route('qsystem/editor/quest/structures', quest)
 		PanelManager:Destruct()
 	end
 
@@ -269,4 +226,4 @@ OpenPointsPanelEditor = function(quest, structure_name)
 	end
 
 	PanelManager:AddPanel(InfoButtonNo)
-end
+end)
