@@ -131,8 +131,8 @@ net.Receive('cl_qsystem_set_quest_tracking', function()
 	end
 end)
 
-local arrow_color = Color(255, 255, 255, 255)
-local arrow_texture = surface.GetTextureID('vgui/quest_system/mm_arrow')
+local arrow_color = Color(0, 0, 0)
+local arrow_texture = surface.GetTextureID('vgui/quest_system/quest_arrow')
 
 local function DrawNavigationArrow()
 	if not IsValid(QuestTracking) then return end

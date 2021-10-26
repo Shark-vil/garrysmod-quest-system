@@ -1,6 +1,6 @@
 "UnlitGeneric" 
 { 
-	"$basetexture"		"vgui/quest_system/mm_arrow.vmt" 
+	"$basetexture"		"vgui/quest_system/quest_arrow.vmt" 
 	"$vertexcolor" 		1 
 	"$vertexalpha" 		1 
 	"$nolod" 			1 
