@@ -90,7 +90,7 @@ concommand.Add('qsystem_compile_quests', function(ply, cmd, args)
 	local quest = QuestSystem:GetQuest(quest_id)
 
 	if quest ~= nil then
-		file.Write('quest_system/compile/' .. quest_id .. '.dat', create_files)
+		file.Write('quest_system/compile/' .. quest_id .. '.txt', create_files)
 	end
 end, function(cmd, args)
 	local autoComplete = {}
