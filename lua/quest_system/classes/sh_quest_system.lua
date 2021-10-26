@@ -4,8 +4,6 @@ if SERVER then
 	util.AddNetworkString('qsystem_remove_all_structure_from_client')
 end
 
--- Main table for working with quests and events
-QuestSystem = QuestSystem or {}
 -- List of registered storages (Not to be confused with a pattern)
 QuestSystem.storage = QuestSystem.storage or {}
 -- List of currently active events

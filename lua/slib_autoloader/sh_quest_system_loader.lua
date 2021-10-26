@@ -20,6 +20,10 @@ local NPC = {
 }
 list.Set('NPC', NPC.Class, NPC)
 
+-- Main table for working with quests and events
+QuestSystem = QuestSystem or {}
+QuestSystem.VERSION = '1.0-beta'
+
 local root_directory = 'quest_system'
 local script = slib.CreateIncluder(root_directory, '[Quest System] Script load - {file}')
 
