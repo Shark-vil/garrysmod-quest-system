@@ -1,8 +1,25 @@
+local lang = slib.language({
+	['default'] = {
+		['title'] = 'List of active quests',
+		['timeQuest'] = 'Quest time: {time} sec.',
+		['stop_tracking'] = 'Stop tracking',
+		['tracking'] = 'Track quest',
+		['empty'] = 'No active quests',
+	},
+	['russian'] = {
+		['title'] = 'Список активных заданий',
+		['timeQuest'] = 'Время на выполнение: {time} сек.',
+		['tracking'] = 'Отслеживать задание',
+		['stop_tracking'] = 'Прекратить отслеживание',
+		['empty'] = 'Нету активных заданий',
+	}
+})
+
 local QuestTracking = NULL
 
 local function OpenMenu()
 	local Frame = vgui.Create('DFrame')
-	Frame:SetTitle('Список активных заданий')
+	Frame:SetTitle(lang['title'])
 	Frame:SetSize(500, 450)
 	Frame:MakePopup()
 	Frame:Center()
@@ -15,14 +32,18 @@ local function OpenMenu()
 	ScrollPanel:Dock(FILL)
 
 	local quests = ents.FindByClass('quest_entity')
+	local LastButtonQuestTracking
 	local isZero = true
 
 	for _, ent in pairs(quests) do
 		local quest = ent:GetQuest()
 
 		if quest.isEvent or ent:GetPlayer() == LocalPlayer() then
+			local description = quest.description
+
 			if quest.timeQuest ~= nil then
-				quest.description = quest.description .. '\nВремя на выполнение: ' .. quest.timeQuest .. ' сек.'
+				description = quest.description .. '\n'
+					.. string.Replace(lang['timeQuest'], '{time}', quest.timeQuest)
 			end
 
 			isZero = false
@@ -62,16 +83,31 @@ local function OpenMenu()
 			LabelDescription:Dock(TOP)
 			LabelDescription:DockMargin(5, 0, 0, 0)
 			LabelDescription:SetFont('DermaDefault')
-			LabelDescription:SetText(quest.description)
+			LabelDescription:SetText(description)
 			LabelDescription:SetDark(1)
 			LabelDescription:SetWrap(true)
 
 			local ButtonQuestTracking = vgui.Create('DButton', PanelItem)
-			ButtonQuestTracking:SetText('Отслеживать задание')
+			if IsValid(QuestTracking) and QuestTracking == ent then
+				ButtonQuestTracking:SetText(lang['stop_tracking'])
+				LastButtonQuestTracking = ButtonQuestTracking
+			else
+				ButtonQuestTracking:SetText(lang['tracking'])
+			end
 			ButtonQuestTracking:Dock(BOTTOM)
+			ButtonQuestTracking.DoClick = function(self)
+				if IsValid(QuestTracking) and QuestTracking == ent then
+					QuestTracking = NULL
+					self:SetText(lang['tracking'])
+				else
+					QuestTracking = ent
+					self:SetText(lang['stop_tracking'])
 
-			ButtonQuestTracking.DoClick = function()
-				QuestTracking = ent
+					if IsValid(LastButtonQuestTracking) and LastButtonQuestTracking ~= self then
+						LastButtonQuestTracking:SetText(lang['tracking'])
+						LastButtonQuestTracking = self
+					end
+				end
 			end
 		end
 	end
@@ -79,7 +115,7 @@ local function OpenMenu()
 	if isZero then
 		local LabelDescription = vgui.Create('DLabel', Frame)
 		LabelDescription:SetFont('DermaLarge')
-		LabelDescription:SetText('Нету активных заданий')
+		LabelDescription:SetText(lang['empty'])
 		LabelDescription:SizeToContents()
 		LabelDescription:Center()
 	end
@@ -95,21 +131,28 @@ net.Receive('cl_qsystem_set_quest_tracking', function()
 	end
 end)
 
-local arrow_color = Color(255, 255, 255, 255)
-local arrow_texture = surface.GetTextureID('vgui/quest_system/mm_arrow')
+local arrow_color = Color(0, 0, 0)
+local arrow_texture = surface.GetTextureID('vgui/quest_system/quest_arrow')
 
 local function DrawNavigationArrow()
 	if not IsValid(QuestTracking) then return end
 	local eQuest = QuestTracking
 
 	if eQuest:HasQuester(LocalPlayer()) and eQuest:slibGetVar('arrow_target_enabled') then
-		local vec = eQuest:slibGetVar('arrow_target', Vector(0, 0, 0))
+		local target = eQuest:slibGetVar('arrow_target', Vector(0, 0, 0))
+		local vec = target
+
+		if not isvector(vec) then
+			if not isentity(target) or not IsValid(target) then return end
+			vec = target:GetPos()
+		end
+
 		local local_pos = LocalPlayer():GetPos()
 		local eye_angle = LocalPlayer():EyeAngles()
 
 		if LocalPlayer():InVehicle() then
-				local veh = LocalPlayer():GetVehicle()
-				eye_angle = eye_angle + veh:EyeAngles()
+			local veh = LocalPlayer():GetVehicle()
+			eye_angle = eye_angle + veh:EyeAngles()
 		end
 
 		local angTo = (vec - local_pos):Angle()

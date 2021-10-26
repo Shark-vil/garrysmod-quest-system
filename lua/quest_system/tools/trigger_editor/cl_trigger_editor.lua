@@ -1,58 +1,10 @@
 local weapon_class = 'weapon_quest_system_tool_trigger_selector'
 
-concommand.Add('qsystem_open_trigger_editor', function(ply)
+sgui.RouteRegister('qsystem/editor/quest/triggers', function(quest)
 	net.Start('sv_qsystem_open_trigger_editor')
 	net.SendToServer()
-end)
 
-local OpenTriggerPanelEditor, OpenQuestSelectPanel, OpenTriggerSelectPanel
-
-net.Receive('cl_qsystem_open_trigger_editor', function(len, ply)
-	OpenQuestSelectPanel()
-end)
-
-local allQuests
-
-OpenQuestSelectPanel = function()
-	local notsend = false
-	local frame = vgui.Create('DFrame')
-	frame:SetPos(20, 20)
-	frame:SetSize(550, 350)
-	frame:SetTitle('Select quest')
-	frame:MakePopup()
-	frame:Center()
-
-	frame.OnClose = function()
-		if notsend then return end
-		net.Start('sv_qsystem_close_trigger_editor')
-		net.SendToServer()
-	end
-
-	allQuests = QuestSystem:GetAllQuest()
-	local QuestList = vgui.Create('DListView', frame)
-	QuestList:Dock(FILL)
-	QuestList:SetMultiSelect(false)
-	QuestList:AddColumn('Id')
-	QuestList:AddColumn('Title')
-
-	for _, quest in pairs(allQuests) do
-		for _, step in pairs(quest.steps) do
-			if step.triggers ~= nil then
-				QuestList:AddLine(quest.id, quest.title)
-				break
-			end
-		end
-	end
-
-	QuestList.OnRowSelected = function(lst, index, pnl)
-		OpenTriggerSelectPanel(allQuests[pnl:GetColumnText(1)])
-		notsend = true
-		frame:Close()
-	end
-end
-
-OpenTriggerSelectPanel = function(quest)
-	local notsend = false
+	local is_back = true
 	local frame = vgui.Create('DFrame')
 	frame:SetPos(20, 20)
 	frame:SetSize(550, 350)
@@ -61,8 +13,11 @@ OpenTriggerSelectPanel = function(quest)
 	frame:Center()
 
 	frame.OnClose = function(self)
-		if notsend then return end
-		OpenQuestSelectPanel()
+		if not is_back then return end
+		net.Start('sv_qsystem_close_trigger_editor')
+		net.SendToServer()
+
+		sgui.route('qsystem/editor/quest', quest)
 	end
 
 	local QuestList = vgui.Create('DListView', frame)
@@ -89,15 +44,17 @@ OpenTriggerSelectPanel = function(quest)
 	end
 
 	QuestList.OnRowSelected = function(lst, index, pnl)
+		if not LocalPlayer():HasWeapon(weapon_class) then return end
+
 		timer.Simple(0.1, function()
-			OpenTriggerPanelEditor(quest, pnl:GetColumnText(1))
-			notsend = true
+			sgui.route('qsystem/editor/quest/triggers/select', quest, pnl:GetColumnText(1))
+			is_back = false
 			frame:Close()
 		end)
 	end
-end
+end)
 
-OpenTriggerPanelEditor = function(quest, trigger_name)
+sgui.RouteRegister('qsystem/editor/quest/triggers/select', function(quest, trigger_name)
 	local weapon = LocalPlayer():GetWeapon(weapon_class)
 
 	QuestSystem:GetStorage('trigger'):Read(quest.id, trigger_name, function(ply, data)
@@ -172,7 +129,7 @@ OpenTriggerPanelEditor = function(quest, trigger_name)
 
 	InfoPanel.OnClose = function()
 		weapon:ClearTriggerPosition()
-		OpenTriggerSelectPanel(quest)
+		sgui.route('qsystem/editor/quest/triggers', quest)
 		PanelManager:Destruct()
 	end
 
@@ -204,4 +161,4 @@ OpenTriggerPanelEditor = function(quest, trigger_name)
 	end
 
 	PanelManager:AddPanel(InfoButtonNo)
-end
+end)

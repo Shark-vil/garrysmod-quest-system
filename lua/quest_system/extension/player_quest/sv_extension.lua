@@ -1,4 +1,5 @@
 util.AddNetworkString('cl_qsystem_player_notify')
+util.AddNetworkString('cl_qsystem_player_notify_quest_start')
 
 local meta = FindMetaTable('Player')
 
@@ -119,7 +120,9 @@ function meta:EnableQuest(quest_id)
 
 		local ent = ents.Create('quest_entity')
 		ent:SetQuest(quest_id, self)
+		ent:SetPos(self:GetPos())
 		ent:Spawn()
+		ent:slibFixPVS()
 		ent:Activate()
 
 		timer.Simple(1, function()
@@ -132,12 +135,14 @@ end
 function meta:EnableAllQuest()
 	local quests = self:ReadAllQuest()
 
-	for _, quest_data in pairs(quests) do
+	for _, quest_data in ipairs(quests) do
 		if quest_data ~= nil then
 			if QuestSystem:QuestIsValid(self, quest_data.id) then
 				local ent = ents.Create('quest_entity')
 				ent:SetQuest(quest_data.id, self)
+				ent:SetPos(self:GetPos())
 				ent:Spawn()
+				ent:slibFixPVS()
 				ent:Activate()
 
 				timer.Simple(1, function()
@@ -162,7 +167,7 @@ end
 function meta:DisableAllQuest()
 	local quest_entities = self:FindQuestEntities()
 
-	for _, quest_entity in pairs(quest_entities) do
+	for _, quest_entity in ipairs(quest_entities) do
 		if IsValid(quest_entity) then
 			quest_entity:Remove()
 		end
@@ -186,16 +191,3 @@ function meta:SetQuestStep(quest_id, step)
 
 	return false
 end
-
-concommand.Add('qsystem_players_reset_delay', function(ply)
-	if IsValid(ply) and ply:IsAdmin() and ply:IsSuperAdmin() then
-		for _, human in pairs(player.GetAll()) do
-			local file_path = 'quest_system/players_data/' .. human:PlayerId() .. '/delay.json'
-
-			if file.Exists(file_path, 'DATA') then
-				human:SetNWFloat('quest_delay', 0)
-				file.Delete(file_path)
-			end
-		end
-	end
-end)

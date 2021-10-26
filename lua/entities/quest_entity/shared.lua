@@ -351,6 +351,35 @@ function ENT:GetAllPlayers()
 end
 
 -------------------------------------
+-- Checks the existence of one or more NPCs. If there are several NPCs in the check,
+-- then the truth will be returned, even if there is only one left alive!
+-------------------------------------
+-- @param type string - npc type
+-- @param tag string|nil - npc tag
+-------------------------------------
+-- @return bool - will return true if one or more npc exists, otherwise false
+-------------------------------------
+function ENT:QuestNPCIsValid(type, tag)
+	local allowAlive = false
+	for _, data in pairs(self.npcs) do
+		if type ~= nil and tag ~= nil then
+			if data.type == type and data.tag == tag and IsValid(data.npc) and data.npc:Health() > 0 then
+				allowAlive = true
+				break
+			end
+		elseif type ~= nil then
+			if data.type == type and IsValid(data.npc) and data.npc:Health() > 0 then
+				allowAlive = true
+				break
+			end
+		else
+			ErrorNoHalt('This function must take at least 1 argument!')
+		end
+	end
+	return allowAlive
+end
+
+-------------------------------------
 -- Calls an step think and triggers function if exists.
 -------------------------------------
 -- Wiki - https://wiki.facepunch.com/gmod/ENTITY:Think
@@ -374,20 +403,23 @@ function ENT:Think()
 				local trigger_think = trigger_functions.think
 				local trigger_onEnter = trigger_functions.onEnter
 				local trigger_onExit = trigger_functions.onExit
+				local center
 
 				self.trigger_entities[name] = self.trigger_entities[name] or {}
 
 				if trigger.type == 'box' then
 					entities = ents.FindInBox(trigger.vec1, trigger.vec2)
+					center = (trigger.vec1 + trigger.vec2) / 2
 				elseif trigger.type == 'sphere' then
 					entities = ents.FindInSphere(trigger.center, trigger.radius)
+					center = trigger.center
 				end
 
 				for i = #self.trigger_entities[name], 1, -1 do
 					local ent = self.trigger_entities[name][i]
 					if not table.HasValue(entities, ent) then
 						if trigger_onExit ~= nil then
-							trigger_onExit(self, ent)
+							trigger_onExit(self, ent, center, trigger)
 						end
 						table.remove(self.trigger_entities[name], i)
 					end
@@ -397,13 +429,13 @@ function ENT:Think()
 					if not table.HasValue(self.trigger_entities[name], ent) then
 						table.insert(self.trigger_entities[name], ent)
 						if trigger_onEnter ~= nil then
-							trigger_onEnter(self, ent)
+							trigger_onEnter(self, ent, center, trigger)
 						end
 					end
 				end
 
 				if trigger_think ~= nil then
-					trigger_think(self, entities)
+					trigger_think(self, entities, center, trigger)
 				end
 			end
 		end
@@ -485,6 +517,27 @@ function ENT:OnNextStep()
 		end
 	end
 
+	if #self.triggers ~= 0 then
+		for _, tdata in pairs(self.triggers) do
+			local name = tdata.name
+			local trigger = tdata.trigger
+			local trigger_functions = quest.steps[tdata.step].triggers[name]
+			local trigger_construct = trigger_functions.construct
+
+			if trigger_construct then
+				local center
+
+				if trigger.type == 'box' then
+					center = (trigger.vec1 + trigger.vec2) / 2
+				elseif trigger.type == 'sphere' then
+					center = trigger.center
+				end
+
+				trigger_construct(self, center, trigger)
+			end
+		end
+	end
+
 	local step_hook_name = self:GetStepHookName()
 
 	if old_step and #old_step ~= 0 and quest.steps[old_step] and quest.steps[old_step].hooks then
@@ -509,13 +562,10 @@ function ENT:OnNextStep()
 
 	if step == 'start' then
 		if SERVER and not quest.disableNotify then
-			local quest_title = quest.title or ''
-			local quest_description = quest.description or ''
-
 			if quest.isEvent then
-				eQuest:NotifyAll(quest_title, quest_description)
+				self:NotifyAllQuestStart(quest.notify_lifetime, quest.notify_image, quest.notify_bgcolor)
 			else
-				eQuest:Notify(quest_title, quest_description)
+				self:NotifyQuestStart(quest.notify_lifetime, quest.notify_image, quest.notify_bgcolor)
 			end
 		end
 
@@ -562,9 +612,23 @@ end
 -- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 -------------------------------------
 function ENT:Notify(title, desc, lifetime, image, bgcolor)
-	local ply = self:GetPlayer()
-	if not IsValid(ply) then return end
-	ply:QuestNotify(title, desc, lifetime, image, bgcolor)
+	if SERVER then
+		local ply = self:GetPlayer()
+		if not IsValid(ply) then return end
+		ply:QuestNotify(title, desc, lifetime, image, bgcolor)
+	else
+		LocalPlayer():QuestNotify(title, desc, lifetime, image, bgcolor)
+	end
+end
+
+function ENT:NotifyQuestStart(lifetime, image, bgcolor)
+	if SERVER then
+		local ply = self:GetPlayer()
+		if not IsValid(ply) then return end
+		ply:QuestStartNotify(self:GetQuest().id, lifetime, image, bgcolor)
+	else
+		LocalPlayer():QuestStartNotify(self:GetQuest().id, lifetime, image, bgcolor)
+	end
 end
 
 -------------------------------------
@@ -575,10 +639,26 @@ end
 -- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 -------------------------------------
 function ENT:NotifyOnlyRegistred(title, desc, lifetime, image, bgcolor)
-	for _, ply in pairs(self.players) do
-		if IsValid(ply) then
-			ply:QuestNotify(title, desc, lifetime, image, bgcolor)
+	if SERVER then
+		for _, ply in pairs(self.players) do
+			if IsValid(ply) then
+				ply:QuestNotify(title, desc, lifetime, image, bgcolor)
+			end
 		end
+	else
+		LocalPlayer():QuestNotify(title, desc, lifetime, image, bgcolor)
+	end
+end
+
+function ENT:NotifyOnlyRegistredQuestStart(lifetime, image, bgcolor)
+	if SERVER then
+		for _, ply in pairs(self.players) do
+			if IsValid(ply) then
+				ply:QuestStartNotify(self:GetQuest().id, lifetime, image, bgcolor)
+			end
+		end
+	else
+		LocalPlayer():QuestStartNotify(self:GetQuest().id, lifetime, image, bgcolor)
 	end
 end
 
@@ -590,10 +670,26 @@ end
 -- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 -------------------------------------
 function ENT:NotifyAll(title, desc, lifetime, image, bgcolor)
-	for _, ply in pairs(player.GetHumans()) do
-		if IsValid(ply) then
-			ply:QuestNotify(title, desc, lifetime, image, bgcolor)
+	if SERVER then
+		for _, ply in pairs(player.GetHumans()) do
+			if IsValid(ply) then
+				ply:QuestNotify(title, desc, lifetime, image, bgcolor)
+			end
 		end
+	else
+		LocalPlayer():QuestNotify(title, desc, lifetime, image, bgcolor)
+	end
+end
+
+function ENT:NotifyAllQuestStart(lifetime, image, bgcolor)
+	if SERVER then
+		for _, ply in pairs(player.GetHumans()) do
+			if IsValid(ply) then
+				ply:QuestStartNotify(self:GetQuest().id, lifetime, image, bgcolor)
+			end
+		end
+	else
+		LocalPlayer():QuestStartNotify(self:GetQuest().id, lifetime, image, bgcolor)
 	end
 end
 
@@ -721,11 +817,11 @@ function ENT:GetVariable(key)
 	return self.values[key]
 end
 
-function ENT:SetArrowVector(vec, autoEnable)
-	if not isvector(vec) then return end
-	autoEnable = autoEnable or true
+function ENT:SetArrowVector(target, autoEnable)
+	if not isvector(target) and (not isentity(target) or not IsValid(target)) then return end
+	if autoEnable == nil then autoEnable = true end
 	if autoEnable then self:EnableArrowVector() end
-	self:slibSetVar('arrow_target', vec)
+	self:slibSetVar('arrow_target', target)
 end
 
 function ENT:EnableArrowVector()
@@ -766,4 +862,17 @@ function ENT:TimerCreate(func, delay)
 		if not IsValid(self) then return end
 		func()
 	end)
+end
+
+function ENT:GetAllQuests()
+	local quest = self:GetQuest()
+	local quests = {}
+
+	for _, eQuest in ipairs(ents.FindByClass('quest_entity')) do
+		if eQuest:GetQuest().id == quest.id then
+			table.insert(quests, eQuest)
+		end
+	end
+
+	return quests
 end

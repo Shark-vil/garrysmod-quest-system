@@ -2,6 +2,17 @@ util.AddNetworkString('sv_qsystem_startquest')
 util.AddNetworkString('sv_qsystem_stopquest')
 util.AddNetworkString('cl_qsystem_set_quest_tracking')
 
+local language_data = {
+	['default'] = {
+		['reject_title'] = 'Rejected',
+		['reject_description'] = 'You can take a new quest only after {time} sec.',
+	},
+	['russian'] = {
+		['reject_title'] = 'Отклонено',
+		['reject_description'] = 'Вы сможете взять новое задание только через {time} сек.',
+	}
+}
+
 net.Receive('sv_qsystem_startquest', function(len, ply)
 	if ply:QSystemIsSpam() then
 		QuestSystem:AdminAlert('Spam was detected in the network from the player - ' .. ply:Nick())
@@ -17,7 +28,9 @@ net.Receive('sv_qsystem_startquest', function(len, ply)
 
 		if current_delay > os.time() then
 			local delay_math = current_delay - os.time()
-			ply:QuestNotify('Отклонено', 'Вы сможете взять новое задание только через ' .. delay_math .. ' сек.')
+			local lang = ply:slibLanguage(language_data)
+			ply:QuestNotify(lang['reject_title'],
+				string.Replace(lang['reject_description'], '{time}', delay_math))
 			return
 		else
 			local file_path = 'quest_system/players_data/' .. ply:PlayerId()
@@ -48,3 +61,10 @@ net.Receive('sv_qsystem_stopquest', function(len, ply)
 	ply:DisableQuest(id)
 	ply:RemoveQuest(id)
 end)
+
+hook.Add('PlayerSay', 'QuestSystem.OpenQuestsMenu', function( ply, text )
+	if string.lower(string.Trim(text)) == '/quests' then
+		ply:ConCommand('qsystem_active_quests_menu')
+		return ''
+	end
+end )

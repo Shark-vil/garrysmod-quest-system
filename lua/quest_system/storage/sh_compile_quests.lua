@@ -1,5 +1,4 @@
-concommand.Add('qsystem_compile_quests', function(ply, cmd, args)
-	if not ply:IsAdmin() and not ply:IsSuperAdmin() then return end
+scommand.Create('qsystem_compile_quests').OnServer(function(ply, cmd, args)
 	local quest_id = args[1]
 	local point_dir_path = 'quest_system/points/' .. quest_id .. '/'
 	local _, points_maps = file.Find(point_dir_path .. '*', 'DATA')
@@ -90,12 +89,12 @@ concommand.Add('qsystem_compile_quests', function(ply, cmd, args)
 	local quest = QuestSystem:GetQuest(quest_id)
 
 	if quest ~= nil then
-		file.Write('quest_system/compile/' .. quest_id .. '.dat', create_files)
+		file.Write('quest_system/compile/' .. quest_id .. '.txt', create_files)
 	end
 end, function(cmd, args)
 	local autoComplete = {}
 
-	for quest_id, quest in pairs(QuestSystem:GetAllQuest()) do
+	for quest_id, quest in pairs(QuestSystem:GetAllQuests()) do
 		local point_dir_path = 'quest_system/points/' .. quest_id .. '/'
 		local triggers_dir_path = 'quest_system/triggers/' .. quest_id .. '/'
 		local structure_dir_path = 'quest_system/structure/' .. quest_id .. '/'
@@ -106,4 +105,4 @@ end, function(cmd, args)
 	end
 
 	return autoComplete
-end)
+end).Access( { isAdmin = true } ).Register()

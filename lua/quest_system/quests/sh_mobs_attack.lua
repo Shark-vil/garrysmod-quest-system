@@ -1,13 +1,55 @@
+local language_data = {
+	['default'] = {
+		['title'] = 'Mob waves',
+		['description'] = 'You need to hold out for three waves, fighting off the crowd of zombies. Your movement is limited to the quest area.',
+		['condition_title'] = 'Refusal',
+		['condition_description'] = 'This quest cannot be taken by several players at the same time.',
+		['delay_spawn_mobs_wave_title'] = 'Respite',
+		['delay_spawn_mobs_wave_description'] = 'New wave in 20 seconds...',
+		['spawn_mobs_wave_1_title'] = 'The beginning of the first wave!',
+		['spawn_mobs_wave_1_description'] = 'Don\'t die there.',
+		['spawn_mobs_wave_2_title'] = 'The beginning of the second wave!',
+		['spawn_mobs_wave_2_description'] = 'Be careful, there are more of them...',
+		['spawn_mobs_wave_3_title'] = 'The beginning of the third wave!',
+		['spawn_mobs_wave_3_description'] = 'A bit more!',
+		['complete_title'] = 'Completed',
+		['complete_description'] = 'You made it through all the waves, well done!',
+		['failed_title'] = 'Failed',
+		['cfailed_description'] = 'You have left the play area.',
+	},
+	['russian'] = {
+		['title'] = 'Волны мобов',
+		['description'] = 'Вам нужно продержаться три волны, отбиваясь от толпы зомби. Ваше передвижение ограничено зоной квеста.',
+		['condition_title'] = 'Отказ',
+		['condition_description'] = 'Этот квест нельзя взять нескольким игрокам одновременно.',
+		['delay_spawn_mobs_wave_title'] = 'Передышка',
+		['delay_spawn_mobs_wave_description'] = 'Новая волна через 20 секунд...',
+		['spawn_mobs_wave_1_title'] = 'Начало первой волны!',
+		['spawn_mobs_wave_1_description'] = 'Не помри там.',
+		['spawn_mobs_wave_2_title'] = 'Начало второй волны!',
+		['spawn_mobs_wave_2_description'] = 'Держись, их стало больше...',
+		['spawn_mobs_wave_3_title'] = 'Начало третьей волны!',
+		['spawn_mobs_wave_3_description'] = 'Ещё немного!',
+		['complete_title'] = 'Завершено',
+		['complete_description'] = 'Вы продержались все волны, так держать!',
+		['failed_title'] = 'Провалено',
+		['cfailed_description'] = 'Вы вышли за пределы игровой зоны.',
+	}
+}
+
+local lang = slib.language(language_data)
+
 local quest = {
 	id = 'mobs_attack',
-	title = 'Волны мобов',
-	description = 'Вам нужно продержаться три волны, отбиваясь от толпы зомби. Ваше передвижение ограничено зоной квеста.',
+	title = lang['title'],
+	description = lang['description'],
 	condition = function(ply)
-		for _, eQuest in ipairs(ents.FindByClass('quest_entity')) do
-			if eQuest:GetQuest().id == 'mobs_attack' then
-				ply:QuestNotify('Отказ', 'Этот квест нельзя взять нескольким игрокам одновременно.')
-				return false
-			end
+		if QuestSystem:IsExistsQuest('mobs_attack') then
+			-- The check is done on the server, so the language will always return a value - by default
+			-- Therefore, you need to get data from the player's language
+			local player_language = ply:slibLanguage(language_data)
+			ply:QuestNotify(player_language['condition_title'], player_language['condition_description'])
+			return false
 		end
 
 		return true
@@ -189,15 +231,16 @@ local quest = {
 		},
 		spawn_mobs_wave_1 = {
 			construct = function(eQuest)
-				if CLIENT then return end
+				if CLIENT then
+					eQuest:Notify(lang['spawn_mobs_wave_1_title'], lang['spawn_mobs_wave_1_description'])
+					return
+				end
 
 				for _, data in pairs(eQuest.items) do
 					if IsValid(data.item) then
 						data.item:Remove()
 					end
 				end
-
-				eQuest:Notify('Начало первой волны!', 'Не помри там.')
 			end,
 			points = {
 				mob_spawners_1 = function(eQuest, positions)
@@ -224,7 +267,7 @@ local quest = {
 					end, 20)
 				else
 					eQuest:GetPlayer():ConCommand('r_cleardecals')
-					eQuest:Notify('Передышка', 'Новая волна через 20 секунд...')
+					eQuest:Notify(lang['delay_spawn_mobs_wave_title'], lang['delay_spawn_mobs_wave_description'])
 				end
 			end,
 			points = {
@@ -247,15 +290,16 @@ local quest = {
 		},
 		spawn_mobs_wave_2 = {
 			construct = function(eQuest)
-				if CLIENT then return end
+				if CLIENT then
+					eQuest:Notify(lang['spawn_mobs_wave_2_title'], lang['spawn_mobs_wave_2_description'])
+					return
+				end
 
 				for _, data in pairs(eQuest.items) do
 					if IsValid(data.item) then
 						data.item:Remove()
 					end
 				end
-
-				eQuest:Notify('Начало второй волны!', 'Держись, их стало больше...')
 			end,
 			points = {
 				mob_spawners_1 = function(eQuest, positions)
@@ -282,7 +326,7 @@ local quest = {
 					end, 20)
 				else
 					eQuest:GetPlayer():ConCommand('r_cleardecals')
-					eQuest:Notify('Передышка', 'Новая волна через 20 секунд...')
+					eQuest:Notify(lang['delay_spawn_mobs_wave_title'], lang['delay_spawn_mobs_wave_description'])
 				end
 			end,
 			points = {
@@ -291,15 +335,16 @@ local quest = {
 		},
 		spawn_mobs_wave_3 = {
 			construct = function(eQuest)
-				if CLIENT then return end
+				if CLIENT then
+					eQuest:Notify(lang['spawn_mobs_wave_3_title'], lang['spawn_mobs_wave_3_description'])
+					return
+				end
 
 				for _, data in pairs(eQuest.items) do
 					if IsValid(data.item) then
 						data.item:Remove()
 					end
 				end
-
-				eQuest:Notify('Начало третьей волны!', 'Ещё немного!')
 			end,
 			points = {
 				mob_spawners_1 = function(eQuest, positions)
@@ -322,11 +367,11 @@ local quest = {
 			construct = function(eQuest)
 				if CLIENT then
 					eQuest:GetPlayer():ConCommand('r_cleardecals')
+					eQuest:Notify(lang['complete_title'], lang['complete_description'])
 					return
 				end
 
 				eQuest:QuestFunction('f_move_player_to_old_position', eQuest)
-				eQuest:Notify('Завершено', 'Вы продержались все волны, так держать!')
 				eQuest:Reward()
 				eQuest:Complete()
 			end,
@@ -335,11 +380,11 @@ local quest = {
 			construct = function(eQuest)
 				if CLIENT then
 					eQuest:GetPlayer():ConCommand('r_cleardecals')
+					eQuest:Notify(lang['failed_title'], lang['failed_description'])
 					return
 				end
 
 				eQuest:QuestFunction('f_move_player_to_old_position', eQuest)
-				eQuest:Notify('Провалено', 'Вы вышли за пределы игровой зоны.')
 				eQuest:Failed()
 			end,
 		}

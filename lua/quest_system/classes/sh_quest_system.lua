@@ -4,8 +4,6 @@ if SERVER then
 	util.AddNetworkString('qsystem_remove_all_structure_from_client')
 end
 
--- Main table for working with quests and events
-QuestSystem = QuestSystem or {}
 -- List of registered storages (Not to be confused with a pattern)
 QuestSystem.storage = QuestSystem.storage or {}
 -- List of currently active events
@@ -127,7 +125,7 @@ end
 -------------------------------------
 -- @return table - list of registered quests
 -------------------------------------
-function QuestSystem:GetAllQuest()
+function QuestSystem:GetAllQuests()
 	return list.Get('QuestSystem')
 end
 
@@ -434,4 +432,14 @@ function QuestSystem:Debug(msg)
 		MsgN('[QSystem Debug][' .. tostring(self.debug_index) .. '] ' .. tostring(msg))
 		self.debug_index = self.debug_index + 1
 	end
+end
+
+function QuestSystem:IsExistsQuest(quest_id)
+	for _, eQuest in ipairs(ents.FindByClass('quest_entity')) do
+		if eQuest:GetQuest().id == quest_id then
+			return true
+		end
+	end
+
+	return false
 end

@@ -131,8 +131,7 @@ function ENT:SetStep(step)
 
 	self:TimerCreate(function()
 		self:TimerCreate(function()
-			self.quest_data_normalize = self.quest_data_normalize or snet.GetNormalizeDataTable(quest)
-			snet.InvokeAll('qsystem_on_construct', self, step, self.quest_data_normalize)
+			snet.InvokeAll('qsystem_on_construct', self, quest.id, step)
 
 			self:TimerCreate(function()
 				if quest.steps[step] and quest.steps[step].construct and quest.steps[step].construct(self) then
@@ -624,35 +623,6 @@ function ENT:SpawnQuestItem(item_class, data)
 	item:Activate()
 	self:AddQuestItem(item, data.id)
 	return item
-end
-
--------------------------------------
--- Checks the existence of one or more NPCs. If there are several NPCs in the check,
--- then the truth will be returned, even if there is only one left alive!
--------------------------------------
--- @param type string - npc type
--- @param tag string|nil - npc tag
--------------------------------------
--- @return bool - will return true if one or more npc exists, otherwise false
--------------------------------------
-function ENT:QuestNPCIsValid(type, tag)
-	local allowAlive = false
-	for _, data in pairs(self.npcs) do
-		if type ~= nil and tag ~= nil then
-			if data.type == type and data.tag == tag and IsValid(data.npc) and data.npc:Health() > 0 then
-				allowAlive = true
-				break
-			end
-		elseif type ~= nil then
-			if data.type == type and IsValid(data.npc) and data.npc:Health() > 0 then
-				allowAlive = true
-				break
-			end
-		else
-			ErrorNoHalt('This function must take at least 1 argument!')
-		end
-	end
-	return allowAlive
 end
 
 -------------------------------------
