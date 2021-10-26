@@ -19,12 +19,7 @@ sgui.RouteRegister('qsystem/editor', function()
 	QuestList:AddColumn('Title')
 
 	for _, quest in pairs(all_quests) do
-		for _, step in pairs(quest.steps) do
-			if step.points ~= nil then
-				QuestList:AddLine(quest.id, quest.title)
-				break
-			end
-		end
+		QuestList:AddLine(quest.id, quest.title)
 	end
 
 	QuestList.OnRowSelected = function(lst, index, pnl)

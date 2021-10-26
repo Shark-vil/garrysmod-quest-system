@@ -133,11 +133,12 @@ end
 function meta:EnableAllQuest()
 	local quests = self:ReadAllQuest()
 
-	for _, quest_data in pairs(quests) do
+	for _, quest_data in ipairs(quests) do
 		if quest_data ~= nil then
 			if QuestSystem:QuestIsValid(self, quest_data.id) then
 				local ent = ents.Create('quest_entity')
 				ent:SetQuest(quest_data.id, self)
+				ent:SetPos(self:GetPos())
 				ent:Spawn()
 				ent:Activate()
 
@@ -163,7 +164,7 @@ end
 function meta:DisableAllQuest()
 	local quest_entities = self:FindQuestEntities()
 
-	for _, quest_entity in pairs(quest_entities) do
+	for _, quest_entity in ipairs(quest_entities) do
 		if IsValid(quest_entity) then
 			quest_entity:Remove()
 		end

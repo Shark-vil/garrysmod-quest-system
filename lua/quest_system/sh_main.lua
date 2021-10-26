@@ -14,6 +14,7 @@ if SERVER then
 			QuestSystem:EnableEvent(event.id)
 		end
 	end
+
 	concommand.Add('qsystem_activate_random_event', function(ply, cmd, args)
 		if IsValid(ply) and not ply:IsAdmin() and not ply:IsSuperAdmin() then return end
 		ActivateRandomEvent(args[1])
@@ -51,8 +52,7 @@ if SERVER then
 
 	hook.Add('OnEntityCreated', 'QSystem.ReloadingNPCsRestiction', function(npc)
 		if npc:IsNPC() then
-			local entitis = ents.FindByClass('quest_entity')
-			for _, ent in pairs(entitis) do
+			for _, ent in ipairs(ents.FindByClass('quest_entity')) do
 				if IsValid(ent) then
 					ent:SetNPCsBehavior(npc)
 				end

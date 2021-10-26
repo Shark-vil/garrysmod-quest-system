@@ -131,8 +131,7 @@ function ENT:SetStep(step)
 
 	self:TimerCreate(function()
 		self:TimerCreate(function()
-			self.quest_data_normalize = self.quest_data_normalize or snet.GetNormalizeDataTable(quest)
-			snet.InvokeAll('qsystem_on_construct', self, step, self.quest_data_normalize)
+			snet.InvokeAll('qsystem_on_construct', self, quest.id, step)
 
 			self:TimerCreate(function()
 				if quest.steps[step] and quest.steps[step].construct and quest.steps[step].construct(self) then

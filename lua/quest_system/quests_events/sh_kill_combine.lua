@@ -1,4 +1,4 @@
-local language_data = slib.language({
+local language_data = {
 	['default'] = {
 		['title'] = 'Kill drug dealer',
 		['description'] = 'A detachment of enemy combines has landed somewhere. Find and eliminate them!',
@@ -19,7 +19,7 @@ local language_data = slib.language({
 		['complete_title'] = 'Завершено',
 		['complete_description'] = 'Все противники были уничтожены',
 	}
-})
+}
 
 local lang = slib.language(language_data)
 
@@ -54,10 +54,11 @@ local quest = {
 			triggers = {
 				spawn_combines_trigger = {
 					onEnter = function(eQuest, ent)
+						if CLIENT then return end
 						eQuest:AddPlayer(ent)
 					end,
 					onExit = function(eQuest, ent)
-						if not eQuest:HasQuester(ent) then return end
+						if CLIENT or not eQuest:HasQuester(ent) then return end
 						eQuest:RemovePlayer(ent)
 					end
 				},
@@ -73,7 +74,9 @@ local quest = {
 			},
 			points = {
 				spawn_combines = function(eQuest, positions)
-					for _, pos in pairs(positions) do
+					if CLIENT then return end
+
+					for _, pos in ipairs(positions) do
 						eQuest:SpawnQuestNPC('npc_combine_s', {
 							type = 'enemy',
 							pos = pos,
@@ -87,7 +90,7 @@ local quest = {
 			},
 			hooks = {
 				OnNPCKilled = function(eQuest, npc, attacker, inflictor)
-					if not eQuest:IsAliveQuestNPC('enemy') then
+					if SERVER and not eQuest:IsAliveQuestNPC('enemy') then
 						eQuest:NextStep('complete')
 					end
 				end

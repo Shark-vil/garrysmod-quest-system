@@ -72,7 +72,7 @@ if not QuestSystem.cfg.DisableDefaultQuests then
 	script:using('quests/sh_kill_drug_dealer.lua')
 	script:using('quests/sh_player_killer.lua')
 	script:using('quests/sh_mobs_attack.lua')
-	script:using('quests_events/kill_combine/sv_quest.lua')
+	script:using('quests_events/sh_kill_combine.lua')
 	script:using('dialogues/sh_free_medic_dialogue.lua')
 	script:using('dialogues/sh_random_background_replics.lua')
 	script:using('dialogues/sh_talking_bank_background.lua')
