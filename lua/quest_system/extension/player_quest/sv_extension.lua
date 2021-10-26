@@ -120,7 +120,9 @@ function meta:EnableQuest(quest_id)
 
 		local ent = ents.Create('quest_entity')
 		ent:SetQuest(quest_id, self)
+		ent:SetPos(self:GetPos())
 		ent:Spawn()
+		ent:slibFixPVS()
 		ent:Activate()
 
 		timer.Simple(1, function()
@@ -140,6 +142,7 @@ function meta:EnableAllQuest()
 				ent:SetQuest(quest_data.id, self)
 				ent:SetPos(self:GetPos())
 				ent:Spawn()
+				ent:slibFixPVS()
 				ent:Activate()
 
 				timer.Simple(1, function()

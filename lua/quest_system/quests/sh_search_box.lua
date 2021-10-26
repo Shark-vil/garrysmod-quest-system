@@ -128,7 +128,7 @@ local quest = {
 			end,
 			triggers = {
 				spawn_npc_trigger_after_exit_tirgger = {
-					onExit = function(eQuest, ent)
+					onEnter = function(eQuest, ent)
 						eQuest:QuestFunction('f_spawn_enemy_npcs', eQuest, ent)
 					end
 				},

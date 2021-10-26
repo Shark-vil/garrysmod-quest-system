@@ -86,31 +86,13 @@ function SWEP:ClearZonePositions()
 	surface.PlaySound('common/wpn_denyselect.wav')
 end
 
-function SWEP:IsReloadDelay()
-	self.ReloadDelay = self.ReloadDelay or 0
-
-	if self.ReloadDelay > CurTime() then
-		self.ReloadDelay = CurTime() + 0.3
-		return true
-	end
-
-	self.ReloadDelay = CurTime() + 0.5
-	return false
-end
-
-function SWEP:CallOnClient(hookType)
-	if game.SinglePlayer() then
-		self:CallOnClient(hookType)
-	end
+function SWEP:CallOnClient(function_name)
+	if CLIENT or not IsFirstTimePredicted() then return end
+	self:slibClientRPC(function_name)
 end
 
 function SWEP:PrimaryAttack()
-	if SERVER then
-		self:CallOnClient('PrimaryAttack')
-		return
-	end
-
-	if not IsFirstTimePredicted() then return end
+	if SERVER then self:CallOnClient('PrimaryAttack') return end
 
 	local owner = self:GetOwner()
 	local tr = util.TraceLine({
@@ -142,12 +124,7 @@ function SWEP:PrimaryAttack()
 end
 
 function SWEP:SecondaryAttack()
-	if SERVER then
-		self:CallOnClient('SecondaryAttack')
-		return
-	end
-
-	if not IsFirstTimePredicted() then return end
+	if SERVER then self:CallOnClient('SecondaryAttack') return end
 	self:ClearZonePositions()
 end
 

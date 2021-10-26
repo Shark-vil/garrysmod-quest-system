@@ -35,8 +35,6 @@ function SWEP:Initialize()
 	if SERVER then return end
 
 	local ply = LocalPlayer()
-	local IsValid = IsValid
-	local LocalPlayer = LocalPlayer
 	local add_upper_vetor = Vector(0, 0, 20)
 	local render_DrawSphere = render.DrawSphere
 	local render_SetColorMaterial = render.SetColorMaterial
@@ -83,6 +81,11 @@ function SWEP:IsReloadDelay()
 	return false
 end
 
+function SWEP:CallOnClient(function_name)
+	if CLIENT or not IsFirstTimePredicted() then return end
+	self:slibClientRPC(function_name)
+end
+
 function SWEP:AddPointPosition(value)
 	table.insert(self.Points, value)
 end
@@ -102,13 +105,8 @@ function SWEP:ClearPoints()
 	end
 end
 
-function SWEP:CallOnClient(hookType)
-	if game.SinglePlayer() then self:CallOnClient(hookType) end
-end
-
 function SWEP:PrimaryAttack()
-	if SERVER and game.SinglePlayer() then self:CallOnClient('PrimaryAttack') end
-	if not IsFirstTimePredicted() then return end
+	if SERVER then self:CallOnClient('PrimaryAttack') return end
 
 	local owner = self:GetOwner()
 	local tr = util.TraceLine( {
@@ -126,23 +124,19 @@ function SWEP:PrimaryAttack()
 
 	if hit_vector ~= nil then
 		self:AddPointPosition(hit_vector + Vector(0, 0, 15))
-		if CLIENT then
-			surface.PlaySound('common/wpn_select.wav')
-		end
+		surface.PlaySound('common/wpn_select.wav')
 	end
 end
 
 function SWEP:Reload()
-	if SERVER and game.SinglePlayer() then self:CallOnClient('Reload') end
+	if SERVER then self:CallOnClient('Reload') return end
 	if self:IsReloadDelay() then return end
 
 	self:ClearPoints()
 end
 
 function SWEP:SecondaryAttack()
-	if SERVER and game.SinglePlayer() then self:CallOnClient('SecondaryAttack') end
-	if not IsFirstTimePredicted() then return end
-
+	if SERVER then self:CallOnClient('SecondaryAttack') return end
 	self:RemoveLastPoint()
 end
 

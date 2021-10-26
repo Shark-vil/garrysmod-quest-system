@@ -150,13 +150,13 @@ function SWEP:IsReloadDelay()
 	return false
 end
 
-function SWEP:CallOnClient(hookType)
-	if game.SinglePlayer() then self:CallOnClient(hookType) end
+function SWEP:CallOnClient(function_name)
+	if CLIENT or not IsFirstTimePredicted() then return end
+	self:slibClientRPC(function_name)
 end
 
 function SWEP:PrimaryAttack()
 	if SERVER then self:CallOnClient('PrimaryAttack') return end
-	if not IsFirstTimePredicted() then return end
 
 	local owner = self:GetOwner()
 	local tr = util.TraceLine( {
@@ -199,7 +199,6 @@ end
 
 function SWEP:SecondaryAttack()
 	if SERVER then self:CallOnClient('SecondaryAttack') return end
-	if not IsFirstTimePredicted() then return end
 
 	self:ClearTriggerPosition()
 end

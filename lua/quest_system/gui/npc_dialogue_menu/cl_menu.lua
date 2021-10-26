@@ -333,8 +333,9 @@ snet.Callback('cl_qsystem_set_dialogue_id', function(ply, ent, ignore_npc_text, 
 end).Validator(SNET_ENTITY_VALIDATOR).Register()
 
 snet.RegisterValidator('dialogue', function(ply, uid, ent)
-	if IsValid(ent) and IsValid(ent:GetPlayer()) and IsValid(ent:GetNPC()) then
-		return ent:GetDialogueID() ~= '' and ent:GetStepID() ~= ''
-	end
-	return false
+	if not IsValid(ent) then return false end
+	if not ent.GetPlayer or not ent.GetNPC then return false end
+	if not IsValid(ent:GetPlayer()) or not IsValid(ent:GetNPC()) then return false end
+	if not ent.GetDialogueID or not ent.GetStepID then return false end
+	return ent:GetDialogueID() ~= '' and ent:GetStepID() ~= ''
 end)
