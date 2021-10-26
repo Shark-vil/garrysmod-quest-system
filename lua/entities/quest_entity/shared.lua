@@ -351,6 +351,35 @@ function ENT:GetAllPlayers()
 end
 
 -------------------------------------
+-- Checks the existence of one or more NPCs. If there are several NPCs in the check,
+-- then the truth will be returned, even if there is only one left alive!
+-------------------------------------
+-- @param type string - npc type
+-- @param tag string|nil - npc tag
+-------------------------------------
+-- @return bool - will return true if one or more npc exists, otherwise false
+-------------------------------------
+function ENT:QuestNPCIsValid(type, tag)
+	local allowAlive = false
+	for _, data in pairs(self.npcs) do
+		if type ~= nil and tag ~= nil then
+			if data.type == type and data.tag == tag and IsValid(data.npc) and data.npc:Health() > 0 then
+				allowAlive = true
+				break
+			end
+		elseif type ~= nil then
+			if data.type == type and IsValid(data.npc) and data.npc:Health() > 0 then
+				allowAlive = true
+				break
+			end
+		else
+			ErrorNoHalt('This function must take at least 1 argument!')
+		end
+	end
+	return allowAlive
+end
+
+-------------------------------------
 -- Calls an step think and triggers function if exists.
 -------------------------------------
 -- Wiki - https://wiki.facepunch.com/gmod/ENTITY:Think
@@ -509,13 +538,10 @@ function ENT:OnNextStep()
 
 	if step == 'start' then
 		if SERVER and not quest.disableNotify then
-			local quest_title = quest.title or ''
-			local quest_description = quest.description or ''
-
 			if quest.isEvent then
-				self:NotifyAll(quest_title, quest_description)
+				self:NotifyAllQuestStart(quest.notify_lifetime, quest.notify_image, quest.notify_bgcolor)
 			else
-				self:Notify(quest_title, quest_description)
+				self:NotifyQuestStart(quest.notify_lifetime, quest.notify_image, quest.notify_bgcolor)
 			end
 		end
 
@@ -562,9 +588,23 @@ end
 -- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 -------------------------------------
 function ENT:Notify(title, desc, lifetime, image, bgcolor)
-	local ply = self:GetPlayer()
-	if not IsValid(ply) then return end
-	ply:QuestNotify(title, desc, lifetime, image, bgcolor)
+	if SERVER then
+		local ply = self:GetPlayer()
+		if not IsValid(ply) then return end
+		ply:QuestNotify(title, desc, lifetime, image, bgcolor)
+	else
+		LocalPlayer():QuestNotify(title, desc, lifetime, image, bgcolor)
+	end
+end
+
+function ENT:NotifyQuestStart(lifetime, image, bgcolor)
+	if SERVER then
+		local ply = self:GetPlayer()
+		if not IsValid(ply) then return end
+		ply:QuestStartNotify(self:GetQuest().id, lifetime, image, bgcolor)
+	else
+		LocalPlayer():QuestStartNotify(self:GetQuest().id, lifetime, image, bgcolor)
+	end
 end
 
 -------------------------------------
@@ -575,10 +615,26 @@ end
 -- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 -------------------------------------
 function ENT:NotifyOnlyRegistred(title, desc, lifetime, image, bgcolor)
-	for _, ply in pairs(self.players) do
-		if IsValid(ply) then
-			ply:QuestNotify(title, desc, lifetime, image, bgcolor)
+	if SERVER then
+		for _, ply in pairs(self.players) do
+			if IsValid(ply) then
+				ply:QuestNotify(title, desc, lifetime, image, bgcolor)
+			end
 		end
+	else
+		LocalPlayer():QuestNotify(title, desc, lifetime, image, bgcolor)
+	end
+end
+
+function ENT:NotifyOnlyRegistredQuestStart(lifetime, image, bgcolor)
+	if SERVER then
+		for _, ply in pairs(self.players) do
+			if IsValid(ply) then
+				ply:QuestStartNotify(self:GetQuest().id, lifetime, image, bgcolor)
+			end
+		end
+	else
+		LocalPlayer():QuestStartNotify(self:GetQuest().id, lifetime, image, bgcolor)
 	end
 end
 
@@ -590,10 +646,26 @@ end
 -- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 -------------------------------------
 function ENT:NotifyAll(title, desc, lifetime, image, bgcolor)
-	for _, ply in pairs(player.GetHumans()) do
-		if IsValid(ply) then
-			ply:QuestNotify(title, desc, lifetime, image, bgcolor)
+	if SERVER then
+		for _, ply in pairs(player.GetHumans()) do
+			if IsValid(ply) then
+				ply:QuestNotify(title, desc, lifetime, image, bgcolor)
+			end
 		end
+	else
+		LocalPlayer():QuestNotify(title, desc, lifetime, image, bgcolor)
+	end
+end
+
+function ENT:NotifyAllQuestStart(lifetime, image, bgcolor)
+	if SERVER then
+		for _, ply in pairs(player.GetHumans()) do
+			if IsValid(ply) then
+				ply:QuestStartNotify(self:GetQuest().id, lifetime, image, bgcolor)
+			end
+		end
+	else
+		LocalPlayer():QuestStartNotify(self:GetQuest().id, lifetime, image, bgcolor)
 	end
 end
 
@@ -766,4 +838,17 @@ function ENT:TimerCreate(func, delay)
 		if not IsValid(self) then return end
 		func()
 	end)
+end
+
+function ENT:GetAllQuests()
+	local quest = self:GetQuest()
+	local quests = {}
+
+	for _, eQuest in ipairs(ents.FindByClass('quest_entity')) do
+		if eQuest:GetQuest().id == quest.id then
+			table.insert(quests, eQuest)
+		end
+	end
+
+	return quests
 end

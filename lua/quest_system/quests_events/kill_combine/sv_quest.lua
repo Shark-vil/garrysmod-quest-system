@@ -1,7 +1,32 @@
+local language_data = slib.language({
+	['default'] = {
+		['title'] = 'Kill drug dealer',
+		['description'] = 'A detachment of enemy combines has landed somewhere. Find and eliminate them!',
+		['cancel_title'] = 'Event canceled',
+		['cancel_description'] = 'The event did not take place due to a lack of players in the event area.',
+		['spawn_combines_title'] = 'The enemy is close',
+		['spawn_combines_description'] = 'Kill the arriving enemies',
+		['complete_title'] = 'Completed',
+		['complete_description'] = 'All enemies were killed',
+	},
+	['russian'] = {
+		['title'] = 'Убить комбайнов',
+		['description'] = 'Где-то высадился отряд вражеских комбайнов. Найдите и устраните их!',
+		['cancel_title'] = 'Событие отменено',
+		['cancel_description'] = 'Событие не состоялось из-за нехватки игроков в зоне ивента.',
+		['spawn_combines_title'] = 'Враг близко',
+		['spawn_combines_description'] = 'Убейте прибывших противников',
+		['complete_title'] = 'Завершено',
+		['complete_description'] = 'Все противники были уничтожены',
+	}
+})
+
+local lang = slib.language(language_data)
+
 local quest = {
 	id = 'event_kill_combine',
-	title = 'Убить комбайнов',
-	description = 'Где-то высадился отряд вражеских комбайнов. Найдите и устраните их!',
+	title = lang['title'],
+	description = lang['description'],
 	payment = 500,
 	isEvent = true,
 	npcNotReactionOtherPlayer = true,
@@ -11,15 +36,18 @@ local quest = {
 		local count = #eQuest.players
 
 		if count == 0 then
-			eQuest:NotifyAll('Событие отменено', 'Событие не состоялось из-за нехватки игроков в зоне ивента.')
+			for _, ply in ipairs(player.GetHumans()) do
+				local player_language = ply:slibLanguage(language_data)
+				ply:QuestNotify(player_language['cancel_title'], player_language['cancel_description'])
+			end
 		end
 
 		return count ~= 0
 	end,
 	timeQuest = 120,
 	failedText = {
-		title = 'Задание провалено',
-		text = 'Время выполнения истекло.'
+		title = 'Quest failed :(',
+		text = 'The execution time has expired.'
 	},
 	steps = {
 		start = {
@@ -37,7 +65,8 @@ local quest = {
 		},
 		spawn_combines = {
 			construct = function(eQuest)
-				eQuest:NotifyOnlyRegistred('Враг близко', 'Убейте прибивших противников')
+				if SERVER then return end
+				eQuest:NotifyOnlyRegistred(lang['spawn_combines_title'], lang['spawn_combines_description'])
 			end,
 			structures = {
 				barricades = true
@@ -66,7 +95,11 @@ local quest = {
 		},
 		complete = {
 			construct = function(eQuest)
-				eQuest:NotifyOnlyRegistred('Завершено', 'Все противники были уничтожены')
+				if CLIENT then
+					eQuest:Notify(lang['complete_title'], lang['complete_description'])
+					return
+				end
+
 				eQuest:Reward()
 				eQuest:Complete()
 			end,

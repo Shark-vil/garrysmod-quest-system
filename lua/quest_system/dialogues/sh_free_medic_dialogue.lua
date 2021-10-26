@@ -1,6 +1,84 @@
+local lang = slib.language({
+	['default'] = {
+		['name'] = 'Free medic',
+		['start'] = {
+			'What did you want?',
+			'Mm?...',
+			'Yes?',
+			'I\'m listening to.',
+			'What did they want?',
+		},
+		['start_answers_1'] = {
+			'Nothing, sorry.',
+			'I identified myself.'
+		},
+		['start_answers_2'] = 'Nothing else is needed, yet.',
+		['start_answers_3'] = 'Cure me, please.',
+		['few_money'] = 'Hah, and that is money?... What, and that\'s all? This is not enough. Come in when you have at least a hundred...',
+		['rejection_health'] = 'I have already patched you up, I have other clients as well. You can come back later.',
+		['get_health'] = 'OK. We will fix you now. That\'s it... And then... Done!',
+		['failed_health'] = 'You don\'t look so rumpled. You can do it.',
+		['exit'] = {
+			'Fuck you...',
+			'You are wasting my time.',
+			'Damn you...',
+			'Okay.',
+			'Okay. All the best.',
+			'Goodbye.',
+			'Bye.',
+		},
+		['exit_2'] = {
+			'Okay.',
+			'Okay. All the best.',
+			'Всего доброго',
+			'Goodbye.',
+			'Bye.',
+		},
+	},
+	['russian'] = {
+		['name'] = 'Вольный медик',
+		['start'] = {
+			'Ты что-то хотел?',
+			'А?..',
+			'Чего надо?',
+			'Да-да?',
+			'Я слушаю.',
+			'Чего хотели?',
+		},
+		['start_answers_1'] = {
+			'Ничего, простите.',
+			'Обознался.'
+		},
+		['start_answers_2'] = 'Больше ничего не нужно, пока.',
+		['start_answers_3'] = 'Вылечи меня, пожалуйста.',
+		['few_money'] = 'Ага, а деньги то есть?... Чего, и всего? Этого мало. Зайди когда на руках будет хотяб сотня...',
+		['rejection_health'] = 'Я тебя уже подлатал, у меня и другие клиенты есть. Можешь зайти позднее.',
+		['get_health'] = 'Ладно. Сейчас мы тебя починим. Вот так... И тут... Готово!',
+		['failed_health'] = 'Ты не выглядишь таким уж помятым. Обойдёшься.',
+		['exit'] = {
+			'Ебать ты...',
+			'Ты тратишь моё время.',
+			'Ну тебя...',
+			'Ладно.',
+			'Ладно. Всего доброго',
+			'Ну бывай',
+			'Пока',
+			'Прощай',
+		},
+		['exit_2'] = {
+			'Ладно.',
+			'Ладно. Всего доброго',
+			'Всего доброго',
+			'Ну бывай',
+			'Пока',
+			'Прощай',
+		},
+	}
+})
+
 local conversation = {
 	id = 'free_medic',
-	name = 'Вольный медик',
+	name = lang['name'],
 	autoParent = true,
 	isRandomNpc = true,
 	randomNumber = 2,
@@ -15,14 +93,7 @@ local conversation = {
 	end,
 	steps = {
 		start = {
-			text = {
-				'Ты что-то хотел?',
-				'А?..',
-				'Чего надо?',
-				'Да-да?',
-				'Я слушаю.',
-				'Чего хотели?'
-			},
+			text = lang['start'],
 			event = function(eDialogue)
 				if CLIENT and eDialogue.isFirst then
 					eDialogue:VoiceSay('vo/canals/matt_go_nag01.wav')
@@ -30,10 +101,7 @@ local conversation = {
 			end,
 			answers = {
 				{
-					text = {
-						'Ничего, простите.',
-						'Обознался.'
-					},
+					text = lang['start_answers_1'],
 					condition = function(eDialogue)
 						local lock_health = eDialogue:GetPlayerValue('lock_health')
 						return lock_health == nil
@@ -43,7 +111,7 @@ local conversation = {
 					end
 				},
 				{
-					text = 'Больше ничего не нужно, пока.',
+					text = lang['start_answers_2'],
 					condition = function(eDialogue)
 						local lock_health = eDialogue:GetPlayerValue('lock_health')
 						return lock_health ~= nil
@@ -53,7 +121,7 @@ local conversation = {
 					end
 				},
 				{
-					text = 'Вылечи меня пожалуйста',
+					text = lang['start_answers_3'],
 					event = function(eDialogue)
 						if SERVER then
 							local ply = eDialogue:GetPlayer()
@@ -79,19 +147,19 @@ local conversation = {
 			},
 		},
 		few_money = {
-			text = 'Ага, а деньги то есть?... Чего, и всего? Этого мало. Зайди когда на руках будет хотяб сотня...',
+			text = lang['few_money'],
 			eventDelay = function(eDialogue)
 				if SERVER then eDialogue:Next('start', true) end
 			end
 		},
 		rejection_health = {
-			text = 'Я тебя уже подлатал, у меня и другие клиенты есть. Можешь зайти позднее.',
+			text = lang['rejection_health'],
 			eventDelay = function(eDialogue)
 				if SERVER then eDialogue:Next('start', true) end
 			end
 		},
 		get_health = {
-			text = 'Ладно. Сейчас мы тебя починим. Вот так... И тут... Готово!',
+			text = lang['get_health'],
 			delay = 4,
 			eventDelay = function(eDialogue)
 				if SERVER then
@@ -115,20 +183,13 @@ local conversation = {
 			end
 		},
 		failed_health = {
-			text = 'Ты не выглядишь таким уж помятым. Обойдёшься.',
+			text = lang['failed_health'],
 			eventDelay = function(eDialogue)
 				if SERVER then eDialogue:Next('start', true) end
 			end
 		},
 		exit = {
-			text = {
-				'Ебать ты...',
-				'Зря время отнимаешь',
-				'Ну тебя...',
-				'Ладно.',
-				'Ладно. Всего доброго',
-				'Ну бывай'
-			},
+			text = lang['exit'],
 			delay = 3,
 			eventDelay = function(eDialogue)
 				if CLIENT then
@@ -139,12 +200,7 @@ local conversation = {
 			end
 		},
 		exit_2 = {
-			text = {
-				'Ладно.',
-				'Ладно. Всего доброго',
-				'Всего доброго',
-				'Ну бывай'
-			},
+			text = lang['exit_2'],
 			delay = 3,
 			eventDelay = function(eDialogue)
 				if SERVER then eDialogue:Stop() end

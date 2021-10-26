@@ -95,7 +95,7 @@ concommand.Add('qsystem_compile_quests', function(ply, cmd, args)
 end, function(cmd, args)
 	local autoComplete = {}
 
-	for quest_id, quest in pairs(QuestSystem:GetAllQuest()) do
+	for quest_id, quest in pairs(QuestSystem:GetAllQuests()) do
 		local point_dir_path = 'quest_system/points/' .. quest_id .. '/'
 		local triggers_dir_path = 'quest_system/triggers/' .. quest_id .. '/'
 		local structure_dir_path = 'quest_system/structure/' .. quest_id .. '/'

@@ -12,7 +12,7 @@ local function OpenMenu()
 	local ScrollPanel = vgui.Create('DScrollPanel', Frame)
 	ScrollPanel:Dock(FILL)
 
-	local quests = QuestSystem:GetAllQuest()
+	local quests = QuestSystem:GetAllQuests()
 	local isZero = true
 
 	for id, quest in pairs(quests) do

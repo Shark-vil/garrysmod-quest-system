@@ -1,24 +1,65 @@
+local language_data = {
+	['default'] = {
+		['title'] = 'Find the box',
+		['description'] = 'Our employer has lost his box of valuables. Find it and take it to the customer.',
+		['spawn_enemy_title'] = 'Uninvited guests',
+		['spawn_enemy_description'] = 'Oh no, it seems our customer has been attacked! Save him in order not to fail the mission.',
+		['complete_title'] = 'Completed',
+		['loss_description'] = 'You saved the client. Now you can place your order.',
+		['give_box_title'] = 'Delivery',
+		['give_box_description'] = 'The case is small. Find a client and give him the box.',
+		['attack_on_the_customer_title'] = 'Completed',
+		['attack_on_the_customer_description'] = 'Great, you found the box. Now take it to the customer.',
+		['complete_description'] = 'You have successfully delivered your order to the recipient.',
+		['failed_title'] = 'Провалено',
+		['failed_description'] = 'The customer is dead, you will not receive a reward for completing it.',
+	},
+	['russian'] = {
+		['title'] = 'Найти коробку',
+		['description'] = 'Наш наниматель потерял свою коробку с ценными вещами. Найдите её и отнесите заказчику.',
+		['spawn_enemy_title'] = 'Незваные гости',
+		['spawn_enemy_description'] = 'О нет, кажется на нашего заказчика напали! Спасите его, чтобы не провалить задание.',
+		['complete_title'] = 'Завершено',
+		['loss_description'] = 'Вы спасли клиента. Теперь можете отдать заказ.',
+		['give_box_title'] = 'Доставка',
+		['give_box_description'] = 'Дело за малым. Найдите клиента и отдайте ему коробку.',
+		['attack_on_the_customer_title'] = 'Завершено',
+		['attack_on_the_customer_description'] = 'Отлично, вы нашли коробку. Теперь отнесите её заказчику.',
+		['complete_description'] = 'Вы успешно доставили заказ получателю.',
+		['failed_title'] = 'Провалено',
+		['failed_description'] = 'Заказчик мёртв, вы не получите награду за выполнение.',
+	}
+}
+
+local lang = slib.language(language_data)
+
 local quest = {
 	id = 'search_box',
-	title = 'Найти коробку',
-	description = 'Наш наниматель потерял свою коробку с ценными вещами. Найдите её и отнесите заказчику.',
+	title = lang['title'],
+	description = lang['description'],
 	payment = 500,
 	npcNotReactionOtherPlayer = false,
 	functions = {
 		f_spawn_enemy_npcs = function(eQuest, ent)
 			if ent ~= eQuest:GetPlayer() then return end
-			if CLIENT then return end
-			eQuest:Notify('Незваные гости', 'О нет, кажется на нашего заказчика напали! Спасите его, чтобы не провалить задание.')
+			if CLIENT then
+				eQuest:Notify(lang['spawn_enemy_title'], lang['spawn_enemy_description'])
+				return
+			end
+
 			eQuest:NextStep('safe_customer')
 		end,
 		f_loss_conditions = function(eQuest)
-			if CLIENT then return end
-
 			if not eQuest:QuestNPCIsValid('friend', 'customer') then
-				eQuest:NextStep('failed')
+				if SERVER then
+					eQuest:NextStep('failed')
+				end
 			elseif not eQuest:QuestNPCIsValid('enemy') then
-				eQuest:Notify('Завершено', 'Вы спасли клиента. Теперь можете отдать заказ.')
-				eQuest:NextStep('give_box')
+				if SERVER then
+					eQuest:NextStep('give_box')
+				else
+					eQuest:Notify(lang['complete_title'], lang['loss_description'])
+				end
 			end
 		end,
 		f_spawn_customer = function(eQuest, pos, isAttack)
@@ -35,7 +76,7 @@ local quest = {
 				weapon_class = weapon_class,
 				type = 'friend',
 				tag = 'customer',
-				afterSpawnExecute = function(eQuest, data)
+				afterSpawnExecute = function(_, data)
 					if not isAttack then return end
 					local npc = data.npc
 					eQuest:MoveQuestNpcToPosition(npc:GetPos(), 'enemy')
@@ -75,7 +116,6 @@ local quest = {
 						eQuest:SetVariable('is_customer_attack', true)
 						eQuest:NextStep('attack_on_the_customer')
 					else
-						eQuest:Notify('Доставка', 'Дело за малым. Найдите клиента и отдайте ему коробку.')
 						eQuest:NextStep('give_box')
 					end
 				end
@@ -84,7 +124,7 @@ local quest = {
 		attack_on_the_customer = {
 			construct = function(eQuest)
 				if SERVER then return end
-				eQuest:Notify('Завершено', 'Отлично, вы нашли коробку. Теперь отнесите её заказчику.')
+				eQuest:Notify(lang['attack_on_the_customer_title'], lang['attack_on_the_customer_description'])
 			end,
 			triggers = {
 				spawn_npc_trigger = {
@@ -124,6 +164,10 @@ local quest = {
 			end,
 		},
 		give_box = {
+			construct = function(eQuest)
+				if SERVER then return end
+				eQuest:Notify(lang['give_box_title'], lang['give_box_description'])
+			end,
 			points = {
 				customer = function(eQuest, positions)
 					eQuest:QuestFunction('f_spawn_customer', eQuest, table.Random(positions))
@@ -143,8 +187,10 @@ local quest = {
 		},
 		complete = {
 			construct = function(eQuest)
-				if CLIENT then return end
-				eQuest:Notify('Завершено', 'Вы успешно доставили заказ получателю.')
+				if CLIENT then
+					eQuest:Notify(lang['complete_title'], lang['complete_description'])
+					return
+				end
 
 				if eQuest:GetVariable('is_customer_attack') then
 					eQuest:Reward(nil, 500)
@@ -158,8 +204,11 @@ local quest = {
 		},
 		failed = {
 			construct = function(eQuest)
-				if CLIENT then return end
-				eQuest:Notify('Провалено', 'Заказчик мёртв, вы не получите награду за выполнение.')
+				if CLIENT then
+					eQuest:Notify(lang['failed_title'], lang['failed_description'])
+					return
+				end
+
 				eQuest:Failed()
 				eQuest:DisableArrowVector()
 			end,

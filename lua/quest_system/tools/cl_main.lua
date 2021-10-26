@@ -3,7 +3,7 @@ concommand.Add('qsystem_editor', function()
 end)
 
 sgui.RouteRegister('qsystem/editor', function()
-	local all_quests = QuestSystem:GetAllQuest()
+	local all_quests = QuestSystem:GetAllQuests()
 
 	local MainFrame = vgui.Create('DFrame')
 	MainFrame:SetPos(20, 20)

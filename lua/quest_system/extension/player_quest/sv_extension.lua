@@ -1,4 +1,5 @@
 util.AddNetworkString('cl_qsystem_player_notify')
+util.AddNetworkString('cl_qsystem_player_notify_quest_start')
 
 local meta = FindMetaTable('Player')
 

@@ -99,6 +99,30 @@ hook.Add('Think', 'QuestNotifyAnimationPosition', function()
 	end
 end)
 
+function meta:QuestStartNotify(quest_id, lifetime, image, bgcolor)
+	bgcolor = bgcolor or Color(64, 64, 64)
+	image = image or 'entities/npc_kleiner.png'
+	lifetime = lifetime or 5
+	lifetime = lifetime + #notifyHistory
+
+	if SERVER then
+		net.Start('cl_qsystem_player_notify_quest_start')
+		net.WriteString(quest_id)
+		net.WriteFloat(lifetime)
+		net.WriteString(image)
+		net.WriteColor(bgcolor)
+		net.Send(self)
+	else
+		local quest = QuestSystem:GetQuest(quest_id)
+		if not quest then return end
+
+		local title = quest.title or ''
+		local description = quest.description or ''
+
+		self:QuestNotify(title, description, lifetime, image, bgcolor)
+	end
+end
+
 function meta:QuestNotify(title, desc, lifetime, image, bgcolor)
 	bgcolor = bgcolor or Color(64, 64, 64)
 	image = image or 'entities/npc_kleiner.png'
