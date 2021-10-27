@@ -140,24 +140,12 @@ function SWEP:ClearTriggerPosition()
 	surface.PlaySound('common/wpn_denyselect.wav')
 end
 
-function SWEP:IsReloadDelay()
-	self.ReloadDelay = self.ReloadDelay or 0
-	if self.ReloadDelay > CurTime() then
-		self.ReloadDelay = CurTime() + 0.3
-		return true
-	end
-	self.ReloadDelay = CurTime() + 0.5
-	return false
-end
-
-function SWEP:CallOnClient(function_name)
-	if CLIENT or not IsFirstTimePredicted() then return end
-	self:slibClientRPC(function_name)
-end
-
 function SWEP:PrimaryAttack()
-	if SERVER then self:CallOnClient('PrimaryAttack') return end
+	if not self:slibIsSingleCall() then return end
+	self:slibPredictedClientRPC('RpcPrimaryAttack')
+end
 
+function SWEP:RpcPrimaryAttack()
 	local owner = self:GetOwner()
 	local tr = util.TraceLine( {
 		start = owner:GetShootPos(),
@@ -179,9 +167,11 @@ function SWEP:PrimaryAttack()
 end
 
 function SWEP:Reload()
-	if SERVER then self:CallOnClient('Reload') return end
-	if self:IsReloadDelay() then return end
+	if not self:slibIsSingleCall() then return end
+	self:slibPredictedClientRPC('RpcReload')
+end
 
+function SWEP:RpcReload()
 	self:ClearTriggerPosition()
 
 	local triggers = self.TriggerType
@@ -198,8 +188,11 @@ function SWEP:Reload()
 end
 
 function SWEP:SecondaryAttack()
-	if SERVER then self:CallOnClient('SecondaryAttack') return end
+	if not self:slibIsSingleCall() then return end
+	self:slibPredictedClientRPC('RpcSecondaryAttack')
+end
 
+function SWEP:RpcSecondaryAttack()
 	self:ClearTriggerPosition()
 end
 

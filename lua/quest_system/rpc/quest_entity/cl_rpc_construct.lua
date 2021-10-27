@@ -5,19 +5,19 @@ snet.Callback('qsystem_on_construct', function(_, ent, quest_id, step)
 	if not quest then return end
 
 	if step == 'start' then
-		if quest.isEvent then
+		if quest.is_event then
 			quest.title = '[Событие] ' .. quest.title
 		end
 
-		if quest.timeToNextStep and quest.nextStep then
-			quest.description = quest.description .. '\nДо начала: ' .. quest.timeToNextStep .. ' сек.'
+		if quest.auto_next_step_delay and quest.auto_next_step then
+			quest.description = quest.description .. '\nДо начала: ' .. quest.auto_next_step_delay .. ' сек.'
 		end
 
-		if quest.timeQuest then
-			quest.description = quest.description .. '\nВремя выполнения: ' .. quest.timeQuest .. ' сек.'
+		if quest.quest_time then
+			quest.description = quest.description .. '\nВремя выполнения: ' .. quest.quest_time .. ' сек.'
 		end
 
-		if quest.isEvent then
+		if quest.is_event then
 			hook.Run('QSystem.EventStarted', ent, quest)
 		else
 			hook.Run('QSystem.QuestStarted', ent, quest)

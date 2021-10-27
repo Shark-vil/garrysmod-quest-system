@@ -21,6 +21,10 @@ QuestSystem.debug_index = 0
 -- @return entity - will return the created entity or NULL on failure
 -------------------------------------
 function QuestSystem:EnableEvent(event_id, step)
+	local players = player.GetAll()
+	if #players == 0 then return end
+
+	local playerTarget = table.RandomBySeq(players)
 	local allQuests = ents.FindByClass('quest_entity')
 
 	for _, ent in pairs(allQuests) do
@@ -32,12 +36,14 @@ function QuestSystem:EnableEvent(event_id, step)
 
 	if event ~= nil and event.steps[step] ~= nil then
 		local eQuest = ents.Create('quest_entity')
+		eQuest:SetPos(playerTarget:GetPos())
 		eQuest:SetQuest(event_id)
 		eQuest:Spawn()
 		eQuest:Activate()
+		eQuest:slibFixPVS()
 
-		if not event.notAddAllPlayers then
-			for _, ply in ipairs(player.GetAll()) do
+		if event.auto_add_players then
+			for _, ply in ipairs(players) do
 				eQuest:AddPlayer(ply)
 			end
 		end
@@ -80,7 +86,7 @@ function QuestSystem:GetAllEvents()
 	local all_events = {}
 
 	for quest_id, quest in pairs(list.Get('QuestSystem')) do
-		if quest.isEvent then
+		if quest.is_event then
 			all_events[quest_id] = quest
 		end
 	end
@@ -276,6 +282,8 @@ if SERVER then
 				ent:SetModel(prop.model)
 				ent:SetPos(prop.pos)
 				ent:SetAngles(prop.ang)
+				ent:SetColor(prop.color)
+				ent:SetMaterial(prop.material)
 				ent:Spawn()
 				ent:Activate()
 				ent:SetCustomCollisionCheck(true)
@@ -413,7 +421,7 @@ end
 -------------------------------------
 function QuestSystem:QuestIsValid(ply, quest_id)
 	local quest = QuestSystem:GetQuest(quest_id)
-	if quest.hide or quest.isEvent then return false end
+	if quest.hide or quest.is_event then return false end
 	if not QuestSystem:CheckRestiction(ply, quest.restriction) then return false end
 	if quest.condition ~= nil and not quest.condition(ply) then return false end
 	local anyCondition = hook.Run('QSystem.QuestCondition', ply, quest_id)
