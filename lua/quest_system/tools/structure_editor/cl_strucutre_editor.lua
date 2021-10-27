@@ -192,11 +192,13 @@ sgui.RouteRegister('qsystem/editor/quest/structures/select', function(quest, str
 			Props = {}
 		}
 
-		for _, ent in pairs(props) do
-			if tobool(string.find(ent:GetClass(), 'prop_*')) then
+		for _, ent in ipairs(props) do
+			if string.find(ent:GetClass(), 'prop_*') then
 				local prop_data = {
 					class = ent:GetClass(),
 					model = ent:GetModel(),
+					color = ent:GetColor(),
+					material = ent:GetMaterial(),
 					pos = ent:GetPos(),
 					ang = ent:GetAngles()
 				}

@@ -1,14 +1,14 @@
 local lang = slib.language({
 	['default'] = {
 		['title'] = 'Quest board',
-		['timeQuest'] = 'Quest time: {time} sec.',
+		['quest_time'] = 'Quest time: {time} sec.',
 		['takke'] = 'Take the quest',
 		['revoke'] = 'Revoke the quest',
 		['empty'] = 'No active quests',
 	},
 	['russian'] = {
 		['title'] = 'Доска заданий',
-		['timeQuest'] = 'Время на выполнение: {time} сек.',
+		['quest_time'] = 'Время на выполнение: {time} сек.',
 		['takke'] = 'Взять задание',
 		['revoke'] = 'Отозвать задание',
 		['empty'] = 'Нету активных заданий',
@@ -33,14 +33,14 @@ local function OpenMenu()
 	local isZero = true
 
 	for id, quest in pairs(quests) do
-		if not quest.isEvent and not quest.hide
+		if not quest.is_event and not quest.hide
 			and QuestSystem:CheckRestiction(LocalPlayer(), quest.restriction)
 		then
 			local description = quest.description
 
-			if quest.timeQuest ~= nil then
+			if quest.quest_time ~= nil then
 				description = quest.description .. '\n'
-					.. string.Replace(lang['timeQuest'], '{time}', quest.timeQuest)
+					.. string.Replace(lang['quest_time'], '{time}', quest.quest_time)
 			end
 
 			isZero = false

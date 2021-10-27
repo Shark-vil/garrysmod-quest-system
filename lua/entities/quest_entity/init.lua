@@ -38,8 +38,8 @@ function ENT:SetStep(step)
 	if quest ~= nil and quest.steps[step] ~= nil then
 		local old_step = self:GetQuestStep()
 		if old_step ~= nil and #old_step ~= 0 then
-			if quest.steps[old_step].destruct ~= nil then
-				quest.steps[old_step].destruct(self)
+			if quest.steps[old_step].destruct and quest.steps[old_step].destruct(self) then
+				return
 			end
 
 			self:SetNWString('old_step', old_step)
@@ -147,41 +147,36 @@ function ENT:SetStep(step)
 		end)
 
 		if step == 'start' then
-			if quest.isEvent then
+			if quest.is_event then
 				hook.Run('QSystem.EventStarted', self, quest)
 			else
 				hook.Run('QSystem.QuestStarted', self, quest)
 			end
 
-			if quest.timeToNextStep ~= nil and quest.nextStep ~= nil then
+			if quest.auto_next_step_delay ~= nil and quest.auto_next_step ~= nil then
 				self:TimerCreate(function()
-					if quest.nextStepCheck ~= nil then
-						if quest.nextStepCheck(self) then
-							self:NextStep(quest.nextStep)
-						else
-							self:Failed()
-						end
+					if quest.auto_next_step_validaotr and not quest.auto_next_step_validaotr(self) then
+						self:Failed()
 					else
-						self:NextStep(quest.nextStep)
+						self:NextStep(quest.auto_next_step)
 					end
-				end, quest.timeToNextStep)
+				end, quest.auto_next_step_delay)
 			end
 
-			if quest.timeQuest ~= nil then
-				local time = quest.timeQuest
+			if quest.quest_time ~= nil then
+				local time = quest.quest_time
 
-				if quest.timeToNextStep ~= nil then
-					time = time + quest.timeToNextStep
+				if quest.auto_next_step_delay ~= nil then
+					time = time + quest.auto_next_step_delay
 				end
 
 				timer.Simple(time, function()
 					if IsValid(self) then
-						local failedText = quest.failedText or {
-							title = 'Quest failed',
-							text = 'The execution time has expired.'
-						}
-
-						self:NotifyOnlyRegistred(failedText.title, failedText.text)
+						if quest.failed_text then
+							quest.failed_text.title = quest.failed_text.title or 'Quest failed'
+							quest.failed_text.text = quest.failed_text.text or 'The execution time has expired.'
+							self:NotifyOnlyRegistred(quest.failed_text.title, quest.failed_text.text)
+						end
 						self:Failed()
 					end
 				end)
@@ -197,7 +192,7 @@ end
 -------------------------------------
 function ENT:NextStep(step)
 	local quest = self:GetQuest()
-	if quest.isEvent then
+	if quest.is_event then
 		self:SetStep(step)
 	else
 		local ply = self:GetPlayer()
@@ -327,7 +322,7 @@ end
 -------------------------------------
 function ENT:Complete()
 	self:TimerCreate(function()
-		if self:GetQuest().isEvent then
+		if self:GetQuest().is_event then
 			if SERVER then self:Remove() end
 			return
 		end
@@ -345,7 +340,7 @@ end
 -------------------------------------
 function ENT:Failed()
 	self:TimerCreate(function()
-		if self:GetQuest().isEvent then
+		if self:GetQuest().is_event then
 			if SERVER then self:Remove() end
 			return
 		end
@@ -363,19 +358,10 @@ end
 -------------------------------------
 function ENT:MoveEnemyToRandomPlayer()
 	local players = self:GetAllPlayers()
-
 	if #players ~= 0 then
 		local ply = table.Random(players)
-
 		if IsValid(ply) then
-			local player_pos = ply:GetPos()
-
-			for _, data in pairs(self.npcs) do
-				if IsValid(data.npc) then
-					data.npc:SetSaveValue('m_vecLastPosition', player_pos)
-					data.npc:SetSchedule(SCHED_FORCED_GO)
-				end
-			end
+			self:MoveQuestNpcToPosition(ply:GetPos(), 'enemy', nil, 'run')
 		end
 	end
 end
@@ -392,31 +378,64 @@ function ENT:MoveQuestNpcToPosition(pos, type, tag, moveType)
 	moveType = moveType or 'walk'
 
 	local function MoveToPosition(npc)
-		npc:SetSaveValue('m_vecLastPosition', pos)
-		if moveType == 'walk' then
-			npc:SetSchedule(SCHED_FORCED_GO)
-		else
-			npc:SetSchedule(SCHED_FORCED_GO_RUN)
+		local is_background_npcs_movable = false
+
+		if bgNPC then
+			local actor = bgNPC:GetActor(npc)
+			if actor then
+				if moveType == 'walk' then
+					actor:WalkToPos(pos, 'walk')
+				else
+					actor:WalkToPos(pos, 'run')
+				end
+				if #actor.walkPath ~= 0 then s_background_npcs_movable = true end
+			end
 		end
 
-		local timerName = 'QSystem.WalkNpcToPosition.ID' .. tostring(npc:EntIndex())
-		timer.Create(timerName, 1, 0, function()
-			if not IsValid(npc) or not IsValid(self) then
-				timer.Remove(timerName)
-				return
+		if not is_background_npcs_movable then
+			npc:SetSaveValue('m_vecLastPosition', pos)
+			if moveType == 'walk' then
+				npc:SetSchedule(SCHED_FORCED_GO)
+			else
+				npc:SetSchedule(SCHED_FORCED_GO_RUN)
 			end
+		end
 
-			for _, ply in pairs(self.players) do
-				if ply:GetPos():Distance(npc:GetPos()) < 800 then
-					npc:ClearSchedule()
-					if type == 'enemy' then
-						npc:SetTarget(ply)
-					end
-					timer.Remove(timerName)
+		if not npc:slibExistsTimer('QSystem.WalkNpcToPosition') and type == 'enemy' then
+			npc:slibCreateTimer('QSystem.WalkNpcToPosition', 1, 0, function()
+				if not IsValid(self) then
+					npc:slibRemoveTimer('QSystem.WalkNpcToPosition')
 					return
 				end
-			end
-		end)
+
+				if not IsValid(npc:GetTarget()) then
+					local near_target
+					local last_distance = 1000000
+
+					for _, ply in ipairs(self.players) do
+						local distance = ply:GetPos():DistToSqr(npc:GetPos())
+						if distance <= last_distance then
+							near_target = ply
+							last_distance = distance
+						end
+					end
+
+					if IsValid(near_target) then
+						local actor
+
+						if bgNPC then
+							actor = bgNPC:GetActor(npc)
+							if actor then actor:SetState('defense', nil, true) end
+						end
+
+						if not actor then
+							npc:ClearSchedule()
+							npc:SetTarget(near_target)
+						end
+					end
+				end
+			end)
+		end
 	end
 
 	for _, data in pairs(self.npcs) do
@@ -501,6 +520,28 @@ function ENT:AddQuestNPC(npc, type, tag)
 		tag = tag,
 		npc = npc,
 	})
+
+	local active_weapon = npc:GetActiveWeapon()
+	local active_weapon_class
+	if IsValid(active_weapon) then active_weapon_class = active_weapon:GetClass() end
+
+	if bgNPC then
+		local actor
+
+		if type == 'enemy' then
+			actor = BGN_ACTOR:Instance(npc, 'quest_system_enemy')
+		elseif type == 'friend' then
+			actor = BGN_ACTOR:Instance(npc, 'quest_system_friend')
+		end
+
+		if actor then
+			actor.disable_fold_weapon = true
+			if active_weapon_class then
+				actor.weapon = active_weapon_class
+				actor:PrepareWeapon()
+			end
+		end
+	end
 
 	if QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then
 		npc:SetCustomCollisionCheck(true)
@@ -635,10 +676,10 @@ end
 function ENT:SetNPCsBehavior(ent)
 	if table.Count(self.npcs) == 0 then return end
 
-	local npcNotReactionOtherPlayer = self:GetQuest().npcNotReactionOtherPlayer or false
+	local npc_ignore_other_players = self:GetQuest().npc_ignore_other_players or false
 
 	if QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then
-		npcNotReactionOtherPlayer = true
+		npc_ignore_other_players = true
 	end
 
 	local function restictionByPlayer(ply)
@@ -646,12 +687,16 @@ function ENT:SetNPCsBehavior(ent)
 			if IsValid(data.npc) then
 				if table.HasValue(self.players, ply) then
 					if data.type == 'enemy' then
+						if bgNPC then
+							local actor = bgNPC:GetActor(data.npc)
+							if actor then actor:AddEnemy(ply, 'defense', true) end
+						end
 						data.npc:AddEntityRelationship(ply, D_HT, 70)
 					elseif data.type == 'friend' then
 						data.npc:AddEntityRelationship(ply, D_LI, 70)
 					end
 				else
-					if npcNotReactionOtherPlayer then
+					if npc_ignore_other_players then
 						data.npc:AddEntityRelationship(ply, D_NU, 99)
 					end
 				end
@@ -677,8 +722,18 @@ function ENT:SetNPCsBehavior(ent)
 					for _, npcData in pairs(self.npcs) do
 						if IsValid(npcData.npc) and IsValid(otherNPC) and npcData.npc ~= otherNPC then
 							if npcData.type == 'enemy' and data.type == 'friend' then
-								npcData.npc:AddEntityRelationship(data.npc, D_HT, 70)
-								data.npc:AddEntityRelationship(npcData.npc, D_HT, 70)
+								local actor_1, actor_2
+
+								if bgNPC then
+									actor_1 = bgNPC:GetActor(data.npc)
+									if actor_1 then actor_1:AddEnemy(npcData.npc, 'defense', true) end
+
+									actor_2 = bgNPC:GetActor(npcData.npc)
+									if actor_2 then actor_2:AddEnemy(data.npc, 'defense', true) end
+								end
+
+								if not actor_1 then data.npc:AddEntityRelationship(npcData.npc, D_HT, 70) end
+								if not actor_2 then npcData.npc:AddEntityRelationship(data.npc, D_HT, 70) end
 							elseif (npcData.type == 'friend' and data.type == 'friend') or
 								(npcData.type == 'enemy' and data.type == 'enemy')
 							then

@@ -71,21 +71,6 @@ function SWEP:Initialize()
 	end)
 end
 
-function SWEP:IsReloadDelay()
-	self.ReloadDelay = self.ReloadDelay or 0
-	if self.ReloadDelay > CurTime() then
-		self.ReloadDelay = CurTime() + 0.3
-		return true
-	end
-	self.ReloadDelay = CurTime() + 0.5
-	return false
-end
-
-function SWEP:CallOnClient(function_name)
-	if CLIENT or not IsFirstTimePredicted() then return end
-	self:slibClientRPC(function_name)
-end
-
 function SWEP:AddPointPosition(value)
 	table.insert(self.Points, value)
 end
@@ -106,8 +91,11 @@ function SWEP:ClearPoints()
 end
 
 function SWEP:PrimaryAttack()
-	if SERVER then self:CallOnClient('PrimaryAttack') return end
+	if not self:slibIsSingleCall() then return end
+	self:slibPredictedClientRPC('RpcPrimaryAttack')
+end
 
+function SWEP:RpcPrimaryAttack()
 	local owner = self:GetOwner()
 	local tr = util.TraceLine( {
 		start = owner:GetShootPos(),
@@ -129,14 +117,20 @@ function SWEP:PrimaryAttack()
 end
 
 function SWEP:Reload()
-	if SERVER then self:CallOnClient('Reload') return end
-	if self:IsReloadDelay() then return end
+	if not self:slibIsSingleCall() then return end
+	self:slibPredictedClientRPC('RpcReload')
+end
 
+function SWEP:RpcReload()
 	self:ClearPoints()
 end
 
 function SWEP:SecondaryAttack()
-	if SERVER then self:CallOnClient('SecondaryAttack') return end
+	if not self:slibIsSingleCall() then return end
+	self:slibPredictedClientRPC('RpcSecondaryAttack')
+end
+
+function SWEP:RpcSecondaryAttack()
 	self:RemoveLastPoint()
 end
 

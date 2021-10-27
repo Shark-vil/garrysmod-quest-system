@@ -124,6 +124,8 @@ function meta:QuestStartNotify(quest_id, lifetime, image, bgcolor)
 end
 
 function meta:QuestNotify(title, desc, lifetime, image, bgcolor)
+	title = title or ''
+	desc = desc or ''
 	bgcolor = bgcolor or Color(64, 64, 64)
 	image = image or 'entities/npc_kleiner.png'
 	lifetime = lifetime or 5

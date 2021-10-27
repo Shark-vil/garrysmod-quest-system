@@ -485,7 +485,7 @@ function ENT:OnRemove()
 		end
 	end
 
-	if quest.isEvent then
+	if quest.is_event then
 		hook.Run('QSystem.EventStopped', self, quest)
 	else
 		hook.Run('QSystem.QuestStopped', self, quest)
@@ -562,7 +562,7 @@ function ENT:OnNextStep()
 
 	if step == 'start' then
 		if SERVER and not quest.disableNotify then
-			if quest.isEvent then
+			if quest.is_event then
 				self:NotifyAllQuestStart(quest.notify_lifetime, quest.notify_image, quest.notify_bgcolor)
 			else
 				self:NotifyQuestStart(quest.notify_lifetime, quest.notify_image, quest.notify_bgcolor)
@@ -597,7 +597,7 @@ function ENT:OnNextStep()
 		end
 	end
 
-	if quest.isEvent then
+	if quest.is_event then
 		hook.Run('QSystem.NextEventStep', self, step, quest)
 	else
 		hook.Run('QSystem.NextQuestStep', self, step, quest)

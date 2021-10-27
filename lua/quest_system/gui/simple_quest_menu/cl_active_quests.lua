@@ -1,14 +1,14 @@
 local lang = slib.language({
 	['default'] = {
 		['title'] = 'List of active quests',
-		['timeQuest'] = 'Quest time: {time} sec.',
+		['quest_time'] = 'Quest time: {time} sec.',
 		['stop_tracking'] = 'Stop tracking',
 		['tracking'] = 'Track quest',
 		['empty'] = 'No active quests',
 	},
 	['russian'] = {
 		['title'] = 'Список активных заданий',
-		['timeQuest'] = 'Время на выполнение: {time} сек.',
+		['quest_time'] = 'Время на выполнение: {time} сек.',
 		['tracking'] = 'Отслеживать задание',
 		['stop_tracking'] = 'Прекратить отслеживание',
 		['empty'] = 'Нету активных заданий',
@@ -38,12 +38,12 @@ local function OpenMenu()
 	for _, ent in pairs(quests) do
 		local quest = ent:GetQuest()
 
-		if quest.isEvent or ent:GetPlayer() == LocalPlayer() then
+		if quest.is_event or ent:GetPlayer() == LocalPlayer() then
 			local description = quest.description
 
-			if quest.timeQuest ~= nil then
+			if quest.quest_time ~= nil then
 				description = quest.description .. '\n'
-					.. string.Replace(lang['timeQuest'], '{time}', quest.timeQuest)
+					.. string.Replace(lang['quest_time'], '{time}', quest.quest_time)
 			end
 
 			isZero = false

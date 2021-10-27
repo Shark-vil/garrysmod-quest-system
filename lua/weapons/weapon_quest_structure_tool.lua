@@ -86,14 +86,12 @@ function SWEP:ClearZonePositions()
 	surface.PlaySound('common/wpn_denyselect.wav')
 end
 
-function SWEP:CallOnClient(function_name)
-	if CLIENT or not IsFirstTimePredicted() then return end
-	self:slibClientRPC(function_name)
+function SWEP:PrimaryAttack()
+	if not self:slibIsSingleCall() then return end
+	self:slibPredictedClientRPC('RpcPrimaryAttack')
 end
 
-function SWEP:PrimaryAttack()
-	if SERVER then self:CallOnClient('PrimaryAttack') return end
-
+function SWEP:RpcPrimaryAttack()
 	local owner = self:GetOwner()
 	local tr = util.TraceLine({
 		start = owner:GetShootPos(),
@@ -124,7 +122,11 @@ function SWEP:PrimaryAttack()
 end
 
 function SWEP:SecondaryAttack()
-	if SERVER then self:CallOnClient('SecondaryAttack') return end
+	if not self:slibIsSingleCall() then return end
+	self:slibPredictedClientRPC('RpcSecondaryAttack')
+end
+
+function SWEP:RpcSecondaryAttack()
 	self:ClearZonePositions()
 end
 
