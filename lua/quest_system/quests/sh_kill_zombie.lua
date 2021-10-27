@@ -27,6 +27,10 @@ local quest = {
 		start = {
 			triggers = {
 				spawn_zombie_trigger = {
+					construct = function(eQuest, center)
+						if CLIENT then return end
+						eQuest:SetArrowVector(center)
+					end,
 					onEnter = function(eQuest, ent)
 						if CLIENT then return end
 						if ent ~= eQuest:GetPlayer() then return end
