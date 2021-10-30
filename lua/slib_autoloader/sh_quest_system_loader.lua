@@ -74,7 +74,6 @@ script:using('rpc/quest_entity/cl_rpc_values.lua')
 script:using('rpc/quest_entity/cl_rpc_weapons.lua')
 script:using('rpc/quest_entity/cl_rpc_structures.lua')
 script:using('rpc/quest_entity/cl_rpc_nodraw.lua')
-script:using('rpc/quest_entity/cl_rpc_functions.lua')
 
 script:using('modules/actions/on_quest_npc_killed/cl_on_quest_npc_killed_action.lua')
 script:using('modules/actions/on_quest_npc_killed/sv_on_quest_npc_killed_action.lua')
