@@ -14,7 +14,7 @@ if SERVER then
 		ActivateRandomEvent(args[1])
 	end).AutoComplete(function(cmd, stringargs)
 		local tbl = {}
-		for id, _ in pairs(QuestSystem:GetAllEvents()) do tbl[ #tbl + 1] = cmd .. ' ' .. id end
+		for id, _ in pairs(QuestSystem:GetAllEvents()) do tbl[ #tbl + 1] = cmd .. ' "' .. id .. '"' end
 		return tbl
 	end).Access( { isAdmin = true } ).Register()
 
@@ -22,7 +22,7 @@ if SERVER then
 	hook.Add('Think', 'QSystemActivateRandomEvents', function()
 		if #player.GetAll() == 0 then return end
 
-		local delay_time = QuestSystem:GetConfig('EventsTimeDelay')
+		local delay_time = GetConVar('qsystem_cfg_events_delay'):GetInt()
 
 		if delay_time > 0 then
 			if current_time > CurTime() then
@@ -32,13 +32,12 @@ if SERVER then
 			end
 		end
 
-		if not QuestSystem:GetConfig('EnableEvents') then return end
+		if not GetConVar('qsystem_cfg_enable_game_events'):GetBool() then return end
 
-		local randNum = QuestSystem:GetConfig('EventsRandomActivate')
-		local maxEvents = QuestSystem:GetConfig('MaxActiveEvents')
+		local randNum = GetConVar('qsystem_cfg_events_chance'):GetInt()
+		if randNum > 0 and randNum < math.random(1, 100) then return end
 
-		if randNum > 0 and math.random(1, randNum) ~= 1 then return end
-
+		local maxEvents = GetConVar('qsystem_cfg_events_max'):GetInt()
 		if table.Count(QuestSystem.activeEvents) > maxEvents then return end
 
 		ActivateRandomEvent()
@@ -58,3 +57,34 @@ end
 hook.Add('DisableEvent', 'QSystem.RemoveEventFromTable', function(eQuest, quest)
 	QuestSystem.activeEvents[quest.id] = nil
 end)
+
+hook.Add('PostCleanupMap', 'QSystem.PostCleanupMap.ResetGlobalTables', function()
+	table.Empty(QuestSystem.Storage.Quests)
+	table.Empty(QuestSystem.Storage.Dialogues)
+end)
+
+scommand.Create('qsystem_give_quest_from_player').OnServer(function(ply, cmd, args)
+	if not QuestSystem:GetQuest(args[2]) then return end
+
+	for _, quester in ipairs(player.GetAll()) do
+		if quester:Nick() == args[1] then
+			quester:EnableQuest(args[2])
+			break
+		end
+	end
+end).AutoComplete(function(cmd, stringargs)
+	local autoComplete = {}
+	stringargs = string.Trim(stringargs)
+
+	if #string.Trim(stringargs) == 0 then
+		for _, quester in ipairs(player.GetAll()) do
+			table.insert(autoComplete, cmd .. ' "' .. quester:Nick() .. '"')
+		end
+	else
+		for quest_id, _ in pairs(QuestSystem:GetAllQuests()) do
+			table.insert(autoComplete, cmd .. ' ' .. stringargs .. ' "' .. quest_id .. '"')
+		end
+	end
+
+	return autoComplete
+end).Access( { isAdmin = true } ).Register()

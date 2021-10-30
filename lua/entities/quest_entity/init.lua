@@ -33,11 +33,11 @@ function ENT:SetStep(step)
 	self:SetNWBool('StopThink', self.StopThink)
 
 	local quest = self:GetQuest()
-	if not quest.steps then return end
+	if not quest or not quest.steps then return end
 
-	if quest ~= nil and quest.steps[step] ~= nil then
+	if quest.steps[step] then
 		local old_step = self:GetQuestStep()
-		if old_step ~= nil and #old_step ~= 0 then
+		if old_step and #old_step ~= 0 then
 			if quest.steps[old_step].destruct and quest.steps[old_step].destruct(self) then
 				return
 			end
@@ -495,7 +495,7 @@ function ENT:AddQuestItem(item, item_id)
 		item = item
 	})
 
-	if QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then
+	if GetConVar('qsystem_cfg_hide_quests_of_other_players'):GetBool() then
 		item:SetCustomCollisionCheck(true)
 	end
 
@@ -539,11 +539,13 @@ function ENT:AddQuestNPC(npc, type, tag)
 			if active_weapon_class then
 				actor.weapon = active_weapon_class
 				actor:PrepareWeapon()
+			else
+				actor.weapon = ''
 			end
 		end
 	end
 
-	if QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then
+	if GetConVar('qsystem_cfg_hide_quests_of_other_players'):GetBool() then
 		npc:SetCustomCollisionCheck(true)
 	end
 
@@ -584,14 +586,46 @@ end
 function ENT:SpawnQuestNPC(npc_class, data)
 	local npc = ents.Create(npc_class)
 	npc:SetPos(data.pos)
-	if data.ang ~= nil then
+	if data.ang then
 		npc:SetAngles(data.ang)
 	end
-	if data.model ~= nil then
+	if data.model then
 		npc:SetModel(data.model)
 	end
-	if data.weapon_class ~= nil then
+	if data.weapon_class then
 		npc:Give(data.weapon_class)
+	end
+
+	if data.health then
+		if isnumber(data.health) then
+			npc:SetHealth(data.health)
+		elseif isstring(data.health) then
+			local health = npc:Health()
+
+			do
+				local split = string.Split(data.health, '/')
+				local value = tonumber(split[2])
+				if value then npc:SetHealth(health / value) print(health / value) end
+			end
+
+			do
+				local split = string.Split(data.health, '*')
+				local value = tonumber(split[2])
+				if value then npc:SetHealth(health * value) end
+			end
+
+			do
+				local split = string.Split(data.health, '+')
+				local value = tonumber(split[2])
+				if value then npc:SetHealth(health + value) end
+			end
+
+			do
+				local split = string.Split(data.health, '-')
+				local value = tonumber(split[2])
+				if value then npc:SetHealth(health - value) end
+			end
+		end
 	end
 
 	--[[
@@ -668,7 +702,7 @@ end
 
 -------------------------------------
 -- Establishes the rules of conduct for registered NPCs for other players or NPCs.
--- If the config parameter - HideQuestsOfOtherPlayers - is not false,
+-- If the config parameter - qsystem_cfg_hide_quests_of_other_players - is not false,
 -- then the NPCs will ignore players that do not belong to the quest.
 -------------------------------------
 -- @param ent entity|nil - player or npc entity
@@ -678,7 +712,7 @@ function ENT:SetNPCsBehavior(ent)
 
 	local npc_ignore_other_players = self:GetQuest().npc_ignore_other_players or false
 
-	if QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then
+	if GetConVar('qsystem_cfg_hide_quests_of_other_players'):GetBool() then
 		npc_ignore_other_players = true
 	end
 

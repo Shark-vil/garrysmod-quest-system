@@ -1,17 +1,16 @@
-snet.Callback('qsystem_sync_nodraw', function(_, ent)
-	if not QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then return end
-	if not IsValid(ent) then return end
+snet.Callback('qsystem_sync_nodraw', function(_, eQuest)
+	if not GetConVar('qsystem_cfg_hide_quests_of_other_players'):GetBool() then return end
 
 	-- NPC
 	do
-		local npcs = ent.npcs or {}
-		local noDraw = table.HasValue(ent.players, LocalPlayer())
+		local npcs = eQuest.npcs or {}
+		local noDraw = table.HasValue(eQuest.players, LocalPlayer())
 
 		for _, data in pairs(npcs) do
 			local npc = data.npc
 
 			if IsValid(npc) then
-				if QuestSystem:GetConfig('HideQuestsNPCNotCompletely') then
+				if GetConVar('qsystem_cfg_hide_quests_npcs_not_completely'):GetBool() then
 					if not noDraw then
 						npc:SetRenderMode(RENDERMODE_TRANSCOLOR)
 						npc:SetColor(ColorAlpha(npc:GetColor(), 50))
@@ -23,7 +22,7 @@ snet.Callback('qsystem_sync_nodraw', function(_, ent)
 				local wep = npc:GetActiveWeapon()
 
 				if IsValid(wep) then
-					if QuestSystem:GetConfig('HideQuestsNPCNotCompletely') then
+					if GetConVar('qsystem_cfg_hide_quests_npcs_not_completely'):GetBool() then
 						if not noDraw then
 							wep:SetRenderMode(RENDERMODE_TRANSCOLOR)
 							wep:SetColor(ColorAlpha(wep:GetColor(), 50))
@@ -38,8 +37,8 @@ snet.Callback('qsystem_sync_nodraw', function(_, ent)
 
 	-- Items
 	do
-		local items = ent.items or {}
-		local noDraw = table.HasValue(ent.players, LocalPlayer())
+		local items = eQuest.items or {}
+		local noDraw = table.HasValue(eQuest.players, LocalPlayer())
 
 		for _, data in pairs(items) do
 			local item = data.item
@@ -52,8 +51,8 @@ snet.Callback('qsystem_sync_nodraw', function(_, ent)
 
 	-- Structures
 	do
-		local structures = ent.structures or {}
-		local noDraw = table.HasValue(ent.players, LocalPlayer())
+		local structures = eQuest.structures or {}
+		local noDraw = table.HasValue(eQuest.players, LocalPlayer())
 
 		for id, spawn_id in pairs(structures) do
 			local props = QuestSystem:GetStructure(spawn_id)
@@ -67,4 +66,4 @@ snet.Callback('qsystem_sync_nodraw', function(_, ent)
 			end
 		end
 	end
-end).Validator(SNET_ENTITY_VALIDATOR).Register()
+end).Validator(SNET_ENTITY_VALIDATOR)

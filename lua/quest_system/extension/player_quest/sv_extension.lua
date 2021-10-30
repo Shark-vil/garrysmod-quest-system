@@ -88,7 +88,7 @@ function meta:QuestIsValid(quest_id)
 end
 
 function meta:EnableQuest(quest_id)
-	local maxQuests = QuestSystem:GetConfig('MaxActiveQuestsForOnePlayer')
+	local maxQuests = GetConVar('qsystem_cfg_max_quests_for_player'):GetInt()
 
 	if maxQuests > 0 then
 		local quests = self:GetNumberQuestsActive()

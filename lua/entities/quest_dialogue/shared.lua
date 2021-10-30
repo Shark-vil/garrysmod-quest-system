@@ -21,6 +21,7 @@ function ENT:Initialize()
 
 	if CLIENT then
 		local lines = nil
+		local text_color_upper_head = Color(255, 255, 255)
 
 		-------------------------------------
 		-- Renders the background dialog text above the NPC's head.
@@ -29,91 +30,74 @@ function ENT:Initialize()
 		-------------------------------------
 		hook.Add('PostDrawOpaqueRenderables', self, function()
 			local npc = self:GetNPC()
+			if not IsValid(npc) then return end
 
-			if IsValid(npc) then
-				local dialogue = self:GetDialogue()
+			local dialogue = self:GetDialogue()
+			if not dialogue then return end
 
-				if dialogue ~= nil then
-					if not dialogue.isBackground then
-						hook.Remove('PostDrawOpaqueRenderables', self)
-						return
+			if not dialogue.isBackground then
+				hook.Remove('PostDrawOpaqueRenderables', self)
+				return
+			end
+
+			if npc:GetPos():Distance(LocalPlayer():GetPos()) < 800 then
+				if not lines then
+					lines = {}
+					local step = self:GetStep()
+					local text = ''
+
+					if step.text ~= nil then
+						if isstring(step.text) then
+							text = step.text
+						elseif istable(step.text) then
+							text = table.Random(step.text)
+						end
 					end
 
-					if npc:GetPos():Distance(LocalPlayer():GetPos()) < 800 then
-						if lines == nil then
-							lines = {}
-							local step = self:GetStep()
-							local text = ''
+					text = utf8.force(text)
+					local maxLineSize = 50
+					local startPos = 1
+					local endPos = maxLineSize
+					local str_len = utf8.len(text)
 
-							if step.text ~= nil then
-								if isstring(step.text) then
-									text = step.text
-								elseif istable(step.text) then
-									text = table.Random(step.text)
+					if str_len >= maxLineSize then
+						for i = 1, str_len do
+							if endPos == i then
+								local line = utf8.sub(text, startPos, endPos)
+								table.insert(lines, string.Trim(line))
+								startPos = i
+								endPos = endPos + maxLineSize
+
+								if endPos > str_len then
+									endPos = str_len
 								end
 							end
-
-							text = utf8.force(text)
-							local maxLineSize = 50
-							local startPos = 1
-							local endPos = maxLineSize
-							local str_len = utf8.len(text)
-
-							if str_len >= maxLineSize then
-								for i = 1, str_len do
-									if endPos == i then
-										local line = utf8.sub(text, startPos, endPos)
-										table.insert(lines, string.Trim(line))
-										startPos = i
-										endPos = endPos + maxLineSize
-
-										if endPos > str_len then
-											endPos = str_len
-										end
-									end
-								end
-							end
-
-							if #lines == 0 then
-								table.insert(lines, text)
-							end
 						end
+					end
 
-						local angle = LocalPlayer():EyeAngles()
-						angle:RotateAroundAxis(angle:Forward(), 90)
-						angle:RotateAroundAxis(angle:Right(), 90)
-						local lengthLines = #lines
-
-						if lengthLines ~= 0 then
-							local vec = npc:OBBMaxs()
-							cam.Start3D2D(npc:GetPos() + npc:GetForward() + npc:GetUp() * vec.z, angle, 0.25)
-							local ypos = -15
-
-							for i = 1, lengthLines do
-								local text = lines[i]
-								draw.SimpleTextOutlined(text, 'QuestSystemDialogueBackgroundText', 0, ypos, Color(255, 255, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color(0, 0, 0))
-								ypos = ypos + 15
-							end
-
-							cam.End3D2D()
-						end
+					if #lines == 0 then
+						table.insert(lines, text)
 					end
 				end
-			end
-		end)
-	else
-		-------------------------------------
-		-- Provides visibility of the entity of the dialogue to clients.
-		-- Otherwise, clients may not receive data.
-		-------------------------------------
-		-- Wiki - https://wiki.facepunch.com/gmod/GM:SetupPlayerVisibility
-		-------------------------------------
-		hook.Add('SetupPlayerVisibility', self, function(this, pPlayer, pViewEntity)
-			AddOriginToPVS(self:GetPos())
-			local npc = self:GetNPC()
 
-			if IsValid(npc) then
-				AddOriginToPVS(npc:GetPos())
+				local lines_count = #lines
+				if lines_count == 0 then return end
+
+				local angle = LocalPlayer():EyeAngles()
+				angle:RotateAroundAxis(angle:Forward(), 90)
+				angle:RotateAroundAxis(angle:Right(), 90)
+
+				local vec = npc:OBBMaxs()
+
+				cam.Start3D2D(npc:GetPos() + npc:GetForward() + npc:GetUp() * vec.z, angle, 0.25)
+					local ypos = -15
+
+					for i = 1, lines_count do
+						local text = lines[i]
+						draw.SimpleTextOutlined(text, 'QuestSystemDialogueBackgroundText', 0, ypos, text_color_upper_head, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color(0, 0, 0))
+						ypos = ypos + 15
+					end
+				cam.End3D2D()
 			end
 		end)
 	end
@@ -122,21 +106,8 @@ function ENT:Initialize()
 		if not IsValid(self) then return end
 		hook.Run('QSystem.StartDialogue', self)
 	end)
-end
 
--------------------------------------
--- An entity deletes itself if one of the conditions is violated.
--------------------------------------
--- Wiki - https://wiki.facepunch.com/gmod/ENTITY:Think
--------------------------------------
-function ENT:Think()
-	if SERVER and self.isStarted and (
-		not IsValid(self:GetNPC()) or not IsValid(self:GetPlayer()) or
-		( self:NpcIsFear() and not self:GetDialogue().isBackground )
-	) then
-		self:Remove()
-		return
-	end
+	table.insert(QuestSystem.Storage.Dialogues, self)
 end
 
 -------------------------------------
@@ -160,6 +131,8 @@ function ENT:OnRemove()
 	end
 
 	hook.Run('QSystem.StopDialogue', self)
+
+	table.RemoveValueBySeq(QuestSystem.Storage.Dialogues, self)
 end
 
 -------------------------------------

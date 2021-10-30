@@ -9,6 +9,7 @@ ENT.Instructions = ''
 ENT.Spawnable = false
 ENT.AdminSpawnable = false
 
+ENT.hooks = {}
 ENT.triggers = {}
 ENT.points = {}
 ENT.npcs = {}
@@ -21,9 +22,16 @@ ENT.structures = {}
 ENT.trigger_entities = {}
 
 ENT.StopThink = false
-ENT.StepHookName = ''
-ENT.GlobalHookName = ''
-ENT.FactoryHookName = ''
+
+local ipairs = ipairs
+local pairs = pairs
+local IsValid = IsValid
+local table_HasValueBySeq = table.HasValueBySeq
+local table_insert = table.insert
+local hook_Remove = hook.Remove
+local table_remove = table.remove
+local slib_FindInBox = slib.FindInBox
+local slib_FindInSphere = slib.FindInSphere
 
 function ENT:Initialize()
 	self:SetModel('models/props_junk/PopCan01a.mdl')
@@ -32,203 +40,17 @@ function ENT:Initialize()
 	self:SetSolid(SOLID_NONE)
 	self:SetNoDraw(true)
 
-	self.StepHookName = 'QuestEntityHook_'
-	.. tostring(self:EntIndex())
-	.. tostring(string.Replace(CurTime(), '.', ''))
-
-	self.GlobalHookName = 'QuestEntityGlobalHook_'
-	.. tostring(self:EntIndex())
-	.. tostring(string.Replace(CurTime(), '.', ''))
-
-	self.FactoryHookName = 'QuestEntityFactoryHook_'
-	.. tostring(self:EntIndex())
-	.. tostring(string.Replace(CurTime(), '.', ''))
-
-	local factory_hook_name = self.FactoryHookName
-
 	if SERVER then
-		if QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then
-			-------------------------------------
-			-- Disable collision with quest objects for players not belonging to the quest.
-			-------------------------------------
-			-- Wiki - https://wiki.facepunch.com/gmod/GM:ShouldCollide
-			-------------------------------------
-			hook.Add('ShouldCollide', factory_hook_name, function(ent1, ent2)
-				if not IsValid(self) then hook.Remove('ShouldCollide', factory_hook_name) return end
-
-				if ent2:IsPlayer() then
-					for id, spawn_id in pairs(self.structures) do
-						local props = QuestSystem:GetStructure(spawn_id)
-						if table.HasValue(props, ent1) and not table.HasValue(self.players, ent2) then
-							return false
-						end
-					end
-
-					for _, data in pairs(self.items) do
-						local item = data.item
-						if IsValid(item) and item:GetCustomCollisionCheck() and ent1 == item and
-							not table.HasValue(self.players, ent2)
-						then
-							return false
-						end
-					end
-
-					for _, data in pairs(self.npcs) do
-						local npc = data.npc
-						if IsValid(npc) and npc:GetCustomCollisionCheck() and ent1 == npc and
-							not table.HasValue(self.players, ent2)
-						then
-							return false
-						end
-					end
-				end
-			end)
-
-			-------------------------------------
-			-- Disables player damage to NPCs if players do not belong to the quest, and vice versa.
-			-------------------------------------
-			-- Wiki - https://wiki.facepunch.com/gmod/GM:EntityTakeDamage
-			-------------------------------------
-			hook.Add('EntityTakeDamage', factory_hook_name, function(target, dmginfo)
-				if not IsValid(self) then hook.Remove('EntityTakeDamage', factory_hook_name) return end
-
-				local attaker = dmginfo:GetAttacker()
-				if attaker:IsWeapon() then
-					attaker = attaker.Owner
-				end
-
-				if target:IsNPC() then
-					if attaker ~= nil and attaker:IsPlayer() then
-						for _, data in pairs(self.npcs) do
-							local npc = data.npc
-							if IsValid(npc) and IsValid(attaker) and not table.HasValue(self.players, attaker) then
-								return true
-							end
-						end
-					end
-				elseif target:IsPlayer() and attaker ~= nil and attaker:IsNPC() then
-					for _, ent in pairs(ents.FindByClass('quest_entity')) do
-						if ent ~= self then
-							local npcs = ent.npcs
-							if npcs ~= nil and table.Count(npcs) ~= 0 then
-								for _, data in pairs(npcs) do
-									if attaker == data.npc then
-										return true
-									end
-								end
-							end
-						end
-					end
-				end
-			end)
-		end
-
-		if self:IsExistStepArg('onUse') then
-			-------------------------------------
-			-- Calls a step function - onUse - when press E on any (almost) entity.
-			-------------------------------------
-			-- Wiki - https://wiki.facepunch.com/gmod/GM:PlayerUse
-			-------------------------------------
-			hook.Add('PlayerUse', factory_hook_name, function(ply, ent)
-				if not IsValid(self) then hook.Remove('PlayerUse', factory_hook_name) return end
-
-				local step = self:GetQuestStepTable()
-				if step ~= nil and step.onUse ~= nil and table.HasValue(self.players, ply) then
-					snet.InvokeAll('qsystem_rpc_function_onUse', self, ent)
-					step.onUse(self, ent)
-				end
-			end)
-		end
-
-		if self:IsExistStepArg('onQuestNPCKilled') then
-			-------------------------------------
-			-- Calls a function for a step if the quest NPC is killed.
-			-------------------------------------
-			-- Wiki - https://wiki.facepunch.com/gmod/GM:OnNPCKilled
-			-------------------------------------
-			hook.Add('OnNPCKilled', factory_hook_name, function(npc, attacker, inflictor)
-				if not IsValid(self) then hook.Remove('OnNPCKilled', factory_hook_name) return end
-				for _, data in pairs(self.npcs) do
-					if data.npc == npc then
-						local step = self:GetQuestStepTable()
-						if step ~= nil and step.onQuestNPCKilled ~= nil then
-							snet.InvokeAll('qsystem_rpc_function_onQuestNPCKilled',
-								self, data, npc, attacker, inflictor)
-							step.onQuestNPCKilled(self, data, npc, attacker, inflictor)
-						end
-						break
-					end
-				end
-			end)
-		end
-
-		-------------------------------------
-		-- Forces the visibility of all quest entities. Otherwise, clients may receive an empty value.
-		-------------------------------------
-		-- Wiki - https://wiki.facepunch.com/gmod/GM:SetupPlayerVisibility
-		-------------------------------------
-		hook.Add('SetupPlayerVisibility', factory_hook_name, function(pPlayer, pViewEntity)
-			if not IsValid(self) then hook.Remove('SetupPlayerVisibility', factory_hook_name) return end
-			AddOriginToPVS(self:GetPos())
-
-			local entities = {}
-			for _, data in pairs(self.npcs) do
-				table.insert(entities, data.npc)
-			end
-
-			for _, data in pairs(self.items) do
-				table.insert(entities, data.item)
-			end
-
-			for _, spawn_id in pairs(self.structures) do
-				local props = QuestSystem:GetStructure(spawn_id)
-				for _, prop in pairs(props) do
-					table.insert(entities, prop)
-				end
-			end
-
-			for _, data in pairs(self.weapons) do
-				table.insert(entities, data.weapon)
-			end
-
-			for _, ent in pairs(entities) do
-				if IsValid(ent) then
-					AddOriginToPVS(ent:GetPos())
-				end
-			end
-		end)
-
+		self:slibSetVar('quest_entity_uuid', slib.UUID())
 		self:SetNWBool('StopThink', true)
 		self:SetNWFloat('ThinkDelay', 0)
-	else
-		-------------------------------------
-		-- Removes NPCs sounds if players do not belong to the quest.
-		-- WARNING:
-		-- The effectiveness of the hook is questionable. May be removed in the future.
-		-------------------------------------
-		-- Wiki - https://wiki.facepunch.com/gmod/GM:EntityEmitSound
-		-------------------------------------
-		hook.Add('EntityEmitSound', factory_hook_name, function(t)
-			if not IsValid(self) then hook.Remove('EntityEmitSound', factory_hook_name) return end
-			local ent = t.Entity
-
-			if self:IsQuestNPC(ent) and table.HasValue(self:GetAllPlayers(), LocalPlayer()) then
-				return false
-			end
-		end)
 	end
+
+	table_insert(QuestSystem.Storage.Quests, self)
 end
 
-function ENT:GetStepHookName()
-	return self.StepHookName
-end
-
-function ENT:GetGlobalHookName()
-	return self.GlobalHookName
-end
-
-function ENT:GetFactoryHookName()
-	return self.FactoryHookName
+function ENT:GetUUID()
+	return self:slibGetVar('quest_entity_uuid', nil)
 end
 
 -------------------------------------
@@ -315,7 +137,7 @@ function ENT:GetPlayer()
 end
 
 function ENT:HasQuester(ply)
-	return table.HasValue(self.players, ply)
+	return table_HasValueBySeq(self.players, ply)
 end
 
 -------------------------------------
@@ -354,21 +176,23 @@ end
 -- Checks the existence of one or more NPCs. If there are several NPCs in the check,
 -- then the truth will be returned, even if there is only one left alive!
 -------------------------------------
--- @param type string - npc type
--- @param tag string|nil - npc tag
+-- @param npcType string - npc type
+-- @param npcTag string|nil - npc tag
 -------------------------------------
 -- @return bool - will return true if one or more npc exists, otherwise false
 -------------------------------------
-function ENT:QuestNPCIsValid(type, tag)
+function ENT:QuestNPCIsAlive(npcType, npcTag)
 	local allowAlive = false
-	for _, data in pairs(self.npcs) do
-		if type ~= nil and tag ~= nil then
-			if data.type == type and data.tag == tag and IsValid(data.npc) and data.npc:Health() > 0 then
+	for i = 1, #self.npcs do
+		local data = self.npcs[i]
+		local npc = data.npc
+		if npcType and npcTag then
+			if data.type == npcType and data.tag == npcTag and IsValid(npc) and npc:Health() > 0 then
 				allowAlive = true
 				break
 			end
-		elseif type ~= nil then
-			if data.type == type and IsValid(data.npc) and data.npc:Health() > 0 then
+		elseif npcType then
+			if data.type == npcType and IsValid(npc) and npc:Health() > 0 then
 				allowAlive = true
 				break
 			end
@@ -387,15 +211,17 @@ end
 function ENT:Think()
 	local step = self:GetQuestStepTable()
 
-	if step ~= nil and not self:SetNWBool('StopThink', true) and not self.StopThink then
-		if step.think ~= nil then
-			step.think(self)
-		end
+	if step and not self:SetNWBool('StopThink', true) and not self.StopThink then
+		if step.think then step.think(self) end
 
-		if #self.triggers ~= 0 then
+		local triggers = self.triggers
+		local triggers_count = #triggers
+
+		if triggers_count ~= 0 then
 			local quest = self:GetQuest()
 
-			for _, tdata in pairs(self.triggers) do
+			for i = 1, triggers_count do
+				local tdata = triggers[i]
 				local entities = {}
 				local name = tdata.name
 				local trigger = tdata.trigger
@@ -408,33 +234,33 @@ function ENT:Think()
 				self.trigger_entities[name] = self.trigger_entities[name] or {}
 
 				if trigger.type == 'box' then
-					entities = ents.FindInBox(trigger.vec1, trigger.vec2)
+					entities = slib_FindInBox(trigger.vec1, trigger.vec2)
 					center = (trigger.vec1 + trigger.vec2) / 2
 				elseif trigger.type == 'sphere' then
-					entities = ents.FindInSphere(trigger.center, trigger.radius)
+					entities = slib_FindInSphere(trigger.center, trigger.radius)
 					center = trigger.center
 				end
 
-				for i = #self.trigger_entities[name], 1, -1 do
-					local ent = self.trigger_entities[name][i]
-					if not table.HasValue(entities, ent) then
-						if trigger_onExit ~= nil then
+				for k = #self.trigger_entities[name], 1, -1 do
+					local ent = self.trigger_entities[name][k]
+					if not table_HasValueBySeq(entities, ent) then
+						if trigger_onExit then
 							trigger_onExit(self, ent, center, trigger)
 						end
-						table.remove(self.trigger_entities[name], i)
+						table_remove(self.trigger_entities[name], k)
 					end
 				end
 
 				for _, ent in ipairs(entities) do
-					if not table.HasValue(self.trigger_entities[name], ent) then
-						table.insert(self.trigger_entities[name], ent)
-						if trigger_onEnter ~= nil then
+					if not table_HasValueBySeq(self.trigger_entities[name], ent) then
+						table_insert(self.trigger_entities[name], ent)
+						if trigger_onEnter then
 							trigger_onEnter(self, ent, center, trigger)
 						end
 					end
 				end
 
-				if trigger_think ~= nil then
+				if trigger_think then
 					trigger_think(self, entities, center, trigger)
 				end
 			end
@@ -449,10 +275,7 @@ end
 -------------------------------------
 function ENT:OnRemove()
 	local step = self:GetQuestStepTable()
-
-	if step ~= nil and step.destruct ~= nil then
-		step.destruct(self)
-	end
+	if step and step.destruct then step.destruct(self) end
 
 	if SERVER then
 		self:RemoveNPC()
@@ -461,28 +284,12 @@ function ENT:OnRemove()
 		self:RemoveAllStructure()
 	end
 
-	local factory_hook_name = self:GetFactoryHookName()
-	hook.Remove('PlayerUse', factory_hook_name)
-	hook.Remove('ShouldCollide', factory_hook_name)
-	hook.Remove('EntityTakeDamage', factory_hook_name)
-	hook.Remove('OnNPCKilled', factory_hook_name)
-	hook.Remove('EntityEmitSound', factory_hook_name)
-	hook.Remove('SetupPlayerVisibility', factory_hook_name)
-
 	local quest = self:GetQuest()
 
-	if quest.steps[step] ~= nil and quest.steps[step].hooks ~= nil then
-		local step_hook_name = self:GetStepHookName()
-		for hook_type, _ in pairs(quest.steps[step].hooks) do
-			hook.Remove(hook_type, step_hook_name)
-		end
-	end
-
-	if quest.global_hooks ~= nil then
-		local global_hook_name = self:GetGlobalHookName()
-		for hook_type, _ in pairs(quest.global_hooks) do
-			hook.Remove(hook_type, global_hook_name)
-		end
+	for i = #self.hooks, 1, -1 do
+		local data = self.hooks[i]
+		hook_Remove(data.hook_type, data.hook_name)
+		table_remove(self.hooks, i)
 	end
 
 	if quest.is_event then
@@ -490,6 +297,8 @@ function ENT:OnRemove()
 	else
 		hook.Run('QSystem.QuestStopped', self, quest)
 	end
+
+	table.RemoveValueBySeq(QuestSystem.Storage.Quests, self)
 end
 
 -------------------------------------
@@ -502,29 +311,30 @@ function ENT:OnNextStep()
 	if not quest.steps then return end
 
 	local step = self:GetQuestStep()
-	local old_step = self:GetQuestOldStep()
 
 	if #self.points ~= 0 and quest.steps[step] and quest.steps[step].points then
-		for _, data in pairs(self.points) do
-			if quest.steps[step].points[data.name] ~= nil then
+		for i = 1, #self.points do
+			local data = self.points[i]
+			if quest.steps[step].points[data.name] then
 				local func = quest.steps[data.step].points[data.name]
-				if func then func(self, data.points) end
+				if func and isfunction(func) then func(self, data.points) end
 			end
 		end
 
 		if SERVER then
-			snet.InvokeAll('qsystem_rpc_function_onPoints', self)
+			snet.InvokeAll('QSystem.QuestAction.InitPoints', self)
 		end
 	end
 
 	if #self.triggers ~= 0 then
-		for _, tdata in pairs(self.triggers) do
+		for i = 1, #self.triggers do
+			local tdata = self.triggers[i]
 			local name = tdata.name
 			local trigger = tdata.trigger
 			local trigger_functions = quest.steps[tdata.step].triggers[name]
 			local trigger_construct = trigger_functions.construct
 
-			if trigger_construct then
+			if trigger_construct and isfunction(trigger_construct) then
 				local center
 
 				if trigger.type == 'box' then
@@ -538,11 +348,11 @@ function ENT:OnNextStep()
 		end
 	end
 
-	local step_hook_name = self:GetStepHookName()
-
-	if old_step and #old_step ~= 0 and quest.steps[old_step] and quest.steps[old_step].hooks then
-		for hook_type, _ in pairs(quest.steps[old_step].hooks) do
-			hook.Remove(hook_type, step_hook_name)
+	for i = #self.hooks, 1, -1 do
+		local data = self.hooks[i]
+		if not data.is_gloabl then
+			hook_Remove(data.hook_type, data.hook_name)
+			table_remove(self.hooks, i)
 		end
 	end
 
@@ -551,7 +361,7 @@ function ENT:OnNextStep()
 		self:SyncItems()
 		self:SetNPCsBehavior()
 
-		if QuestSystem:GetConfig('HideQuestsOfOtherPlayers') then
+		if GetConVar('qsystem_cfg_hide_quests_of_other_players'):GetBool() then
 			self:SyncNoDraw()
 		end
 	end
@@ -570,30 +380,37 @@ function ENT:OnNextStep()
 		end
 
 		if quest.global_hooks then
-			local global_hook_name = self:GetGlobalHookName()
 			for hook_type, func in pairs(quest.global_hooks) do
-				hook.Add(hook_type, global_hook_name, function(...)
+				local hook_name = slib.UUID()
+
+				hook.Add(hook_type, hook_name, function(...)
 					if not IsValid(self) then
-						hook.Remove(hook_type, global_hook_name)
+						hook_Remove(hook_type, hook_name)
 						return
 					end
 
 					func(self, ...)
 				end)
+
+				table_insert(self.hooks, { hook_type = hook_type, hook_name = hook_name, is_gloabl = true })
 			end
 		end
 	end
 
 	if quest.steps[step] and quest.steps[step].hooks then
 		for hook_type, func in pairs(quest.steps[step].hooks) do
-			hook.Add(hook_type, step_hook_name, function(...)
+			local hook_name = slib.UUID()
+
+			hook.Add(hook_type, hook_name, function(...)
 				if not IsValid(self) then
-					hook.Remove(hook_type, step_hook_name)
+					hook_Remove(hook_type, hook_name)
 					return
 				end
 
 				func(self, ...)
 			end)
+
+			table_insert(self.hooks, { hook_type = hook_type, hook_name = hook_name, is_gloabl = false })
 		end
 	end
 
@@ -702,21 +519,22 @@ end
 -------------------------------------
 -- @return bool - will return true if NPCs were found according to the conditions, otherwise false
 -------------------------------------
-function ENT:IsQuestNPC(npc, type, tag)
-	if IsValid(npc) then
-		for _, data in pairs(self.npcs) do
-			if data.npc == npc then
-				if type ~= nil and data.type ~= type then return false end
-				if tag ~= nil and data.tag ~= tag then return false end
-				return true
-			end
+function ENT:IsQuestNPC(npc, npcType, npcTag)
+	if not IsValid(npc) then return false end
+	for i = 1, #self.npcs do
+		local data = self.npcs[i]
+		if data.npc == npc then
+			if npcTag and data.tag ~= npcTag then return false end
+			if npcType and data.type ~= npcType then return false end
+			return true
 		end
 	end
 	return false
 end
 
 function ENT:IsAliveQuestNPC(npcType, npcTag)
-	for _, data in pairs(self.npcs) do
+	for i = 1, #self.npcs do
+		local data = self.npcs[i]
 		local npc = data.npc
 		if npcTag then
 			if data.tag == npcTag and IsValid(npc) and npc:Health() > 0 then return true end
@@ -737,12 +555,9 @@ end
 -- @return bool - will return true if the player belongs to the quest, otherwise false
 -------------------------------------
 function ENT:IsQuestPlayer(ply)
-	if IsValid(ply) and ply:IsPlayer() then
-		for _, questPlayer in pairs(self.players) do
-			if questPlayer == ply then
-				return true
-			end
-		end
+	if not IsValid(ply) or not ply:IsPlayer() then return end
+	for i = 1, #self.players do
+		if self.players[i] == ply then return true end
 	end
 	return false
 end
@@ -755,25 +570,23 @@ end
 -------------------------------------
 -- @return entity - will return the found entity, otherwise NULL
 -------------------------------------
-function ENT:GetQuestNpc(type, tag)
-	if type ~= nil then
-		if tag ~= nil then
-			for _, data in pairs(self.npcs) do
-				if data.type == type and data.tag == tag then
-					return data.npc
-				end
+function ENT:GetQuestNpc(npcType, npcTag)
+	if not npcType then return NULL end
+	if npcTag then
+		for _, data in pairs(self.npcs) do
+			if data.type == npcType and data.tag == npcTag then
+				return data.npc
 			end
-		else
-			local npcs = {}
-			for _, data in pairs(self.npcs) do
-				if data.type == type then
-					table.insert(npcs, data.npc)
-				end
-			end
-			return npcs
 		end
+	else
+		local npcs = {}
+		for _, data in pairs(self.npcs) do
+			if data.type == npcType then
+				table_insert(npcs, data.npc)
+			end
+		end
+		return npcs
 	end
-	return NULL
 end
 
 -------------------------------------
@@ -867,10 +680,12 @@ end
 function ENT:GetAllQuests()
 	local quest = self:GetQuest()
 	local quests = {}
+	local quests_in_storage = QuestSystem.Storage.Quests
 
-	for _, eQuest in ipairs(ents.FindByClass('quest_entity')) do
+	for i = #quests_in_storage, 1, -1 do
+		local eQuest = quests_in_storage[i]
 		if eQuest:GetQuest().id == quest.id then
-			table.insert(quests, eQuest)
+			table_insert(quests, eQuest)
 		end
 	end
 
