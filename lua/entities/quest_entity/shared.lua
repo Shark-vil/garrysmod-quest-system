@@ -292,11 +292,7 @@ function ENT:OnRemove()
 		table_remove(self.hooks, i)
 	end
 
-	if quest.is_event then
-		hook.Run('QSystem.EventStopped', self, quest)
-	else
-		hook.Run('QSystem.QuestStopped', self, quest)
-	end
+	hook.Run('QSystem.QuestStopped', self, quest)
 
 	table.RemoveValueBySeq(QuestSystem.Storage.Quests, self)
 end
@@ -311,6 +307,7 @@ function ENT:OnNextStep()
 	if not quest.steps then return end
 
 	local step = self:GetQuestStep()
+	hook.Run('QSystem.PreOnNextStep', self, step, quest)
 
 	if #self.points ~= 0 and quest.steps[step] and quest.steps[step].points then
 		for i = 1, #self.points do
@@ -414,11 +411,7 @@ function ENT:OnNextStep()
 		end
 	end
 
-	if quest.is_event then
-		hook.Run('QSystem.NextEventStep', self, step, quest)
-	else
-		hook.Run('QSystem.NextQuestStep', self, step, quest)
-	end
+	hook.Run('QSystem.PostOnNextStep', self, step, quest)
 end
 
 -------------------------------------

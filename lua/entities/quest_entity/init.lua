@@ -49,85 +49,9 @@ function ENT:SetStep(step)
 		if step ~= 'start' then
 			self:SetNWBool('is_first_start', false)
 		end
-
-		for i = #self.triggers, 1, -1 do
-			if not self.triggers[i].global then
-				table.remove(self.triggers, i)
-			end
-		end
-
-		if quest.steps[step] and quest.steps[step].triggers then
-			for trigger_name, tdata in pairs(quest.steps[step].triggers) do
-				for _, tdata_2 in ipairs(self.triggers) do
-					if tdata.name == tdata_2.name and tdata_2.global then
-						goto skip
-					end
-				end
-
-				local file_path = 'quest_system/triggers/' .. quest.id .. '/' .. game.GetMap() .. '/' .. trigger_name .. '.json'
-				if file.Exists(file_path, 'DATA') then
-					local trigger = util.JSONToTable(file.Read(file_path, 'DATA'))
-					table.insert(self.triggers, {
-						name = trigger_name,
-						trigger = trigger,
-						global = string.EndsWith(string.lower(trigger_name), 'global'),
-						step = step
-					})
-				end
-
-				::skip::
-			end
-
-			self:SyncTriggers()
-		end
-
-		for i = #self.points, 1, -1 do
-			if not self.points[i].global then
-				table.remove(self.points, i)
-			end
-		end
-
-		if quest.steps[step] and quest.steps[step].points then
-			for point_name, _ in pairs(quest.steps[step].points) do
-				for _, pdata in ipairs(self.points) do
-					if point_name == pdata.name and pdata.global then
-						goto skip
-					end
-				end
-
-				local file_path = 'quest_system/points/' .. quest.id .. '/' .. game.GetMap() .. '/' .. point_name .. '.json'
-				if file.Exists(file_path, 'DATA') then
-					local points = util.JSONToTable(file.Read(file_path, 'DATA'))
-					table.insert(self.points, {
-						name = point_name,
-						points = points,
-						global = string.EndsWith(string.lower(point_name), 'global'),
-						step = step
-					})
-				end
-
-				::skip::
-			end
-
-			self:SyncPoints()
-		end
-
-		if quest.steps[step] and quest.steps[step].structures then
-			for structure_id, method in pairs(quest.steps[step].structures) do
-				local spawn_id = QuestSystem:SpawnStructure(quest.id, structure_id)
-				if spawn_id ~= nil then
-					if isfunction(method) then
-						self.structures[structure_id] = spawn_id
-						method(eQuest, QuestSystem:GetStructure(spawn_id), spawn_id)
-					elseif isbool(method) and method == true then
-						self.structures[structure_id] = spawn_id
-					end
-				end
-			end
-
-			self:SyncStructures()
-		end
 	end
+
+	hook.Run('QSystem.PreSetStep', self, quest, step)
 
 	self:TimerCreate(function()
 		self:TimerCreate(function()
@@ -140,6 +64,8 @@ function ENT:SetStep(step)
 
 				self.StopThink = false
 				self:SetNWBool('StopThink', self.StopThink)
+
+				hook.Run('QSystem.PostSetStep', self, quest, step)
 
 				snet.InvokeAll('qsystem_on_next_step', self, step)
 				self:OnNextStep()

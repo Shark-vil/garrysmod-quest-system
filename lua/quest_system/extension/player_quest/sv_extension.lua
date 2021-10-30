@@ -5,22 +5,20 @@ local meta = FindMetaTable('Player')
 
 function meta:SaveQuest(quest_id, step)
 	local file_path = 'quest_system/players/' .. self:PlayerId()
-
-	if not file.Exists(file_path, 'DATA') then
-		file.CreateDir(file_path)
-	end
+	if not file.Exists(file_path, 'DATA') then file.CreateDir(file_path) end
 
 	file_path = file_path .. '/' .. quest_id .. '.json'
+
 	local quest = QuestSystem:GetQuest(quest_id)
 	step = step or 'start'
 
-	if quest ~= nil and quest.steps[step] ~= nil then
-		local data = {
+	if quest and quest.steps[step] then
+		local data_save = {
 			id = quest_id,
 			step = step
 		}
 
-		file.Write(file_path, util.TableToJSON(data))
+		file.Write(file_path, util.TableToJSON(data_save))
 
 		return true
 	end
@@ -30,7 +28,9 @@ end
 
 function meta:ReadQuest(quest_id)
 	local file_path = 'quest_system/players/' .. self:PlayerId() .. '/' .. quest_id .. '.json'
-	if file.Exists(file_path, 'DATA') then return util.JSONToTable(file.Read(file_path, 'DATA')) end
+	if file.Exists(file_path, 'DATA') then
+		return util.JSONToTable(file.Read(file_path, 'DATA'))
+	end
 
 	return nil
 end
@@ -176,18 +176,13 @@ end
 
 function meta:SetQuestStep(quest_id, step)
 	local quest_data = self:ReadQuest(quest_id)
+	if not quest_data then return end
 
-	if quest_data ~= nil then
-		local isSaved = self:SaveQuest(quest_id, step)
+	local is_saved = self:SaveQuest(quest_id, step)
+	if not is_saved then return end
 
-		if isSaved then
-			local ent = self:FindQuestEntity(quest_id)
+	local ent = self:FindQuestEntity(quest_id)
+	if not IsValid(ent) then return end
 
-			if IsValid(ent) then
-				ent:SetStep(step)
-			end
-		end
-	end
-
-	return false
+	ent:SetStep(step)
 end
