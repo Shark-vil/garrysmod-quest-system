@@ -169,17 +169,6 @@ end
 -------------------------------------
 -- Receives data from config by key.
 -------------------------------------
--- @param key string - config value identifier
--------------------------------------
--- @return any - will return data from the config or nil
--------------------------------------
-function QuestSystem:GetConfig(key)
-	return QuestSystem.cfg[key]
-end
-
--------------------------------------
--- Receives data from config by key.
--------------------------------------
 -- @param ply entity - player entity
 -- @param restiction table - quest restrictions table
 -------------------------------------
@@ -436,10 +425,9 @@ end
 -- @param msg any - custom message
 -------------------------------------
 function QuestSystem:Debug(msg)
-	if self:GetConfig('Debug') then
-		MsgN('[QSystem Debug][' .. tostring(self.debug_index) .. '] ' .. tostring(msg))
-		self.debug_index = self.debug_index + 1
-	end
+	if not GetConVar('qsystem_cfg_debug_mode'):GetBool() then return end
+	MsgN('[QSystem Debug][' .. tostring(self.debug_index) .. '] ' .. tostring(msg))
+	self.debug_index = self.debug_index + 1
 end
 
 function QuestSystem:IsExistsQuest(quest_id)

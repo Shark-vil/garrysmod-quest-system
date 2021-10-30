@@ -3,6 +3,18 @@ AddCSLuaFile('shared.lua')
 include('shared.lua')
 
 -------------------------------------
+-- An entity deletes itself if one of the conditions is violated.
+-------------------------------------
+-- Wiki - https://wiki.facepunch.com/gmod/ENTITY:Think
+-------------------------------------
+function ENT:Think()
+	if not self.isStarted then return end
+	if not IsValid(self:GetNPC()) or not IsValid(self:GetPlayer()) or self:NpcIsFear() then
+		self:Remove()
+	end
+end
+
+-------------------------------------
 -- Adds a dialog ID to a network variable.
 -------------------------------------
 -- @param id string - dialogue id

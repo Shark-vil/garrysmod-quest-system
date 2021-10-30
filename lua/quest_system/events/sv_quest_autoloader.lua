@@ -1,5 +1,5 @@
 hook.Add('SlibPlayerFirstSpawn', 'QSystem.QuestsAutoLoader', function(ply)
-	local delay = QuestSystem:GetConfig('DelayBetweenQuests')
+	local delay = GetConVar('qsystem_cfg_delay_between_quests'):GetInt()
 
 	if delay > 0 then
 		local file_path = 'quest_system/players_data/' .. ply:PlayerId() .. '/delay.json'
@@ -9,7 +9,6 @@ hook.Add('SlibPlayerFirstSpawn', 'QSystem.QuestsAutoLoader', function(ply)
 			ply:SetNWFloat('quest_delay', tonumber(current_delay, 10))
 		end
 	end
-
 
 	ply:EnableAllQuest()
 

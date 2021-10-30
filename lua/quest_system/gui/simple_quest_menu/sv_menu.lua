@@ -21,8 +21,8 @@ net.Receive('sv_qsystem_startquest', function(len, ply)
 
 	local id = net.ReadString()
 	if not QuestSystem:QuestIsValid(ply, id) then return end
-	local delay = QuestSystem:GetConfig('DelayBetweenQuests')
 
+	local delay = GetConVar('qsystem_cfg_delay_between_quests'):GetInt()
 	if delay > 0 then
 		local current_delay = ply:GetNWFloat('quest_delay')
 
