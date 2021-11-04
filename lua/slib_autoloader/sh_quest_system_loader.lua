@@ -46,6 +46,7 @@ script:using('extension/player_quest/sh_extension.lua')
 script:using('extension/player_quest/cl_extension.lua')
 script:using('extension/sv_entity_remove.lua')
 
+script:using('tools/sh_main.lua')
 script:using('tools/cl_main.lua')
 script:using('tools/trigger_editor/sv_trigger_editor.lua')
 script:using('tools/trigger_editor/cl_trigger_editor.lua')

@@ -1,7 +1,3 @@
-concommand.Add('qsystem_editor', function()
-	sgui.route('qsystem/editor')
-end)
-
 sgui.RouteRegister('qsystem/editor', function()
 	local all_quests = QuestSystem:GetAllQuests()
 
