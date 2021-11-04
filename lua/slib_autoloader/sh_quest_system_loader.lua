@@ -22,7 +22,7 @@ list.Set('NPC', NPC.Class, NPC)
 
 -- Main table for working with quests and events
 QuestSystem = QuestSystem or {}
-QuestSystem.VERSION = '1.1'
+QuestSystem.VERSION = '1.1.1'
 QuestSystem.Storage = QuestSystem.Storage or {}
 QuestSystem.Storage.Quests = QuestSystem.Storage.Quests or {}
 QuestSystem.Storage.Dialogues = QuestSystem.Storage.Dialogues or {}
