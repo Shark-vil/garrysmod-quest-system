@@ -105,7 +105,7 @@ end
 -- @return string - quest id
 -------------------------------------
 function ENT:GetQuestId()
-	return self:GetNWString('quest_id')
+	return self:slibGetVar('quest_id')
 end
 
 -------------------------------------
@@ -114,7 +114,7 @@ end
 -- @return string - step id
 -------------------------------------
 function ENT:GetQuestStep()
-	return self:GetNWString('step')
+	return self:slibGetVar('step')
 end
 
 -------------------------------------
@@ -123,7 +123,7 @@ end
 -- @return string - step id or empty string
 -------------------------------------
 function ENT:GetQuestOldStep()
-	return self:GetNWString('old_step')
+	return self:slibGetVar('old_step')
 end
 
 -------------------------------------

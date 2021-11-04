@@ -14,7 +14,7 @@ function ENT:SetQuest(eQuest)
 end
 
 function ENT:SetId(itemId)
-	self:SetNWString('item_id', itemId)
+	self:slibSetVar('item_id', itemId)
 end
 
 function ENT:GetQuestEntity()
@@ -22,5 +22,5 @@ function ENT:GetQuestEntity()
 end
 
 function ENT:GetItemId()
-	return self:GetNWString('item_id')
+	return self:slibGetVar('item_id')
 end

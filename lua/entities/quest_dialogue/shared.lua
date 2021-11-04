@@ -141,15 +141,15 @@ end
 -- @return table - dialogue data table
 -------------------------------------
 function ENT:GetDialogue()
-	if self:GetNWString('single_replic') ~= '' then
+	if self:slibGetVar('single_replic') ~= '' then
 		return {
-			name = self:GetNWString('single_replic_name'),
+			name = self:slibGetVar('single_replic_name'),
 			notFreeze = true,
 			notLook = true,
 			isBackground = self:GetNWBool('single_replic_is_background'),
 			steps = {
 				start = {
-					text = self:GetNWString('single_replic'),
+					text = self:slibGetVar('single_replic'),
 					delay = self:GetNWFloat('single_replic_delay'),
 					eventDelay = function(eDialogue)
 						if CLIENT then return end
@@ -170,7 +170,7 @@ end
 -- @return string - dialogue id
 -------------------------------------
 function ENT:GetDialogueID()
-	return self:GetNWString('id')
+	return self:slibGetVar('id')
 end
 
 -------------------------------------
@@ -179,7 +179,7 @@ end
 -- @return string - step id
 -------------------------------------
 function ENT:GetStepID()
-	return self:GetNWString('step_id')
+	return self:slibGetVar('step_id')
 end
 
 -------------------------------------
@@ -244,7 +244,7 @@ end
 -- @return string - will return a string with the data of a variable or nil
 -------------------------------------
 function ENT:GetPlayerValue(value_name)
-	local value = self:GetNWString('var_' .. value_name)
+	local value = self:slibGetVar('var_' .. value_name)
 
 	if value ~= nil and #value ~= 0 then
 		return value
@@ -258,7 +258,7 @@ function ENT:GetPlayerValue(value_name)
 
 			if file.Exists(file_path, 'DATA') then
 				value = file.Read(file_path, 'DATA')
-				self:SetNWString('var_' .. value_name, value)
+				self:slibSetVar('var_' .. value_name, value)
 				return value
 			end
 		end
@@ -314,14 +314,14 @@ function ENT:StartDialogue(ignore_npc_text, is_next)
 				return
 			end
 
-			if self:GetNWString('single_replic') ~= '' and (
+			if self:slibGetVar('single_replic') ~= '' and (
 				self:NpcIsFear() and not self:GetDialogue().isBackground
 			) then
 				self:Remove()
 				return
 			end
 
-			if not is_next and self:GetNWString('single_replic') == '' then
+			if not is_next and self:slibGetVar('single_replic') == '' then
 				local dialogue = self:GetDialogue()
 
 				if not dialogue.isBackground and not dialogue.notFreeze then

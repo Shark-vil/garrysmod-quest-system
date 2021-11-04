@@ -18,7 +18,7 @@ function ENT:SetQuest(quest_id, ply)
 			end
 		end)
 	end
-	self:SetNWString('quest_id', quest_id)
+	self:slibSetVar('quest_id', quest_id)
 end
 
 -------------------------------------
@@ -42,9 +42,9 @@ function ENT:SetStep(step)
 				return
 			end
 
-			self:SetNWString('old_step', old_step)
+			self:slibSetVar('old_step', old_step)
 		end
-		self:SetNWString('step', step)
+		self:slibSetVar('step', step)
 
 		if step ~= 'start' then
 			self:SetNWBool('is_first_start', false)
