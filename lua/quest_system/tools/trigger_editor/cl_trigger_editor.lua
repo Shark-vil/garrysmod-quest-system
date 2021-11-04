@@ -52,7 +52,7 @@ sgui.RouteRegister('qsystem/editor/quest/triggers', function(quest)
 			frame:Close()
 		end)
 	end
-end)
+end, { isAdmin = true})
 
 sgui.RouteRegister('qsystem/editor/quest/triggers/select', function(quest, trigger_name)
 	local weapon = LocalPlayer():GetWeapon(weapon_class)
@@ -161,4 +161,4 @@ sgui.RouteRegister('qsystem/editor/quest/triggers/select', function(quest, trigg
 	end
 
 	PanelManager:AddPanel(InfoButtonNo)
-end)
+end, { isAdmin = true})
