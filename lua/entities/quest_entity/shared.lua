@@ -105,7 +105,7 @@ end
 -- @return string - quest id
 -------------------------------------
 function ENT:GetQuestId()
-	return self:GetNWString('quest_id')
+	return self:slibGetVar('quest_id')
 end
 
 -------------------------------------
@@ -114,7 +114,7 @@ end
 -- @return string - step id
 -------------------------------------
 function ENT:GetQuestStep()
-	return self:GetNWString('step')
+	return self:slibGetVar('step')
 end
 
 -------------------------------------
@@ -123,7 +123,7 @@ end
 -- @return string - step id or empty string
 -------------------------------------
 function ENT:GetQuestOldStep()
-	return self:GetNWString('old_step')
+	return self:slibGetVar('old_step')
 end
 
 -------------------------------------
@@ -269,13 +269,13 @@ function ENT:Think()
 end
 
 -------------------------------------
--- Removes all dependencies when the entity is deleted, and also calls the step function - destruct.
+-- Removes all dependencies when the entity is deleted, and also calls the step function - onEnd.
 -------------------------------------
 -- Wiki - https://wiki.facepunch.com/gmod/ENTITY:OnRemove
 -------------------------------------
 function ENT:OnRemove()
 	local step = self:GetQuestStepTable()
-	if step and step.destruct then step.destruct(self) end
+	if step and step.onEnd then step.onEnd(self) end
 
 	if SERVER then
 		self:RemoveNPC()
@@ -292,11 +292,7 @@ function ENT:OnRemove()
 		table_remove(self.hooks, i)
 	end
 
-	if quest.is_event then
-		hook.Run('QSystem.EventStopped', self, quest)
-	else
-		hook.Run('QSystem.QuestStopped', self, quest)
-	end
+	hook.Run('QSystem.QuestStopped', self, quest)
 
 	table.RemoveValueBySeq(QuestSystem.Storage.Quests, self)
 end
@@ -311,6 +307,7 @@ function ENT:OnNextStep()
 	if not quest.steps then return end
 
 	local step = self:GetQuestStep()
+	hook.Run('QSystem.PreOnNextStep', self, step, quest)
 
 	if #self.points ~= 0 and quest.steps[step] and quest.steps[step].points then
 		for i = 1, #self.points do
@@ -332,7 +329,7 @@ function ENT:OnNextStep()
 			local name = tdata.name
 			local trigger = tdata.trigger
 			local trigger_functions = quest.steps[tdata.step].triggers[name]
-			local trigger_construct = trigger_functions.construct
+			local trigger_construct = trigger_functions.onStart
 
 			if trigger_construct and isfunction(trigger_construct) then
 				local center
@@ -414,11 +411,7 @@ function ENT:OnNextStep()
 		end
 	end
 
-	if quest.is_event then
-		hook.Run('QSystem.NextEventStep', self, step, quest)
-	else
-		hook.Run('QSystem.NextQuestStep', self, step, quest)
-	end
+	hook.Run('QSystem.PostOnNextStep', self, step, quest)
 end
 
 -------------------------------------

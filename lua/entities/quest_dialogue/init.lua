@@ -20,7 +20,7 @@ end
 -- @param id string - dialogue id
 -------------------------------------
 function ENT:SetDialogueID(id)
-	self:SetNWString('id', id)
+	self:slibSetVar('id', id)
 	hook.Run('QSystem.ParentDialogueId', self, id)
 end
 
@@ -30,7 +30,7 @@ end
 -- @param step_id string - dialogue step id
 -------------------------------------
 function ENT:SetStep(step_id)
-	self:SetNWString('step_id', step_id)
+	self:slibSetVar('step_id', step_id)
 	hook.Run('QSystem.ParentDialogueStepId', self, step_id)
 end
 
@@ -66,11 +66,11 @@ end
 -- @param text string - dialogue text
 -- @param delay number - window activity time
 -------------------------------------
-function ENT:SingleReplic(name, text, delay, is_background)
-	self:SetNWString('single_replic', text)
-	self:SetNWString('single_replic_name', name)
+function ENT:SingleReplic(name, text, delay, replic_type)
+	self:slibSetVar('single_replic', text)
+	self:slibSetVar('single_replic_name', name)
 	self:SetNWFloat('single_replic_delay', delay)
-	self:SetNWBool('single_replic_is_background', is_background)
+	self:SetNWBool('single_replic_type', replic_type)
 end
 
 -------------------------------------
@@ -102,11 +102,11 @@ function ENT:LoadPlayerValues()
 
 		for _, file_name in pairs(files_values) do
 			local value_name = string.Split(file_name, '.')
-			local value = self:GetNWString('var_' .. value_name[1])
+			local value = self:slibGetVar('var_' .. value_name[1])
 
-			if value == nil or #value == 0 then
+			if not value then
 				value = file.Read(file_path .. file_name, 'DATA')
-				self:SetNWString('var_' .. value_name[1], value)
+				self:slibSetVar('var_' .. value_name[1], value)
 			end
 		end
 	end
@@ -142,7 +142,7 @@ function ENT:SavePlayerValue(value_name, value, not_autoload)
 		file.Write(file_path, value)
 
 		if not not_autoload then
-			self:SetNWString('var_' .. value_name, value)
+			self:slibSetVar('var_' .. value_name, value)
 		end
 
 		return true

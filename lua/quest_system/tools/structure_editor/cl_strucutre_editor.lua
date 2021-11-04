@@ -64,7 +64,7 @@ sgui.RouteRegister('qsystem/editor/quest/structures', function(quest)
 			frame:Close()
 		end)
 	end
-end)
+end, { isAdmin = true})
 
 sgui.RouteRegister('qsystem/editor/quest/structures/select', function(quest, structure_name)
 	local weapon = LocalPlayer():GetWeapon(weapon_class)
@@ -228,4 +228,4 @@ sgui.RouteRegister('qsystem/editor/quest/structures/select', function(quest, str
 	end
 
 	PanelManager:AddPanel(InfoButtonNo)
-end)
+end, { isAdmin = true})

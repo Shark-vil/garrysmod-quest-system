@@ -11,61 +11,54 @@ QuestDialogue = {}
 -- @return bool - true if the entity matches validation, else false
 -------------------------------------
 function QuestDialogue:IsValidParentNPCDialogue(npc, ply, data)
-	local nice = true
+	local is_valid_parent = true
 
-	if data.class ~= nil then
-		if isstring(data.class) and data.class:lower() ~= npc:GetClass():lower() then
-			nice = false
-		end
+	if data.class then
+		is_valid_parent = false
+		local npc_class = npc:GetClass():lower()
 
-		if istable(data.class) then
-			for _, v in pairs(data.class) do
-				if v:lower() == npc:GetClass():lower() then
-					nice = true
-					break
-				else
-					nice = false
+		if isstring(data.class) and data.class:lower() == npc_class then
+			is_valid_parent = true
+		elseif istable(data.class) then
+			for _, v in ipairs(data.class) do
+				if v:lower() == npc_class then
+					is_valid_parent = true
 					break
 				end
 			end
 		end
 	end
 
-	if data.model ~= nil then
+	if is_valid_parent and data.model then
+		is_valid_parent = false
+		local npc_model = npc:GetModel():lower()
+
 		if isstring(data.model) then
-			if data.model:lower() ~= npc:GetModel():lower() then
-				nice = false
-			else
-				nice = true
+			if data.model:lower() == npc_model then
+				is_valid_parent = true
 			end
-		end
-
-		if istable(data.model) then
+		elseif istable(data.model) then
 			for _, v in pairs(data.model) do
-				if v:lower() == npc:GetModel():lower() then
-					nice = true
-					break
-				else
-					nice = false
+				if v:lower() == npc_model then
+					is_valid_parent = true
 					break
 				end
 			end
 		end
 	end
 
-	if data.condition ~= nil then
+	if is_valid_parent and data.condition then
 		local result = data.condition(ply, npc)
-
-		if result ~= nil and result == false then
-			nice = false
-		end
+		if isbool(result) and result == false then is_valid_parent = false end
 	end
 
-	if not data.autoParent then
-		nice = false
+	if isnumber(data.parent_chance) and not slib.chance(data.parent_chance) then
+		is_valid_parent = false
 	end
 
-	return nice
+	-- if not data.auto_parent then is_valid_parent = false end
+
+	return is_valid_parent
 end
 
 -------------------------------------
@@ -89,60 +82,22 @@ function QuestDialogue:GetAllDialogues()
 end
 
 -------------------------------------
--- Get a list of all registered dialogs of type "isRandomNpc".
--------------------------------------
--- @return table - list of all dialogs with IDs as keys
--------------------------------------
-function QuestDialogue:GetAllRandom()
-	local data = {}
-
-	for key, value in pairs(list.Get('QuestSystemDialogue')) do
-		if value.isRandomNpc then
-			data[key] = value
-		end
-	end
-
-	return data
-end
-
--------------------------------------
--- Get a list of all registered dialogs of type "isBackground".
--------------------------------------
--- @return table - list of all dialogs with IDs as keys
--------------------------------------
-function QuestDialogue:GetAllBackground()
-	local data = {}
-
-	for key, value in pairs(list.Get('QuestSystemDialogue')) do
-		if value.isBackground then
-			data[key] = value
-		end
-	end
-
-	return data
-end
-
--------------------------------------
 -- Automatic assignment of a dialogue ID for NPCs. Will not assign anything if checks fail.
 -------------------------------------
 -- @param npc entity - any entity, not necessarily an NPC
 -- @param ply entity - player entity
+-- @param ignore_valid bool - pass true, if you want to ignore the validation check
+-- @param ignore_random bool - pass true, if you want to ignore the randomness of the dialog assignment
+-- @param ignore_auto_parent_locker bool - if true, then removes the constraint "auto_parent"
 -------------------------------------
-function QuestDialogue:AutoParentToNPC(npc, ply)
+function QuestDialogue:AutoParentToNPC(npc, ply, ignore_valid, ignore_random, ignore_auto_parent_locker)
 	local dialogues = QuestDialogue:GetAllDialogues()
 
-	for key, data in pairs(dialogues) do
+	for key, data in pairs(table.shuffle(dialogues)) do
+		if not ignore_auto_parent_locker and not data.auto_parent then continue end
 		if self:IsValidParentNPCDialogue(npc, ply, data) then
-			local is_done = true
-
-			if data.randomNumber ~= nil and data.randomNumber > 0 and math.random(1, data.randomNumber) ~= 1 then
-				is_done = false
-			end
-
-			if is_done then
-				npc.npc_dialogue_id = data.id
-				break
-			end
+			npc.npc_dialogue_id = data.id
+			break
 		end
 	end
 end
@@ -159,17 +114,10 @@ end
 function QuestDialogue:ParentToNPC(id, npc, ply, ignore_valid, ignore_random)
 	local dialogue = QuestDialogue:GetDialogue(id)
 
-	if dialogue ~= nil then
-		if not self:IsValidParentNPCDialogue(npc, ply, dialogue) and not ignore_valid then return end
+	if not dialogue then return end
+	if not self:IsValidParentNPCDialogue(npc, ply, dialogue) and not ignore_valid then return end
 
-		if not ignore_random and dialogue.randomNumber ~= nil and dialogue.randomNumber > 0
-			and math.random(1, dialogue.randomNumber) ~= 1
-		then
-			return
-		end
-
-		npc.npc_dialogue_id = id
-	end
+	npc.npc_dialogue_id = id
 end
 
 -------------------------------------
@@ -208,12 +156,12 @@ end
 -- @param text string - dialogue text
 -- @param delay number - window activity time
 -------------------------------------
-function QuestDialogue:SingleReplic(ply, npc, name, text, delay, is_background)
-	is_background = is_background or false
+function QuestDialogue:SingleReplic(ply, npc, name, text, delay, replic_type)
+	replic_type = replic_type or 'overhead'
 	local dialogue_ent = ents.Create('quest_dialogue')
 	dialogue_ent:Spawn()
 	dialogue_ent:Activate()
-	dialogue_ent:SingleReplic(name, text, delay, is_background)
+	dialogue_ent:SingleReplic(name, text, delay, replic_type)
 	dialogue_ent:SetStep('start')
 	dialogue_ent:SetPlayer(ply)
 	dialogue_ent:SetNPC(npc)

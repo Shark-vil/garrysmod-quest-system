@@ -16,7 +16,7 @@ hook.Add('PlayerUse', 'QSystem.OpenNpcDialogueMenu', function(ply, npc)
 			if IsValid(ent) and ent:GetPlayer() == ply then
 				local dialogue = ent:GetDialogue()
 
-				if dialogue.isBackground then
+				if dialogue.type == 'overhead' then
 					if ent:GetNPC() == npc then return end
 				else
 					return

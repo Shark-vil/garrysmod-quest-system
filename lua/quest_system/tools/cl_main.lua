@@ -1,7 +1,3 @@
-concommand.Add('qsystem_editor', function()
-	sgui.route('qsystem/editor')
-end)
-
 sgui.RouteRegister('qsystem/editor', function()
 	local all_quests = QuestSystem:GetAllQuests()
 
@@ -26,7 +22,7 @@ sgui.RouteRegister('qsystem/editor', function()
 		sgui.route('qsystem/editor/quest', all_quests[pnl:GetColumnText(1)])
 		MainFrame:Close()
 	end
-end)
+end, { isAdmin = true})
 
 sgui.RouteRegister('qsystem/editor/quest', function(quest)
 	local is_back = true
@@ -86,4 +82,4 @@ sgui.RouteRegister('qsystem/editor/quest', function(quest)
 
 		MainFrame:Close()
 	end
-end)
+end, { isAdmin = true})

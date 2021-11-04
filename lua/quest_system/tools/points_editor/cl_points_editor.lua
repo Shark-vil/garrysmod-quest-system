@@ -52,7 +52,7 @@ sgui.RouteRegister('qsystem/editor/quest/points', function(quest)
 			frame:Close()
 		end)
 	end
-end)
+end, { isAdmin = true})
 
 sgui.RouteRegister('qsystem/editor/quest/points/select', function(quest, points_name)
 	local weapon = LocalPlayer():GetWeapon(weapon_class)
@@ -136,4 +136,4 @@ sgui.RouteRegister('qsystem/editor/quest/points/select', function(quest, points_
 	end
 
 	PanelManager:AddPanel(InfoButtonNo)
-end)
+end, { isAdmin = true})

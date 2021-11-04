@@ -22,7 +22,7 @@ list.Set('NPC', NPC.Class, NPC)
 
 -- Main table for working with quests and events
 QuestSystem = QuestSystem or {}
-QuestSystem.VERSION = '1.1'
+QuestSystem.VERSION = '1.1.1'
 QuestSystem.Storage = QuestSystem.Storage or {}
 QuestSystem.Storage.Quests = QuestSystem.Storage.Quests or {}
 QuestSystem.Storage.Dialogues = QuestSystem.Storage.Dialogues or {}
@@ -46,6 +46,7 @@ script:using('extension/player_quest/sh_extension.lua')
 script:using('extension/player_quest/cl_extension.lua')
 script:using('extension/sv_entity_remove.lua')
 
+script:using('tools/sh_main.lua')
 script:using('tools/cl_main.lua')
 script:using('tools/trigger_editor/sv_trigger_editor.lua')
 script:using('tools/trigger_editor/cl_trigger_editor.lua')
@@ -85,6 +86,9 @@ script:using('modules/services/cl_remove_quest_sounds_service.lua')
 script:using('modules/services/sv_npc_damage_service.lua')
 script:using('modules/services/sv_should_collider_service.lua')
 script:using('modules/services/sv_always_pvs_service.lua')
+script:using('modules/quest_entity/sv_init_points.lua')
+script:using('modules/quest_entity/sv_init_structures.lua')
+script:using('modules/quest_entity/sv_init_triggers.lua')
 
 script:using('gui/simple_quest_menu/sv_menu.lua')
 script:using('gui/simple_quest_menu/cl_menu.lua')
