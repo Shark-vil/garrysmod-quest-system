@@ -38,7 +38,7 @@ function ENT:SetStep(step)
 	if quest.steps[step] then
 		local old_step = self:GetQuestStep()
 		if old_step and #old_step ~= 0 then
-			if quest.steps[old_step].destruct and quest.steps[old_step].destruct(self) then
+			if quest.steps[old_step].onEnd and quest.steps[old_step].onEnd(self) then
 				return
 			end
 

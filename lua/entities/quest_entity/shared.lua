@@ -269,13 +269,13 @@ function ENT:Think()
 end
 
 -------------------------------------
--- Removes all dependencies when the entity is deleted, and also calls the step function - destruct.
+-- Removes all dependencies when the entity is deleted, and also calls the step function - onEnd.
 -------------------------------------
 -- Wiki - https://wiki.facepunch.com/gmod/ENTITY:OnRemove
 -------------------------------------
 function ENT:OnRemove()
 	local step = self:GetQuestStepTable()
-	if step and step.destruct then step.destruct(self) end
+	if step and step.onEnd then step.onEnd(self) end
 
 	if SERVER then
 		self:RemoveNPC()
