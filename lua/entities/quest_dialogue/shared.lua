@@ -35,7 +35,7 @@ function ENT:Initialize()
 			local dialogue = self:GetDialogue()
 			if not dialogue then return end
 
-			if not dialogue.isBackground then
+			if dialogue.type ~= 'overhead' then
 				hook.Remove('PostDrawOpaqueRenderables', self)
 				return
 			end
@@ -125,7 +125,7 @@ function ENT:OnRemove()
 
 		local dialogue = self:GetDialogue()
 
-		if not dialogue.isBackground and not dialogue.notFreeze then
+		if dialogue.type ~= 'overhead' and not dialogue.dont_lock_control then
 			self:GetPlayer():Freeze(false)
 		end
 	end
@@ -144,9 +144,9 @@ function ENT:GetDialogue()
 	if self:slibGetVar('single_replic') ~= '' then
 		return {
 			name = self:slibGetVar('single_replic_name'),
-			notFreeze = true,
+			dont_lock_control = true,
 			notLook = true,
-			isBackground = self:GetNWBool('single_replic_is_background'),
+			type = self:GetNWBool('single_replic_type'),
 			steps = {
 				start = {
 					text = self:slibGetVar('single_replic'),
@@ -315,7 +315,7 @@ function ENT:StartDialogue(ignore_npc_text, is_next)
 			end
 
 			if self:slibGetVar('single_replic') ~= '' and (
-				self:NpcIsFear() and not self:GetDialogue().isBackground
+				self:NpcIsFear() and self:GetDialogue().type ~= 'overhead'
 			) then
 				self:Remove()
 				return
@@ -324,7 +324,7 @@ function ENT:StartDialogue(ignore_npc_text, is_next)
 			if not is_next and self:slibGetVar('single_replic') == '' then
 				local dialogue = self:GetDialogue()
 
-				if not dialogue.isBackground and not dialogue.notFreeze then
+				if dialogue.type ~= 'overhead' and not dialogue.dont_lock_control then
 					ply:Freeze(true)
 					QuestService:WaitingNPCWalk(self:GetNPC(), true)
 				end

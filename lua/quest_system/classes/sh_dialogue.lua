@@ -52,11 +52,11 @@ function QuestDialogue:IsValidParentNPCDialogue(npc, ply, data)
 		if isbool(result) and result == false then is_valid_parent = false end
 	end
 
-	if isnumber(data.randomNumber) and not slib.chance(data.randomNumber) then
+	if isnumber(data.parent_chance) and not slib.chance(data.parent_chance) then
 		is_valid_parent = false
 	end
 
-	-- if not data.autoParent then is_valid_parent = false end
+	-- if not data.auto_parent then is_valid_parent = false end
 
 	return is_valid_parent
 end
@@ -88,13 +88,13 @@ end
 -- @param ply entity - player entity
 -- @param ignore_valid bool - pass true, if you want to ignore the validation check
 -- @param ignore_random bool - pass true, if you want to ignore the randomness of the dialog assignment
--- @param ignore_auto_parent_locker bool - if true, then removes the constraint "autoParent"
+-- @param ignore_auto_parent_locker bool - if true, then removes the constraint "auto_parent"
 -------------------------------------
 function QuestDialogue:AutoParentToNPC(npc, ply, ignore_valid, ignore_random, ignore_auto_parent_locker)
 	local dialogues = QuestDialogue:GetAllDialogues()
 
 	for key, data in pairs(table.shuffle(dialogues)) do
-		if not ignore_auto_parent_locker and not data.autoParent then continue end
+		if not ignore_auto_parent_locker and not data.auto_parent then continue end
 		if self:IsValidParentNPCDialogue(npc, ply, data) then
 			npc.npc_dialogue_id = data.id
 			break
@@ -156,12 +156,12 @@ end
 -- @param text string - dialogue text
 -- @param delay number - window activity time
 -------------------------------------
-function QuestDialogue:SingleReplic(ply, npc, name, text, delay, is_background)
-	is_background = is_background or false
+function QuestDialogue:SingleReplic(ply, npc, name, text, delay, replic_type)
+	replic_type = replic_type or 'overhead'
 	local dialogue_ent = ents.Create('quest_dialogue')
 	dialogue_ent:Spawn()
 	dialogue_ent:Activate()
-	dialogue_ent:SingleReplic(name, text, delay, is_background)
+	dialogue_ent:SingleReplic(name, text, delay, replic_type)
 	dialogue_ent:SetStep('start')
 	dialogue_ent:SetPlayer(ply)
 	dialogue_ent:SetNPC(npc)

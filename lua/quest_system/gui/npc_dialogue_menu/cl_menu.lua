@@ -19,7 +19,7 @@ hook.Add('CalcView', 'QSystem.DialogueNPCCamera', function(ply, pos, angles, fov
 	then
 		local dialogue = eDialogue:GetDialogue()
 
-		if not dialogue.isBackground and not dialogue.notLook then
+		if dialogue.type ~= 'overhead' and not dialogue.notLook then
 			local npc = eDialogue:GetNPC()
 			local n_origin = npc:EyePos() - (npc:GetAngles():Forward() * -35) - Vector(0, 0, 10)
 			local n_angles = npc:EyeAngles() - Angle(0, 180, 0)
@@ -47,7 +47,7 @@ end)
 hook.Add('PreDrawPlayerHands', 'QSystem.eDialogueCamera', function()
 	if IsValid(eDialogue) then
 		local dialogue = eDialogue:GetDialogue()
-		if not dialogue.isBackground and not dialogue.notLook then
+		if dialogue.type ~= 'overhead' and not dialogue.notLook then
 			return true
 		end
 	end
@@ -56,7 +56,7 @@ end)
 hook.Add('PreDrawViewModel', 'QSystem.eDialogueCamera', function()
 	if IsValid(eDialogue) then
 		local dialogue = eDialogue:GetDialogue()
-		if not dialogue.isBackground and not dialogue.notLook then
+		if dialogue.type ~= 'overhead' and not dialogue.notLook then
 			return true
 		end
 	end
@@ -93,7 +93,7 @@ OpenDialoguNpc = function(ignore_npc_text)
 		MainPanel:SetSize(width, height)
 		MainPanel:SetPos(pos_x, pos_y)
 		MainPanel:SetTitle('')
-		if not dialogue.notFreeze then
+		if not dialogue.dont_lock_control then
 				MainPanel:MakePopup()
 		end
 		MainPanel.OnKeyCodePressed = function(self, keyCode)
@@ -324,7 +324,7 @@ snet.Callback('cl_qsystem_set_dialogue_id', function(ply, ent, ignore_npc_text, 
 	eDialogue:StartDialogue(ignore_npc_text)
 
 	local dialogue = ent:GetDialogue()
-	if not dialogue.isBackground then
+	if dialogue.type ~= 'overhead' then
 		if not is_next and not dialogue.notLook then
 			cam_delay = CurTime() + 1
 		end

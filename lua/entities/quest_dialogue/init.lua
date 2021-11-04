@@ -66,11 +66,11 @@ end
 -- @param text string - dialogue text
 -- @param delay number - window activity time
 -------------------------------------
-function ENT:SingleReplic(name, text, delay, is_background)
+function ENT:SingleReplic(name, text, delay, replic_type)
 	self:slibSetVar('single_replic', text)
 	self:slibSetVar('single_replic_name', name)
 	self:SetNWFloat('single_replic_delay', delay)
-	self:SetNWBool('single_replic_is_background', is_background)
+	self:SetNWBool('single_replic_type', replic_type)
 end
 
 -------------------------------------
