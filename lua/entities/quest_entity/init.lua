@@ -58,7 +58,7 @@ function ENT:SetStep(step)
 			snet.InvokeAll('qsystem_on_construct', self, quest.id, step)
 
 			self:TimerCreate(function()
-				if quest.steps[step] and quest.steps[step].construct and quest.steps[step].construct(self) then
+				if quest.steps[step] and quest.steps[step].onStart and quest.steps[step].onStart(self) then
 					return
 				end
 

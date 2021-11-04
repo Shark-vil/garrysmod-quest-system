@@ -329,7 +329,7 @@ function ENT:OnNextStep()
 			local name = tdata.name
 			local trigger = tdata.trigger
 			local trigger_functions = quest.steps[tdata.step].triggers[name]
-			local trigger_construct = trigger_functions.construct
+			local trigger_construct = trigger_functions.onStart
 
 			if trigger_construct and isfunction(trigger_construct) then
 				local center
