@@ -255,8 +255,11 @@ function ENT:GetPlayerValue(value_name)
 		local ply = self:GetPlayer()
 
 		if IsValid(ply) then
+			local dialogue_id = self:GetDialogueID()
+			if not dialogue_id then return nil end
+
 			local file_path = 'quest_system/dialogue/' .. ply:PlayerId()
-			file_path = file_path .. '/' .. self:GetDialogueID()
+			file_path = file_path .. '/' .. dialogue_id
 			file_path = file_path .. '/' .. value_name .. '.txt'
 
 			if file.Exists(file_path, 'DATA') then
