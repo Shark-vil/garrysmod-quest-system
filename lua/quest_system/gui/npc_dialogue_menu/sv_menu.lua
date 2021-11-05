@@ -11,40 +11,50 @@ hook.Add('PlayerSpawnedProp', 'QSystem.PlayerSpawnedProp', function(ply, model, 
 end)
 
 hook.Add('PlayerUse', 'QSystem.OpenNpcDialogueMenu', function(ply, npc)
-	if IsValid(npc) then
-		for _, ent in ipairs(ents.FindByClass('quest_dialogue')) do
-			if IsValid(ent) and ent:GetPlayer() == ply then
-				local dialogue = ent:GetDialogue()
+	if not IsValid(npc) then return end
 
-				if dialogue.type == 'overhead' then
-					if ent:GetNPC() == npc then return end
-				else
-					return
-				end
-			end
-		end
+	ply.npc_dialogue_delay = ply.npc_dialogue_delay or 0
+	if ply.npc_dialogue_delay > RealTime() then return end
 
-		local id = npc.npc_dialogue_id
-
-		if id ~= nil then
-			local dialogue = QuestDialogue:GetDialogue(id)
-			if not QuestSystem:CheckRestiction(ply, dialogue.restriction) then return end
-			local dialogue_ent = ents.Create('quest_dialogue')
-			dialogue_ent:SetPos(ply:GetPos())
-			dialogue_ent:Spawn()
-			dialogue_ent:Activate()
-			dialogue_ent:SetDialogueID(id)
-			dialogue_ent:SetStep('start')
-			dialogue_ent:SetPlayer(ply)
-			dialogue_ent:SetNPC(npc)
-			dialogue_ent:StartDialogue()
-			ply.npc_dialogue_delay = RealTime() + 1
+	for _, eDialogue in ipairs(QuestSystem.Storage.Dialogues) do
+		if IsValid(eDialogue) and eDialogue:GetNPC() == npc then
+			local dialogue = eDialogue:GetDialogue()
+			if dialogue and (dialogue.singleton or dialogue.overhead) then return end
+			if eDialogue:GetPlayer() == ply then return end
 		end
 	end
+
+	local dialogue_id = npc.npc_dialogue_id
+	if not dialogue_id or not isstring(dialogue_id) then return end
+
+	local dialogue = QuestDialogue:GetDialogue(dialogue_id)
+	if not QuestSystem:CheckRestiction(ply, dialogue.restriction) then return end
+
+	local eDialogueEntity = ents.Create('quest_dialogue')
+	eDialogueEntity:SetPos(ply:GetPos())
+	eDialogueEntity:Spawn()
+	eDialogueEntity:Activate()
+	eDialogueEntity:SetDialogueID(dialogue_id)
+	eDialogueEntity:SetPlayer(ply)
+	eDialogueEntity:SetNPC(npc)
+
+	snet.Invoke('cl_qsystem_instance_dialogue', ply, eDialogueEntity)
+
+	ply.npc_dialogue_delay = RealTime() + 1
+end)
+
+snet.Callback('sv_qsystem_instance_dialogue', function(ply, eDialogueEntity)
+	if not IsValid(eDialogueEntity) or eDialogueEntity:GetPlayer() ~= ply then return end
+	eDialogueEntity:SetStep('start')
+end)
+
+snet.Callback('sv_qsystem_start_dialogue', function(ply, eDialogueEntity)
+	if not IsValid(eDialogueEntity) or eDialogueEntity:GetPlayer() ~= ply then return end
+	eDialogueEntity:StartDialogue()
 end)
 
 net.Receive('sv_qsystem_close_npc_dialogue_menu', function(len, ply)
-	for _, ent in pairs(ents.FindByClass('quest_dialogue')) do
+	for _, ent in ipairs(QuestSystem.Storage.Dialogues) do
 		if IsValid(ent) and ent:GetPlayer() == ply then
 			ent:Remove()
 		end
@@ -52,7 +62,7 @@ net.Receive('sv_qsystem_close_npc_dialogue_menu', function(len, ply)
 end)
 
 net.Receive('sv_qsystem_dialogue_answer_select', function(len, ply)
-	for _, ent in pairs(ents.FindByClass('quest_dialogue')) do
+	for _, ent in ipairs(QuestSystem.Storage.Dialogues) do
 		if IsValid(ent) and ent:GetPlayer() == ply then
 			local id = net.ReadInt(10)
 			local step = ent:GetStep()
@@ -72,7 +82,7 @@ net.Receive('sv_qsystem_dialogue_answer_select', function(len, ply)
 end)
 
 net.Receive('sv_qsystem_dialogue_answer_onclick', function(len, ply)
-	for _, ent in pairs(ents.FindByClass('quest_dialogue')) do
+	for _, ent in ipairs(QuestSystem.Storage.Dialogues) do
 		if IsValid(ent) and ent:GetPlayer() == ply then
 			local step = ent:GetStep()
 			if step.eventDelay ~= nil and not step.delay then
