@@ -40,7 +40,7 @@ end
 -- @param ply entity - player entity
 -------------------------------------
 function ENT:SetPlayer(ply)
-	self:SetNWEntity('player', ply)
+	self:slibSetVar('player', ply)
 	hook.Run('QSystem.ParentDialoguePlayer', self, ply)
 end
 
@@ -51,7 +51,7 @@ end
 -- @param npc entity - entity of the interlocutor
 -------------------------------------
 function ENT:SetNPC(npc)
-	self:SetNWEntity('npc', npc)
+	self:slibSetVar('npc', npc)
 	hook.Run('QSystem.ParentDialogueNPC', self, npc)
 end
 
@@ -66,11 +66,11 @@ end
 -- @param text string - dialogue text
 -- @param delay number - window activity time
 -------------------------------------
-function ENT:SingleReplic(name, text, delay, replic_type)
+function ENT:SingleReplic(name, text, delay, overhead)
 	self:slibSetVar('single_replic', text)
 	self:slibSetVar('single_replic_name', name)
-	self:SetNWFloat('single_replic_delay', delay)
-	self:SetNWBool('single_replic_type', replic_type)
+	self:slibSetVar('single_replic_delay', delay)
+	self:slibSetVar('single_replic_overhead', overhead)
 end
 
 -------------------------------------

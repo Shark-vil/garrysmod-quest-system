@@ -35,15 +35,17 @@ function ENT:Initialize()
 			local dialogue = self:GetDialogue()
 			if not dialogue then return end
 
-			if dialogue.type ~= 'overhead' then
+			if not dialogue.overhead then
 				hook.Remove('PostDrawOpaqueRenderables', self)
 				return
 			end
 
 			if npc:GetPos():Distance(LocalPlayer():GetPos()) < 800 then
 				if not lines then
-					lines = {}
 					local step = self:GetStep()
+					if not step then return end
+
+					lines = {}
 					local text = ''
 
 					if step.text ~= nil then
@@ -125,7 +127,7 @@ function ENT:OnRemove()
 
 		local dialogue = self:GetDialogue()
 
-		if dialogue.type ~= 'overhead' and not dialogue.dont_lock_control then
+		if not dialogue.overhead and not dialogue.dont_lock_control then
 			self:GetPlayer():Freeze(false)
 		end
 	end
@@ -141,16 +143,16 @@ end
 -- @return table - dialogue data table
 -------------------------------------
 function ENT:GetDialogue()
-	if self:slibGetVar('single_replic') ~= '' then
+	if isstring(self:slibGetVar('single_replic')) then
 		return {
 			name = self:slibGetVar('single_replic_name'),
 			dont_lock_control = true,
-			notLook = true,
-			type = self:GetNWBool('single_replic_type'),
+			dont_focus_on_target = true,
+			overhead = self:slibGetVar('single_replic_overhead'),
 			steps = {
 				start = {
 					text = self:slibGetVar('single_replic'),
-					delay = self:GetNWFloat('single_replic_delay'),
+					delay = self:slibGetVar('single_replic_delay'),
 					eventDelay = function(eDialogue)
 						if CLIENT then return end
 						eDialogue:Stop()
@@ -189,6 +191,7 @@ end
 -------------------------------------
 function ENT:GetStep()
 	local step = self:GetDialogue().steps[self:GetStepID()]
+	if not step then return end
 
 	if step.answers and isfunction(step.answers) then
 		local func = step.answers
@@ -209,7 +212,7 @@ end
 -- @return entity - player entity
 -------------------------------------
 function ENT:GetPlayer()
-	return self:GetNWEntity('player')
+	return self:slibGetVar('player')
 end
 
 -------------------------------------
@@ -218,7 +221,7 @@ end
 -- @return entity - specific entity
 -------------------------------------
 function ENT:GetNPC()
-	return self:GetNWEntity('npc')
+	return self:slibGetVar('npc')
 end
 
 -------------------------------------
@@ -267,6 +270,24 @@ function ENT:GetPlayerValue(value_name)
 	return nil
 end
 
+function ENT:InittDialogueStep()
+	local step = self:GetStep()
+
+	if step.eventDelay and step.delay then
+		timer.Simple(step.delay + 0.5, function()
+			if not IsValid(self) then return end
+			step.eventDelay(self)
+		end)
+	end
+
+	if step.event then
+		step.event(self)
+	end
+
+	self.isStarted = true
+	self.isFirst = false
+end
+
 -------------------------------------
 -- Starts a dialogue between the player and the interlocutor.
 -------------------------------------
@@ -278,69 +299,30 @@ function ENT:StartDialogue(ignore_npc_text, is_next)
 	is_next = is_next or false
 	local ply = self:GetPlayer()
 
-	local function initStep()
-		local step = self:GetStep()
-
-		if step.eventDelay ~= nil and step.delay then
-			timer.Simple(step.delay + 0.5, function()
-				if not IsValid(self) then return end
-				step.eventDelay(self)
-			end)
-		end
-
-		if step.event ~= nil then
-			step.event(self)
-		end
-
-		self.isStarted = true
-		self.isFirst = false
-	end
-
-	local max_validator_pass = 5
-	local current_pass = 0
-
-	local function validator()
-		if not IsValid(self) then return end
-		current_pass = current_pass + 1
-
-		snet.IsValidForClient(ply, function(_, success)
-			if not success then
-				if current_pass == max_validator_pass then
-					self:Remove()
-					return
-				end
-
-				timer.Simple(0.1, validator)
-				return
-			end
-
-			if self:slibGetVar('single_replic') ~= '' and (
-				self:NpcIsFear() and self:GetDialogue().type ~= 'overhead'
-			) then
-				self:Remove()
-				return
-			end
-
-			if not is_next and self:slibGetVar('single_replic') == '' then
-				local dialogue = self:GetDialogue()
-
-				if dialogue.type ~= 'overhead' and not dialogue.dont_lock_control then
-					ply:Freeze(true)
-					QuestService:WaitingNPCWalk(self:GetNPC(), true)
-				end
-
-				self:LoadPlayerValues()
-			end
-
-			snet.Invoke('cl_qsystem_set_dialogue_id', ply, self, ignore_npc_text, is_next)
-			initStep()
-		end, 'dialogue', self)
-	end
-
 	if SERVER then
-		validator()
+		local single_replic_exists = self:slibGetVar('single_replic') ~= ''
+
+		if single_replic_exists and self:NpcIsFear() and not self:GetDialogue().overhead then
+			self:Remove()
+			return
+		end
+
+		if not is_next and not single_replic_exists then
+			local dialogue = self:GetDialogue()
+
+			if not dialogue.overhead and not dialogue.dont_lock_control then
+				ply:Freeze(true)
+				QuestService:WaitingNPCWalk(self:GetNPC(), true)
+			end
+
+			self:LoadPlayerValues()
+		end
+
+		snet.Request('cl_qsystem_set_dialogue_id', self, ignore_npc_text, is_next).Complete(function()
+			self:InittDialogueStep()
+		end).Invoke(ply)
 	else
-		initStep()
+		self:InittDialogueStep()
 	end
 end
 

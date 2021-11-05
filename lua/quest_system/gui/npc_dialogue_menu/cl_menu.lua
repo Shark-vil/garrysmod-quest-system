@@ -10,19 +10,29 @@ local Color_Font = Color(0, 0, 0)
 local Color_Default = Color(224, 224, 224)
 local Color_Focus = Color(143, 206, 167)
 local Color_Click = Color(45, 112, 59)
-
 local cam_anim = 0
 local cam_delay = 0
+
 hook.Add('CalcView', 'QSystem.DialogueNPCCamera', function(ply, pos, angles, fov)
-	if IsValid(eDialogue) and IsValid(eDialogue:GetNPC())
-		and cam_delay < CurTime()
-	then
+	if IsValid(eDialogue) and IsValid(eDialogue:GetNPC()) and cam_delay < CurTime() then
 		local dialogue = eDialogue:GetDialogue()
 
-		if dialogue.type ~= 'overhead' and not dialogue.notLook then
+		if not dialogue.overhead and not dialogue.dont_focus_on_target then
 			local npc = eDialogue:GetNPC()
-			local n_origin = npc:EyePos() - (npc:GetAngles():Forward() * -35) - Vector(0, 0, 10)
-			local n_angles = npc:EyeAngles() - Angle(0, 180, 0)
+			local n_origin
+			local n_angles
+
+			if dialogue.focus_offset_position and isvector(dialogue.focus_offset_position) then
+				n_origin = npc:GetPos() + dialogue.focus_offset_position
+			else
+				n_origin = npc:EyePos() - (npc:GetAngles():Forward() * -35) - Vector(0, 0, 10)
+			end
+
+			if dialogue.focus_offset_angles and isangle(dialogue.focus_offset_angles) then
+				n_angles = npc:GetAngles() + dialogue.focus_offset_angles
+			else
+				n_angles = npc:EyeAngles() - Angle(0, 180, 0)
+			end
 
 			local view = {
 				origin = LerpVector(cam_anim, pos, n_origin),
@@ -47,7 +57,7 @@ end)
 hook.Add('PreDrawPlayerHands', 'QSystem.eDialogueCamera', function()
 	if IsValid(eDialogue) then
 		local dialogue = eDialogue:GetDialogue()
-		if dialogue.type ~= 'overhead' and not dialogue.notLook then
+		if not dialogue.overhead and not dialogue.dont_focus_on_target then
 			return true
 		end
 	end
@@ -56,7 +66,7 @@ end)
 hook.Add('PreDrawViewModel', 'QSystem.eDialogueCamera', function()
 	if IsValid(eDialogue) then
 		local dialogue = eDialogue:GetDialogue()
-		if dialogue.type ~= 'overhead' and not dialogue.notLook then
+		if not dialogue.overhead and not dialogue.dont_focus_on_target then
 			return true
 		end
 	end
@@ -93,8 +103,8 @@ OpenDialoguNpc = function(ignore_npc_text)
 		MainPanel:SetSize(width, height)
 		MainPanel:SetPos(pos_x, pos_y)
 		MainPanel:SetTitle('')
-		if not dialogue.dont_lock_control then
-				MainPanel:MakePopup()
+		if not dialogue.dont_lock_control or not step.delay or not isnumber(step.delay) then
+			MainPanel:MakePopup()
 		end
 		MainPanel.OnKeyCodePressed = function(self, keyCode)
 			if keyCode == KEY_TAB then
@@ -104,7 +114,10 @@ OpenDialoguNpc = function(ignore_npc_text)
 			end
 		end
 		MainPanel.Paint = function(self, _width, _height)
-			if not IsValid(eDialogue) then self:Close() return end
+			if not IsValid(eDialogue) or LocalPlayer():Health() <= 0 then
+				self:Close()
+				return
+			end
 
 			if background_texture ~= nil then
 				surface.SetDrawColor(255, 255, 255, 255)
@@ -174,6 +187,7 @@ end
 
 OpenDialogueMenu = function(npc_name)
 	local step = eDialogue:GetStep()
+
 	if step.answers ~= nil then
 		local dont_send = false
 		local mpx, mpy = ScrW() / 2, 250
@@ -196,6 +210,11 @@ OpenDialogueMenu = function(npc_name)
 			end
 		end
 		MainPanel.Paint = function(self, width, height)
+			if not IsValid(eDialogue) or LocalPlayer():Health() <= 0 then
+				self:Close()
+				return
+			end
+
 			if background_texture ~= nil then
 				surface.SetDrawColor(255, 255, 255, 255)
 				surface.SetMaterial(background_texture)
@@ -213,10 +232,6 @@ OpenDialogueMenu = function(npc_name)
 			surface.DrawRect(width - 2, 0, 2, horizontal_line_size)
 			surface.DrawRect(0, height - horizontal_line_size, 2, horizontal_line_size)
 			surface.DrawRect(width - 2, height - horizontal_line_size, 2, horizontal_line_size)
-
-			if not IsValid(eDialogue) then
-				self:Close()
-			end
 		end
 
 		local AnswerOptions = vgui.Create('DScrollPanel', MainPanel)
@@ -319,18 +334,25 @@ OpenDialogueMenu = function(npc_name)
 	end
 end
 
-snet.Callback('cl_qsystem_set_dialogue_id', function(ply, ent, ignore_npc_text, is_next)
-	eDialogue = ent
+snet.Callback('cl_qsystem_set_dialogue_id', function(ply, eDialogueEntity, ignore_npc_text, is_next)
+	eDialogue = eDialogueEntity
 	eDialogue:StartDialogue(ignore_npc_text)
 
-	local dialogue = ent:GetDialogue()
-	if dialogue.type ~= 'overhead' then
-		if not is_next and not dialogue.notLook then
+	local dialogue = eDialogue:GetDialogue()
+	if not dialogue.overhead then
+		if not is_next and not dialogue.dont_focus_on_target then
 			cam_delay = CurTime() + 1
 		end
 		OpenDialoguNpc(ignore_npc_text)
 	end
-end).Validator(SNET_ENTITY_VALIDATOR).Register()
+end).Validator(SNET_ENTITY_VALIDATOR)
+
+snet.Callback('cl_qsystem_instance_dialogue', function(ply, eDialogueEntity)
+	eDialogueEntity:slibOnInstanceVarCallback('step_id', function()
+		snet.InvokeServer('sv_qsystem_start_dialogue', eDialogueEntity)
+	end)
+	snet.InvokeServer('sv_qsystem_instance_dialogue', eDialogueEntity)
+end).Validator(SNET_ENTITY_VALIDATOR)
 
 snet.RegisterValidator('dialogue', function(ply, uid, ent)
 	if not IsValid(ent) then return false end
