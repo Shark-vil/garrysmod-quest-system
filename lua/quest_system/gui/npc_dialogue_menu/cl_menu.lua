@@ -132,6 +132,7 @@ OpenDialoguNpc = function(ignore_npc_text)
 			surface.SetDrawColor(rectline_color)
 			surface.DrawLine(20, 30, 20 + (_width - 40), 30)
 		end
+		hook.Run('QSystem.CreateDialogue.MainPanel', MainPanel, eDialogue)
 
 		local TextAnswer = vgui.Create('DLabel', MainPanel)
 		TextAnswer:SetFont('QuestSystemDialogueText')
@@ -141,6 +142,7 @@ OpenDialoguNpc = function(ignore_npc_text)
 		TextAnswer:SetText(text)
 		TextAnswer:SetWrap(true)
 		TextAnswer:SetAutoStretchVertical(true)
+		hook.Run('QSystem.CreateDialogue.TextAnswer', TextAnswer, eDialogue)
 
 		if not step.delay or not isnumber(step.delay) then
 			local NextButton = vgui.Create('DButton', MainPanel)
@@ -172,6 +174,7 @@ OpenDialoguNpc = function(ignore_npc_text)
 
 				draw.RoundedBox(0, 0, 0, w, h, ButtonColor)
 			end
+			hook.Run('QSystem.CreateDialogue.NextButton', NextButton, eDialogue)
 		else
 			timer.Simple(step.delay, function()
 				if IsValid(eDialogue) and IsValid(MainPanel) then
@@ -233,10 +236,12 @@ OpenDialogueMenu = function(npc_name)
 			surface.DrawRect(0, height - horizontal_line_size, 2, horizontal_line_size)
 			surface.DrawRect(width - 2, height - horizontal_line_size, 2, horizontal_line_size)
 		end
+		hook.Run('QSystem.CreateDialogue.MainPanel', MainPanel, eDialogue)
 
 		local AnswerOptions = vgui.Create('DScrollPanel', MainPanel)
 		AnswerOptions:Dock(FILL)
 		AnswerOptions:DockMargin(5, 5, 5, 5)
+		hook.Run('QSystem.CreateDialogue.AnswerOptions', AnswerOptions, eDialogue)
 
 		for id, data in pairs(step.answers) do
 			local skip = false
@@ -320,6 +325,7 @@ OpenDialogueMenu = function(npc_name)
 					end
 				end
 				AnswerOptionItem:SetHeight(height)
+				hook.Run('QSystem.CreateDialogue.AnswerOptionItem', AnswerOptionItem, eDialogue)
 
 				local TextAnswer = vgui.Create('DLabel', AnswerOptionItem)
 				TextAnswer:SetFont('QuestSystemDialogueText')
@@ -329,6 +335,7 @@ OpenDialogueMenu = function(npc_name)
 				TextAnswer:SetText(text)
 				TextAnswer:SetWrap(true)
 				TextAnswer:SetAutoStretchVertical(true)
+				hook.Run('QSystem.CreateDialogue.TextAnswer', TextAnswer, eDialogue)
 			end
 		end
 	end

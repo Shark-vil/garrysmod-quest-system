@@ -15,7 +15,7 @@ local lang = slib.language({
 	}
 })
 
-local QuestTracking = NULL
+local QuestTracking
 
 local function OpenMenu()
 	local Frame = vgui.Create('DFrame')
@@ -30,6 +30,8 @@ local function OpenMenu()
 
 	local ScrollPanel = vgui.Create('DScrollPanel', Frame)
 	ScrollPanel:Dock(FILL)
+
+	QuestTracking = QuestSystem:GetQuestTracking()
 
 	local quests = ents.FindByClass('quest_entity')
 	local LastButtonQuestTracking
@@ -97,10 +99,10 @@ local function OpenMenu()
 			ButtonQuestTracking:Dock(BOTTOM)
 			ButtonQuestTracking.DoClick = function(self)
 				if IsValid(QuestTracking) and QuestTracking == ent then
-					QuestTracking = NULL
+					QuestTracking = QuestSystem:SetQuestTracking()
 					self:SetText(lang['tracking'])
 				else
-					QuestTracking = ent
+					QuestTracking = QuestSystem:SetQuestTracking(ent)
 					self:SetText(lang['stop_tracking'])
 
 					if IsValid(LastButtonQuestTracking) and LastButtonQuestTracking ~= self then
@@ -125,21 +127,19 @@ concommand.Add('qsystem_active_quests_menu', OpenMenu)
 
 net.Receive('cl_qsystem_set_quest_tracking', function()
 	local ent = net.ReadEntity()
-
-	if IsValid(ent) then
-		QuestTracking = ent
-	end
+	if not IsValid(ent) then return end
+	QuestTracking = QuestSystem:SetQuestTracking(ent)
 end)
 
 local arrow_color = Color(0, 0, 0)
 local arrow_texture = surface.GetTextureID('vgui/quest_system/quest_arrow')
 
 local function DrawNavigationArrow()
-	if not IsValid(QuestTracking) then return end
-	local eQuest = QuestTracking
+	local eQuest = QuestSystem:GetQuestTracking()
+	if not IsValid(eQuest) then return end
 
 	if eQuest:HasQuester(LocalPlayer()) and eQuest:slibGetVar('arrow_target_enabled') then
-		local target = eQuest:slibGetVar('arrow_target', Vector(0, 0, 0))
+		local target = eQuest:slibGetVar('arrow_target_' .. LocalPlayer():PlayerId(), Vector(0, 0, 0))
 		local vec = target
 
 		if not isvector(vec) then
