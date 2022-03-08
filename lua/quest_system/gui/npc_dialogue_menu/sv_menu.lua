@@ -85,7 +85,7 @@ net.Receive('sv_qsystem_dialogue_answer_onclick', function(len, ply)
 	for _, ent in ipairs(QuestSystem.Storage.Dialogues) do
 		if IsValid(ent) and ent:GetPlayer() == ply then
 			local step = ent:GetStep()
-			if step.eventDelay ~= nil and not step.delay then
+			if step.eventDelay and not step.delay then
 				step.eventDelay(ent)
 			end
 			break

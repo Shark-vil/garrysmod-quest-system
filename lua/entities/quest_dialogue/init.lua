@@ -93,21 +93,23 @@ end
 -------------------------------------
 function ENT:LoadPlayerValues()
 	local ply = self:GetPlayer()
+	if not IsValid(ply) then return end
 
-	if IsValid(ply) then
-		local file_path = 'quest_system/dialogue/' .. ply:PlayerId()
-		file_path = file_path .. '/' .. self:GetDialogueID()
-		file_path = file_path .. '/'
-		local files_values = file.Find(file_path .. '*', 'DATA')
+	local dialogue_id = self:GetDialogueID()
+	if not dialogue_id then return end
 
-		for _, file_name in pairs(files_values) do
-			local value_name = string.Split(file_name, '.')
-			local value = self:slibGetVar('var_' .. value_name[1])
+	local file_path = 'quest_system/dialogue/' .. ply:PlayerId()
+	file_path = file_path .. '/' .. dialogue_id
+	file_path = file_path .. '/'
+	local files_values = file.Find(file_path .. '*', 'DATA')
 
-			if not value then
-				value = file.Read(file_path .. file_name, 'DATA')
-				self:slibSetVar('var_' .. value_name[1], value)
-			end
+	for _, file_name in pairs(files_values) do
+		local value_name = string.Split(file_name, '.')
+		local value = self:slibGetVar('var_' .. value_name[1])
+
+		if not value then
+			value = file.Read(file_path .. file_name, 'DATA')
+			self:slibSetVar('var_' .. value_name[1], value)
 		end
 	end
 end
@@ -123,32 +125,32 @@ end
 -------------------------------------
 function ENT:SavePlayerValue(value_name, value, not_autoload)
 	local ply = self:GetPlayer()
+	if not IsValid(ply) then return false end
 
-	if IsValid(ply) then
-		local file_path = 'quest_system/dialogue/' .. ply:PlayerId()
+	local dialogue_id = self:GetDialogueID()
+	if not dialogue_id then return false end
 
-		if not file.Exists(file_path, 'DATA') then
-			file.CreateDir(file_path)
-		end
+	local file_path = 'quest_system/dialogue/' .. ply:PlayerId()
 
-		file_path = file_path .. '/' .. self:GetDialogueID()
-
-		if not file.Exists(file_path, 'DATA') then
-			file.CreateDir(file_path)
-		end
-
-		file_path = file_path .. '/' .. value_name .. '.txt'
-		value = tostring(value)
-		file.Write(file_path, value)
-
-		if not not_autoload then
-			self:slibSetVar('var_' .. value_name, value)
-		end
-
-		return true
+	if not file.Exists(file_path, 'DATA') then
+		file.CreateDir(file_path)
 	end
 
-	return false
+	file_path = file_path .. '/' .. dialogue_id
+
+	if not file.Exists(file_path, 'DATA') then
+		file.CreateDir(file_path)
+	end
+
+	file_path = file_path .. '/' .. value_name .. '.txt'
+	value = tostring(value)
+	file.Write(file_path, value)
+
+	if not not_autoload then
+		self:slibSetVar('var_' .. value_name, value)
+	end
+
+	return true
 end
 
 -------------------------------------
@@ -160,26 +162,26 @@ end
 -- @return bool - returns true if the variable was removed, false otherwise
 -------------------------------------
 function ENT:RemovePlayerValue(value_name, player_id)
-	if player_id == nil then
+	if not player_id then
 		local ply = self:GetPlayer()
-
-		if IsValid(ply) then
-			player_id = ply:PlayerId()
-		end
+		if not IsValid(ply) then return false end
+		player_id = ply:PlayerId()
 	end
 
-	if player_id ~= nil then
-		local file_path = 'quest_system/dialogue/' .. player_id
-		file_path = file_path .. '/' .. self:GetDialogueID()
-		file_path = file_path .. '/' .. value_name .. '.txt'
+	if not player_id then return false end
 
-		if file.Exists(file_path, 'DATA') then
-			file.Remove(file_path)
-			return true
-		end
+	local dialogue_id = self:GetDialogueID()
+	if not dialogue_id then return false end
+
+	local file_path = 'quest_system/dialogue/' .. player_id
+	file_path = file_path .. '/' .. dialogue_id
+	file_path = file_path .. '/' .. value_name .. '.txt'
+
+	if file.Exists(file_path, 'DATA') then
+		file.Remove(file_path)
 	end
 
-	return false
+	return true
 end
 
 -------------------------------------
@@ -199,7 +201,12 @@ function ENT:NpcIsFear()
 
 	if IsValid(npc) and npc:IsNPC() then
 		local schedule = npc:GetCurrentSchedule()
-		if npc:IsCurrentSchedule(SCHED_RUN_FROM_ENEMY) or npc:IsCurrentSchedule(SCHED_WAKE_ANGRY) or schedule == 159 then return true end
+		if npc:IsCurrentSchedule(SCHED_RUN_FROM_ENEMY)
+			or npc:IsCurrentSchedule(SCHED_WAKE_ANGRY)
+			or schedule == 159
+		then
+			return true
+		end
 	end
 
 	return false

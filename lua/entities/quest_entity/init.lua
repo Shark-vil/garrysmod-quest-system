@@ -494,7 +494,7 @@ end
 -- 	model = 'models/Humans/Group01/Male_Cheaple.mdl', -- Optional
 -- 	ang = Angle(0, 0, 0), -- Optional
 -- 	weapon_class = 'weapon_pistol', -- Optional
--- 	afterSpawnExecute = function(eQuest, data) -- Optional
+-- 	onSpawn = function(eQuest, data) -- Optional
 --		local npc = data.npc
 -- 		timer.Simple(3, function()
 -- 			if not IsValid(npc) then return end
@@ -510,15 +510,30 @@ end
 -- @return entity - will return the entity of the object
 -------------------------------------
 function ENT:SpawnQuestNPC(npc_class, data)
-	local npc = ents.Create(npc_class)
-	npc:SetPos(data.pos)
-	if data.ang then
+	local entity_class = istable(npc_class) and table.RandomBySeq(npc_class) or npc_class
+	local npc = ents.Create(entity_class)
+
+	if istable(data.pos) then
+		npc:SetPos(table.RandomBySeq(data.pos))
+	elseif isvector(data.pos) then
+		npc:SetPos(data.pos)
+	end
+
+	if istable(data.ang) then
+		npc:SetAngles(table.RandomBySeq(data.ang))
+	elseif isangle(data.ang) then
 		npc:SetAngles(data.ang)
 	end
-	if data.model then
+
+	if istable(data.model) then
+		npc:SetModel(table.RandomBySeq(data.model))
+	elseif isstring(data.model) then
 		npc:SetModel(data.model)
 	end
-	if data.weapon_class then
+
+	if istable(data.weapon_class) then
+		npc:Give(table.RandomBySeq(data.weapon_class))
+	elseif isstring(data.weapon_class) then
 		npc:Give(data.weapon_class)
 	end
 
@@ -558,26 +573,21 @@ function ENT:SpawnQuestNPC(npc_class, data)
 		Adds an NPC spawn check. If the player does not see the NPC spawn vector
 		or if the distance is greater than the minimum.
 	--]]
-	if (data.notViewSpawn or data.notSpawnDistance ~= nil) and #self.players ~= 0 then
-		local timerName = 'QSystem.SpawnNotView.ID' .. tostring(npc:EntIndex())
-		timer.Create(timerName, 0.5, 0, function()
-			if not IsValid(self) then
-				timer.Remove(timerName)
-				return
-			end
-
-			if data.notViewSpawn then
-				for _, ply in pairs(self.players) do
+	if #self.players ~= 0 and (data.not_spawn_on_eyes or data.not_spawn_on_eyes_distance) then
+		local timerName = 'QSystem.NPCNotSpawnOnEyes.ID.' .. slib.UUID()
+		self:slibCreateTimer(timerName, 0.5, 0, function()
+			if data.not_spawn_on_eyes then
+				for _, ply in ipairs(self.players) do
 					if QuestService:PlayerIsViewVector(ply, data.pos) then
 						return
 					end
 				end
 			end
 
-			if data.notSpawnDistance ~= nil then
-				for _, ply in pairs(self.players) do
-					local minDistance = data.notSpawnDistance
-					if ply:GetPos():Distance(data.pos) < minDistance then
+			if data.not_spawn_on_eyes_distance then
+				local sqr_distance = data.not_spawn_on_eyes_distance ^ 2
+				for _, ply in ipairs(self.players) do
+					if ply:GetPos():DistToSqr(data.pos) < sqr_distance then
 						return
 					end
 				end
@@ -585,7 +595,7 @@ function ENT:SpawnQuestNPC(npc_class, data)
 
 			npc:Spawn()
 			npc:Activate()
-			timer.Remove(timerName)
+			self:slibRemoveTimer(timerName)
 		end)
 	else
 		npc:Spawn()
@@ -612,14 +622,27 @@ end
 -- @return entity - will return the entity of the object
 -------------------------------------
 function ENT:SpawnQuestItem(item_class, data)
-	local item = ents.Create(item_class)
-	item:SetPos(data.pos)
-	if data.ang ~= nil then
+	local entity_class = istable(item_class) and table.RandomBySeq(item_class) or item_class
+	local item = ents.Create(entity_class)
+
+	if istable(data.pos) then
+		item:SetPos(table.RandomBySeq(data.pos))
+	elseif isvector(data.pos) then
+		item:SetPos(data.pos)
+	end
+
+	if istable(data.ang) then
+		item:SetAngles(table.RandomBySeq(data.ang))
+	elseif isangle(data.ang) then
 		item:SetAngles(data.ang)
 	end
-	if data.model ~= nil then
+
+	if istable(data.model) then
+		item:SetModel(table.RandomBySeq(data.model))
+	elseif isstring(data.model) then
 		item:SetModel(data.model)
 	end
+
 	item:Spawn()
 	item:Activate()
 	self:AddQuestItem(item, data.id)
@@ -634,92 +657,88 @@ end
 -- @param ent entity|nil - player or npc entity
 -------------------------------------
 function ENT:SetNPCsBehavior(ent)
-	if table.Count(self.npcs) == 0 then return end
+	if #self.npcs == 0 then return end
 
 	local npc_ignore_other_players = self:GetQuest().npc_ignore_other_players or false
-
 	if GetConVar('qsystem_cfg_hide_quests_of_other_players'):GetBool() then
 		npc_ignore_other_players = true
 	end
 
 	local function restictionByPlayer(ply)
-		for _, data in pairs(self.npcs) do
-			if IsValid(data.npc) then
-				if table.HasValue(self.players, ply) then
-					if data.type == 'enemy' then
-						if bgNPC then
-							local actor = bgNPC:GetActor(data.npc)
-							if actor then actor:AddEnemy(ply, 'defense', true) end
-						end
-						data.npc:AddEntityRelationship(ply, D_HT, 70)
-					elseif data.type == 'friend' then
-						data.npc:AddEntityRelationship(ply, D_LI, 70)
+		for _, data in ipairs(self.npcs) do
+			if not IsValid(data.npc) then continue end
+
+			if table.HasValueBySeq(self.players, ply) then
+				if data.type == 'enemy' then
+					if bgNPC then
+						local actor = bgNPC:GetActor(data.npc)
+						if actor then actor:AddEnemy(ply, 'defense', true) end
 					end
-				else
-					if npc_ignore_other_players then
-						data.npc:AddEntityRelationship(ply, D_NU, 99)
-					end
+					data.npc:AddEntityRelationship(ply, D_HT, 70)
+				elseif data.type == 'friend' then
+					data.npc:AddEntityRelationship(ply, D_LI, 70)
 				end
+			elseif npc_ignore_other_players then
+				data.npc:AddEntityRelationship(ply, D_NU, 99)
 			end
 		end
 	end
 
-	if ent ~= nil then
+	if ent then
 		if IsValid(ent) and ent:IsPlayer() then
 			restictionByPlayer(ent)
 			return
 		end
 	else
-		for _, ply in pairs(player.GetAll()) do
+		for _, ply in ipairs(player.GetAll()) do
 			restictionByPlayer(ply)
 		end
 	end
 
 	local function restictionByOtherNPC(otherNPC)
-		if IsValid(otherNPC) and otherNPC:IsNPC() then
-			for _, data in pairs(self.npcs) do
-				if otherNPC == data.npc then
-					for _, npcData in pairs(self.npcs) do
-						if IsValid(npcData.npc) and IsValid(otherNPC) and npcData.npc ~= otherNPC then
-							if npcData.type == 'enemy' and data.type == 'friend' then
-								local actor_1, actor_2
+		if not IsValid(otherNPC) or not otherNPC:IsNPC() then return end
 
-								if bgNPC then
-									actor_1 = bgNPC:GetActor(data.npc)
-									if actor_1 then actor_1:AddEnemy(npcData.npc, 'defense', true) end
+		for _, data in ipairs(self.npcs) do
+			if otherNPC ~= data.npc then continue end
 
-									actor_2 = bgNPC:GetActor(npcData.npc)
-									if actor_2 then actor_2:AddEnemy(data.npc, 'defense', true) end
-								end
+			for _, npcData in ipairs(self.npcs) do
+				if IsValid(npcData.npc) and npcData.npc ~= otherNPC then
+					if npcData.type == 'enemy' and data.type == 'friend' then
+						local actor_1, actor_2
 
-								if not actor_1 then data.npc:AddEntityRelationship(npcData.npc, D_HT, 70) end
-								if not actor_2 then npcData.npc:AddEntityRelationship(data.npc, D_HT, 70) end
-							elseif (npcData.type == 'friend' and data.type == 'friend') or
-								(npcData.type == 'enemy' and data.type == 'enemy')
-							then
-								npcData.npc:AddEntityRelationship(data.npc, D_LI, 70)
-								data.npc:AddEntityRelationship(npcData.npc, D_LI, 70)
-							end
+						if bgNPC then
+							actor_1 = bgNPC:GetActor(data.npc)
+							if actor_1 then actor_1:AddEnemy(npcData.npc, 'defense', true) end
+
+							actor_2 = bgNPC:GetActor(npcData.npc)
+							if actor_2 then actor_2:AddEnemy(data.npc, 'defense', true) end
 						end
+
+						if not actor_1 then data.npc:AddEntityRelationship(npcData.npc, D_HT, 70) end
+						if not actor_2 then npcData.npc:AddEntityRelationship(data.npc, D_HT, 70) end
+					elseif (npcData.type == 'friend' and data.type == 'friend') or
+						(npcData.type == 'enemy' and data.type == 'enemy')
+					then
+						npcData.npc:AddEntityRelationship(data.npc, D_LI, 70)
+						data.npc:AddEntityRelationship(npcData.npc, D_LI, 70)
 					end
-					return
 				end
 			end
 
+			return
+		end
 
-			for _, data in pairs(self.npcs) do
-				if IsValid(data.npc) then
-					data.npc:AddEntityRelationship(otherNPC, D_NU, 99)
-					otherNPC:AddEntityRelationship(data.npc, D_NU, 99)
-				end
-			end
+		for _, data in pairs(self.npcs) do
+			if not IsValid(data.npc) then continue end
+			data.npc:AddEntityRelationship(otherNPC, D_NU, 99)
+			otherNPC:AddEntityRelationship(data.npc, D_NU, 99)
 		end
 	end
 
-	if ent ~= nil then
+	if ent then
 		restictionByOtherNPC(ent)
 	else
-		for _, _ent in pairs(ents.GetAll()) do
+		for _, _ent in ipairs(ents.GetAll()) do
 			restictionByOtherNPC(_ent)
 		end
 	end

@@ -30,8 +30,8 @@ local table_HasValueBySeq = table.HasValueBySeq
 local table_insert = table.insert
 local hook_Remove = hook.Remove
 local table_remove = table.remove
-local slib_FindInBox = slib.FindInBox
-local slib_FindInSphere = slib.FindInSphere
+local ents_FindInBox = ents.FindInBox
+local ents_FindInSphere = ents.FindInSphere
 
 function ENT:Initialize()
 	self:SetModel('models/props_junk/PopCan01a.mdl')
@@ -234,10 +234,10 @@ function ENT:Think()
 				self.trigger_entities[name] = self.trigger_entities[name] or {}
 
 				if trigger.type == 'box' then
-					entities = slib_FindInBox(trigger.vec1, trigger.vec2)
+					entities = ents_FindInBox(trigger.vec1, trigger.vec2)
 					center = (trigger.vec1 + trigger.vec2) / 2
 				elseif trigger.type == 'sphere' then
-					entities = slib_FindInSphere(trigger.center, trigger.radius)
+					entities = ents_FindInSphere(trigger.center, trigger.radius)
 					center = trigger.center
 				end
 
@@ -414,6 +414,22 @@ function ENT:OnNextStep()
 	hook.Run('QSystem.PostOnNextStep', self, step, quest)
 end
 
+function ENT:ConvertTextToValidLanguage(ply, text)
+	if IsValid(ply) and ply:IsPlayer() and isstring(text) then
+		local player_lang = ply:slibGetLanguage()
+		local quest = self:GetQuest()
+
+		if quest and quest.lang then
+			if quest.lang[player_lang] and quest.lang[player_lang][text] then
+				return quest.lang[player_lang][text]
+			elseif quest.lang['default'] and quest.lang['default'][text] then
+				return quest.lang['default'][text]
+			end
+		end
+	end
+	return text
+end
+
 -------------------------------------
 -- Sends a notification to the first player in the list of registered players.
 -------------------------------------
@@ -422,23 +438,21 @@ end
 -- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 -------------------------------------
 function ENT:Notify(title, desc, lifetime, image, bgcolor)
-	if SERVER then
-		local ply = self:GetPlayer()
-		if not IsValid(ply) then return end
-		ply:QuestNotify(title, desc, lifetime, image, bgcolor)
-	else
-		LocalPlayer():QuestNotify(title, desc, lifetime, image, bgcolor)
-	end
+	local ply = SERVER and self:GetPlayer() or LocalPlayer()
+	if not IsValid(ply) then return end
+
+	local _title = self:ConvertTextToValidLanguage(ply, title)
+	local _desc = self:ConvertTextToValidLanguage(ply, desc)
+
+	ply:QuestNotify(_title, _desc, lifetime, image, bgcolor)
 end
 
 function ENT:NotifyQuestStart(lifetime, image, bgcolor)
-	if SERVER then
-		local ply = self:GetPlayer()
-		if not IsValid(ply) then return end
-		ply:QuestStartNotify(self:GetQuest().id, lifetime, image, bgcolor)
-	else
-		LocalPlayer():QuestStartNotify(self:GetQuest().id, lifetime, image, bgcolor)
-	end
+	local ply = SERVER and self:GetPlayer() or LocalPlayer()
+	if not IsValid(ply) then return end
+
+	local text = self:ConvertTextToValidLanguage(ply, self:GetQuest().id)
+	ply:QuestStartNotify(text, lifetime, image, bgcolor)
 end
 
 -------------------------------------
@@ -449,26 +463,21 @@ end
 -- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 -------------------------------------
 function ENT:NotifyOnlyRegistred(title, desc, lifetime, image, bgcolor)
-	if SERVER then
-		for _, ply in pairs(self.players) do
-			if IsValid(ply) then
-				ply:QuestNotify(title, desc, lifetime, image, bgcolor)
-			end
-		end
-	else
-		LocalPlayer():QuestNotify(title, desc, lifetime, image, bgcolor)
+	local players = SERVER and self.players or { LocalPlayer() }
+	for _, ply in ipairs(players) do
+		if not IsValid(ply) then continue end
+		local _title = self:ConvertTextToValidLanguage(ply, title)
+		local _desc = self:ConvertTextToValidLanguage(ply, desc)
+		ply:QuestNotify(_title, _desc, lifetime, image, bgcolor)
 	end
 end
 
 function ENT:NotifyOnlyRegistredQuestStart(lifetime, image, bgcolor)
-	if SERVER then
-		for _, ply in pairs(self.players) do
-			if IsValid(ply) then
-				ply:QuestStartNotify(self:GetQuest().id, lifetime, image, bgcolor)
-			end
-		end
-	else
-		LocalPlayer():QuestStartNotify(self:GetQuest().id, lifetime, image, bgcolor)
+	local players = SERVER and self.players or { LocalPlayer() }
+	for _, ply in ipairs(players) do
+		if not IsValid(ply) then continue end
+		local text = self:ConvertTextToValidLanguage(ply, self:GetQuest().id)
+		ply:QuestStartNotify(text, lifetime, image, bgcolor)
 	end
 end
 
@@ -480,26 +489,21 @@ end
 -- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 -------------------------------------
 function ENT:NotifyAll(title, desc, lifetime, image, bgcolor)
-	if SERVER then
-		for _, ply in pairs(player.GetHumans()) do
-			if IsValid(ply) then
-				ply:QuestNotify(title, desc, lifetime, image, bgcolor)
-			end
-		end
-	else
-		LocalPlayer():QuestNotify(title, desc, lifetime, image, bgcolor)
+	local players = SERVER and player.GetHumans() or { LocalPlayer() }
+	for _, ply in ipairs(players) do
+		if not IsValid(ply) then continue end
+		local _title = self:ConvertTextToValidLanguage(ply, title)
+		local _desc = self:ConvertTextToValidLanguage(ply, desc)
+		ply:QuestNotify(_title, _desc, lifetime, image, bgcolor)
 	end
 end
 
 function ENT:NotifyAllQuestStart(lifetime, image, bgcolor)
-	if SERVER then
-		for _, ply in pairs(player.GetHumans()) do
-			if IsValid(ply) then
-				ply:QuestStartNotify(self:GetQuest().id, lifetime, image, bgcolor)
-			end
-		end
-	else
-		LocalPlayer():QuestStartNotify(self:GetQuest().id, lifetime, image, bgcolor)
+	local players = SERVER and player.GetHumans() or { LocalPlayer() }
+	for _, ply in ipairs(players) do
+		if not IsValid(ply) then continue end
+		local text = self:ConvertTextToValidLanguage(ply, self:GetQuest().id)
+		ply:QuestStartNotify(text, lifetime, image, bgcolor)
 	end
 end
 
@@ -623,11 +627,61 @@ function ENT:GetVariable(key)
 	return self.values[key]
 end
 
-function ENT:SetArrowVector(target, autoEnable)
+function ENT:SetArrow(target, autoEnable)
 	if not isvector(target) and (not isentity(target) or not IsValid(target)) then return end
 	if autoEnable == nil then autoEnable = true end
 	if autoEnable then self:EnableArrowVector() end
-	self:slibSetVar('arrow_target', target)
+
+	for _, ply in ipairs(self.players) do
+		if not IsValid(ply) then continue end
+		self:slibSetVar('arrow_target_' .. ply:PlayerId(), target)
+	end
+end
+
+function ENT:SetArrowNPC(npc_type, npc_tag)
+	for _, ply in ipairs(self.players) do
+		if not IsValid(ply) then continue end
+
+		local current_step = self:GetQuestStep()
+		if not current_step or (not npc_type and not npc_tag) then return end
+
+		if npc_type and npc_tag then
+			for _, data in ipairs(self.npcs) do
+				if data.type == npc_type and data.tag == npc_tag then
+					self:SetArrow(data.npc)
+				end
+			end
+			return
+		end
+
+		local timer_name = 'SetArrowNPC_' .. current_step .. '_' .. ply:PlayerId()
+		self:slibCreateTimer(timer_name, 1, 0, function()
+			if self:GetQuestStep() ~= current_step then
+				self:slibRemoveTimer(timer_name)
+				return
+			end
+
+			local npcs_count = #self.npcs
+			if npcs_count == 0 then return end
+
+			local near_npc
+			local current_distance
+
+			for i = 1, npcs_count do
+				local data = self.npcs[i]
+				if data.type == npc_type and IsValid(data.npc) then
+					local new_distance = data.npc:GetPos():DistToSqr(ply:GetPos())
+					if not current_distance or current_distance > new_distance then
+						current_distance = new_distance
+						near_npc = data.npc
+					end
+				end
+			end
+
+			if not IsValid(near_npc) then return end
+			self:SetArrow(near_npc)
+		end)
+	end
 end
 
 function ENT:EnableArrowVector()

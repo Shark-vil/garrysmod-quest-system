@@ -15,7 +15,7 @@ bgNPC.cfg.npcs_template['quest_system_friend'] = {
    class = 'npc_citizen',
    name = 'Quest System Friend Actor',
    team = { 'player' },
-   at_random = { ['idle'] = 30, ['walk'] = 79 },
+   at_random = { ['idle'] = 50, ['walk'] = 50 },
    at_damage = { ['defense'] = 100 },
    at_protect = { ['defense'] = 100 },
 }

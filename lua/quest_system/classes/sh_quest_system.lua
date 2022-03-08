@@ -123,7 +123,24 @@ end
 -- @return table - will return the quest data table or nil
 -------------------------------------
 function QuestSystem:GetQuest(quest_id)
-	return list.Get('QuestSystem')[quest_id]
+	local quest_data = list.Get('QuestSystem')[quest_id]
+	if not quest_data then return end
+
+	local quest = table.Copy(quest_data)
+	if CLIENT and quest and quest.lang then
+		for key, text in pairs(quest) do
+			if isstring(text) then
+				local player_lang = LocalPlayer():slibGetLanguage()
+				if quest.lang[player_lang] and quest.lang[player_lang][text] then
+					quest[key] = quest.lang[player_lang][text]
+				elseif quest.lang['default'] and quest.lang['default'][text] then
+					quest[key] = quest.lang['default'][text]
+				end
+			end
+		end
+	end
+
+	return quest
 end
 
 -------------------------------------
@@ -132,7 +149,11 @@ end
 -- @return table - list of registered quests
 -------------------------------------
 function QuestSystem:GetAllQuests()
-	return list.Get('QuestSystem')
+	local quests = {}
+	for quest_id, _ in pairs(list.Get('QuestSystem')) do
+		quests[quest_id] = QuestSystem:GetQuest(quest_id)
+	end
+	return quests
 end
 
 -------------------------------------
@@ -438,4 +459,21 @@ function QuestSystem:IsExistsQuest(quest_id)
 	end
 
 	return false
+end
+
+if CLIENT then
+	local TrackingQuest
+
+	function QuestSystem:SetQuestTracking(eQuest)
+		if not IsValid(eQuest) or eQuest:GetClass() ~= 'quest_entity' then
+			TrackingQuest = nil
+			return
+		end
+		TrackingQuest = eQuest
+		return TrackingQuest
+	end
+
+	function QuestSystem:GetQuestTracking()
+		return TrackingQuest
+	end
 end

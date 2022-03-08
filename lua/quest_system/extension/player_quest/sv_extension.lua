@@ -88,15 +88,12 @@ function meta:QuestIsValid(quest_id)
 end
 
 function meta:EnableQuest(quest_id)
-	local maxQuests = GetConVar('qsystem_cfg_max_quests_for_player'):GetInt()
+	local quests_limit = GetConVar('qsystem_cfg_max_quests_for_player'):GetInt()
+	local active_quests_count = self:GetNumberQuestsActive()
 
-	if maxQuests > 0 then
-		local quests = self:GetNumberQuestsActive()
-
-		if quests > maxQuests then
-			self:QuestNotify('Отклонено', 'Вы не можете взять больше заданий, пока не выполните текущие.')
-			return
-		end
+	if quests_limit > 0 and active_quests_count > quests_limit then
+		self:QuestNotify('Отклонено', 'Вы не можете взять больше заданий, пока не выполните текущие.')
+		return
 	end
 
 	if self:QuestIsActive(quest_id) then return end
@@ -127,6 +124,7 @@ function meta:EnableQuest(quest_id)
 
 		timer.Simple(1, function()
 			if not IsValid(ent) then return end
+			-- ent:ForcedTracking()
 			ent:SetStep(step)
 		end)
 	end

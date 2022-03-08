@@ -230,13 +230,7 @@ end
 -- @return bool - will return true if the player has already used this dialog, otherwise false
 -------------------------------------
 function ENT:AlreadySaid()
-	local value = self:GetPlayerValue('already_said')
-
-	if value == nil then
-		value = false
-	end
-
-	return tobool(value)
+	return tobool(self:GetPlayerValue('already_said'))
 end
 
 -------------------------------------
