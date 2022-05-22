@@ -1,4 +1,4 @@
-hook.Add('SlibPlayerFirstSpawn', 'QSystem.QuestsAutoLoader', function(ply)
+hook.Add('slib.FirstPlayerSpawn', 'QSystem.QuestsAutoLoader', function(ply)
 	local delay = GetConVar('qsystem_cfg_delay_between_quests'):GetInt()
 
 	if delay > 0 then

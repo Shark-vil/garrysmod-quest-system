@@ -19,19 +19,15 @@ hook.Add('CalcView', 'QSystem.DialogueNPCCamera', function(ply, pos, angles, fov
 
 		if not dialogue.overhead and not dialogue.dont_focus_on_target then
 			local npc = eDialogue:GetNPC()
-			local n_origin
-			local n_angles
+			local n_origin = npc:EyePos() - (npc:GetAngles():Forward() * -35) - Vector(0, 0, 10)
+			local n_angles =  npc:EyeAngles() - Angle(0, 180, 0)
 
 			if dialogue.focus_offset_position and isvector(dialogue.focus_offset_position) then
-				n_origin = npc:GetPos() + dialogue.focus_offset_position
-			else
-				n_origin = npc:EyePos() - (npc:GetAngles():Forward() * -35) - Vector(0, 0, 10)
+				n_origin = n_origin + dialogue.focus_offset_position
 			end
 
 			if dialogue.focus_offset_angles and isangle(dialogue.focus_offset_angles) then
-				n_angles = npc:GetAngles() + dialogue.focus_offset_angles
-			else
-				n_angles = npc:EyeAngles() - Angle(0, 180, 0)
+				n_angles = n_angles + dialogue.focus_offset_angles
 			end
 
 			local view = {
@@ -82,7 +78,7 @@ OpenDialoguNpc = function(ignore_npc_text)
 		name = table.Random(dialogue.name)
 	end
 
-	if step.text ~= nil and not ignore_npc_text then
+	if step.text and not ignore_npc_text then
 		local text
 		if isstring(step.text) then
 			text = step.text
@@ -97,7 +93,7 @@ OpenDialoguNpc = function(ignore_npc_text)
 		local pos_x = (ScrW() - width) / 2
 		local pos_y = ScrH() - 200
 
-		local MainPanel = vgui.Create('DFrame')
+		local MainPanel = sgui.Create('DFrame')
 		MainPanel:ShowCloseButton(false)
 		MainPanel:SetDraggable(false)
 		MainPanel:SetSize(width, height)
@@ -145,7 +141,7 @@ OpenDialoguNpc = function(ignore_npc_text)
 		hook.Run('QSystem.CreateDialogue.TextAnswer', TextAnswer, eDialogue)
 
 		if not step.delay or not isnumber(step.delay) then
-			local NextButton = vgui.Create('DButton', MainPanel)
+			local NextButton = sgui.Create('DButton', MainPanel)
 			NextButton:SetText('Далее')
 			NextButton:SetPos(width - 110, height - 30)
 			NextButton:SetWidth(90)
@@ -245,8 +241,12 @@ OpenDialogueMenu = function(npc_name)
 
 		for id, data in pairs(step.answers) do
 			local skip = false
-			local condition = step.answers[id].condition
-			if condition ~= nil and not condition(eDialogue) then skip = true end
+			local step_data = step.answers[id]
+			if step_data.condition and not step_data.condition(eDialogue) then
+				skip = true
+			elseif step_data.conditionClient and not step_data.conditionClient(eDialogue) then
+				skip = true
+			end
 
 			if not skip then
 				local AnswerOptionItem = AnswerOptions:Add('DPanel')
@@ -259,9 +259,8 @@ OpenDialogueMenu = function(npc_name)
 					self.onCursor = false
 				end
 				AnswerOptionItem.DragMouseRelease = function(self, mouseCode)
-					if step.answers[id] ~= nil then
-						local func = step.answers[id].event
-						func(eDialogue)
+					if step_data then
+						QuestSystem:CallTableSSC(step_data, 'event', eDialogue)
 
 						eDialogue.isFirstAnswer = true
 

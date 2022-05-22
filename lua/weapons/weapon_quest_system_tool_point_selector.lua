@@ -35,9 +35,11 @@ function SWEP:Initialize()
 	if SERVER then return end
 
 	local ply = LocalPlayer()
+	local font_type = 'TargetID'
 	local add_upper_vetor = Vector(0, 0, 20)
 	local render_DrawSphere = render.DrawSphere
 	local render_SetColorMaterial = render.SetColorMaterial
+	local draw_SimpleTextOutlined = draw.SimpleTextOutlined
 	local cam_Start3D2D = cam.Start3D2D
 	local cam_End3D2D = cam.End3D2D
 	local point_color = Color(23, 255, 243, 200)
@@ -63,7 +65,7 @@ function SWEP:Initialize()
 				render_DrawSphere(pos, 10, 30, 30, point_color)
 
 				cam_Start3D2D(pos + add_upper_vetor, angle, 0.9)
-					draw.SimpleTextOutlined(i, 'TargetID', 0, 0, text_color,
+					draw_SimpleTextOutlined(i, font_type, 0, 0, text_color,
 						TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 0.5, text_outline_color)
 				cam_End3D2D()
 			end
@@ -83,7 +85,7 @@ function SWEP:RemoveLastPoint()
 end
 
 function SWEP:ClearPoints()
-	table.Empty(self.Points)
+	self.Points = {}
 
 	if CLIENT then
 		surface.PlaySound('common/wpn_denyselect.wav')

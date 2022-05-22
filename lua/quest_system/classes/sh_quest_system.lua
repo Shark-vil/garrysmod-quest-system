@@ -4,6 +4,8 @@ if SERVER then
 	util.AddNetworkString('qsystem_remove_all_structure_from_client')
 end
 
+local string_EndsWith = string.EndsWith
+
 -- List of registered storages (Not to be confused with a pattern)
 QuestSystem.storage = QuestSystem.storage or {}
 -- List of currently active events
@@ -11,6 +13,34 @@ QuestSystem.activeEvents = QuestSystem.activeEvents or {}
 -- List of currently active game structures
 QuestSystem.structures = QuestSystem.structures or {}
 QuestSystem.debug_index = 0
+
+function QuestSystem:CallTableSSC(table_object, field_name, ...)
+	if not table_object or not istable(table_object) then return end
+	if not field_name or not isstring(field_name) then return end
+	if string_EndsWith(field_name, 'Server') or string_EndsWith(field_name, 'Client') then return end
+
+	local basic_result, server_result, client_result
+
+	if isfunction(table_object[field_name]) then
+		basic_result = table_object[field_name](...)
+	end
+
+	if SERVER and isfunction(table_object[field_name .. 'Server']) then
+		server_result = table_object[field_name .. 'Server'](...)
+	end
+
+	if CLIENT and isfunction(table_object[field_name .. 'Client']) then
+		client_result = table_object[field_name .. 'Client'](...)
+	end
+
+	if basic_result or server_result or client_result then
+		return {
+			basic = basic_result,
+			server = server_result,
+			client = client_result,
+		}
+	end
+end
 
 -------------------------------------
 -- Creates an entity for a global game event.
