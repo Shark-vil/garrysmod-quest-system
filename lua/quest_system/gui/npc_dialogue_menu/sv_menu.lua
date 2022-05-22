@@ -67,14 +67,14 @@ net.Receive('sv_qsystem_dialogue_answer_select', function(len, ply)
 			local id = net.ReadInt(10)
 			local step = ent:GetStep()
 
-			if step.answers[id] ~= nil then
-				local condition = step.answers[id].condition
-				if condition ~= nil and not condition(ent) then return end
-
-				local func = step.answers[id].event
-				func(ent)
-				ent.isFirstAnswer = true
+			local step_data = step.answers[id]
+			local condition = QuestSystem:CallTableSSC(step_data, 'condition', ent)
+			if condition and (not condition.server or not condition.basic) then
+				return
 			end
+
+			QuestSystem:CallTableSSC(step_data, 'event', ent)
+			ent.isFirstAnswer = true
 
 			break
 		end
@@ -85,9 +85,11 @@ net.Receive('sv_qsystem_dialogue_answer_onclick', function(len, ply)
 	for _, ent in ipairs(QuestSystem.Storage.Dialogues) do
 		if IsValid(ent) and ent:GetPlayer() == ply then
 			local step = ent:GetStep()
-			if step.eventDelay and not step.delay then
-				step.eventDelay(ent)
+			if step.delay then
+				QuestSystem:CallTableSSC(step, 'eventDelay', ent)
 			end
+
+			QuestSystem:CallTableSSC(step, 'event', ent)
 			break
 		end
 	end

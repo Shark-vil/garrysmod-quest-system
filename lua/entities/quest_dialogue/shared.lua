@@ -200,7 +200,13 @@ function ENT:GetStep()
 
 	if step.text and isfunction(step.text) then
 		local func = step.text
-		step.text = func(self)
+		local result = func(self)
+		if isstring(result) then
+			step.text = result
+		elseif istable(result) then
+			local table_value = table.RandomBySeq(result)
+			if table_value then step.text = result end
+		end
 	end
 
 	return step
@@ -234,18 +240,113 @@ function ENT:AlreadySaid()
 end
 
 -------------------------------------
+-- Loads custom network variables, if they exist.
+-------------------------------------
+function ENT:LoadPlayerValues()
+	local ply = self:GetPlayer()
+	if not IsValid(ply) then return end
+
+	local dialogue_id = self:GetDialogueID()
+	if not dialogue_id then return end
+
+	local file_path = 'quest_system/dialogue/' .. ply:PlayerId()
+	file_path = file_path .. '/' .. dialogue_id .. '.json'
+
+	if file.Exists(file_path, 'DATA') then
+		local dialogue_values = util.JSONToTable(file.Read(file_path, 'DATA'))
+		for key, value in pairs(dialogue_values) do
+			if self:slibGetVar('var_' .. key) then continue end
+			self:slibSetVar('var_' .. key, value)
+		end
+	end
+end
+
+-------------------------------------
+-- Saves the user variable to the database, and connects in real time if necessary.
+-------------------------------------
+-- @param value_name string - variable key
+-- @param value string - variable value (string only)
+-- @param not_autoload bool - if true, the variable will not be uploaded to the network immediately after saving
+-------------------------------------
+-- @return bool - returns true if the variable was saved, false otherwise
+-------------------------------------
+function ENT:SavePlayerValue(value_name, value, not_autoload)
+	local ply = self:GetPlayer()
+	if not IsValid(ply) or not isstring(value_name) then return false end
+
+	local dialogue_id = self:GetDialogueID()
+	if not dialogue_id then return false end
+
+	local file_path = 'quest_system/dialogue/' .. ply:PlayerId()
+
+	if not file.Exists(file_path, 'DATA') then
+		file.CreateDir(file_path)
+	end
+
+	file_path = file_path .. '/' .. dialogue_id .. '.json'
+
+	local dialogue_values
+
+	if not file.Exists(file_path, 'DATA') then
+		dialogue_values = {}
+	else
+		dialogue_values = util.JSONToTable(file.Read(file_path, 'DATA'))
+	end
+
+	dialogue_values[value_name] = value
+	file.Write(file_path, util.TableToJSON(dialogue_values))
+
+	if not not_autoload then
+		self:slibSetVar('var_' .. value_name, value)
+	end
+
+	return true
+end
+
+-------------------------------------
+-- Deletes the network variable data file.
+-------------------------------------
+-- @param value_name string - variable key
+-- @param player_id string - player id (default nil, since the player can be obtained automatically)
+-------------------------------------
+-- @return bool - returns true if the variable was removed, false otherwise
+-------------------------------------
+function ENT:RemovePlayerValue(value_name, player_id)
+	if not player_id then
+		local ply = self:GetPlayer()
+		if not IsValid(ply) then return false end
+		player_id = ply:PlayerId()
+	end
+
+	if not player_id then return false end
+
+	local dialogue_id = self:GetDialogueID()
+	if not dialogue_id then return false end
+
+	local file_path = 'quest_system/dialogue/' .. player_id
+	file_path = file_path .. '/' .. dialogue_id .. '.json'
+
+	if file.Exists(file_path, 'DATA') then
+		local dialogue_values = util.JSONToTable(file.Read(file_path, 'DATA'))
+		dialogue_values[value_name] = nil
+		file.Write(file_path, util.TableToJSON(dialogue_values))
+		self:slibSetVar('var_' .. value_name, nil)
+	end
+
+	return true
+end
+
+-------------------------------------
 -- Reads a custom variable from a file and writes to the entity network variable.
 -------------------------------------
 -- @param value_name string - custom variable key in dialog
 -------------------------------------
 -- @return string - will return a string with the data of a variable or nil
 -------------------------------------
-function ENT:GetPlayerValue(value_name)
+function ENT:GetPlayerValue(value_name, get_type)
 	local value = self:slibGetVar('var_' .. value_name)
 
-	if value ~= nil and #value ~= 0 then
-		return value
-	else
+	if value == nil then
 		local ply = self:GetPlayer()
 
 		if IsValid(ply) then
@@ -253,33 +354,44 @@ function ENT:GetPlayerValue(value_name)
 			if not dialogue_id then return nil end
 
 			local file_path = 'quest_system/dialogue/' .. ply:PlayerId()
-			file_path = file_path .. '/' .. dialogue_id
-			file_path = file_path .. '/' .. value_name .. '.txt'
+			file_path = file_path .. '/' .. dialogue_id .. '.json'
 
 			if file.Exists(file_path, 'DATA') then
-				value = file.Read(file_path, 'DATA')
-				self:slibSetVar('var_' .. value_name, value)
-				return value
+				local dialogue_values = util.JSONToTable(file.Read(file_path, 'DATA'))
+				if dialogue_values[value_name] then
+					value = dialogue_values[value_name]
+					self:slibSetVar('var_' .. value_name, value)
+				end
 			end
 		end
 	end
 
-	return nil
+	if get_type == 'string' or get_type == 'str' then
+		return tostring(value)
+	end
+
+	if get_type == 'number' or get_type == 'num' then
+		return tonumber(value)
+	end
+
+	if get_type == 'boolean' or get_type == 'bool' then
+		return tobool(value)
+	end
+
+	return value
 end
 
 function ENT:InittDialogueStep()
 	local step = self:GetStep()
 
-	if step.eventDelay and step.delay then
+	if step.delay then
 		timer.Simple(step.delay + 0.5, function()
 			if not IsValid(self) then return end
-			step.eventDelay(self)
+			QuestSystem:CallTableSSC(step, 'eventDelay', self)
 		end)
 	end
 
-	if step.event then
-		step.event(self)
-	end
+	-- QuestSystem:CallTableSSC(step, 'event', self)
 
 	self.isStarted = true
 	self.isFirst = false
@@ -303,22 +415,27 @@ function ENT:StartDialogue(ignore_npc_text, is_next)
 			self:Remove()
 			return
 		end
+	end
 
-		if not is_next and not single_replic_exists then
+	if not is_next and not single_replic_exists then
+		if SERVER then
 			local dialogue = self:GetDialogue()
-
 			if not dialogue.overhead and not dialogue.dont_lock_control then
 				ply:Freeze(true)
 				QuestService:WaitingNPCWalk(self:GetNPC(), true)
 			end
-
-			self:LoadPlayerValues()
 		end
 
+		self:LoadPlayerValues()
+	end
+
+	if SERVER then
 		snet.Request('cl_qsystem_set_dialogue_id', self, ignore_npc_text, is_next).Complete(function()
 			self:InittDialogueStep()
 		end).Invoke(ply)
-	else
+	end
+
+	if CLIENT then
 		self:InittDialogueStep()
 	end
 end

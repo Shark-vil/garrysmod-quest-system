@@ -212,7 +212,7 @@ function ENT:Think()
 	local step = self:GetQuestStepTable()
 
 	if step and not self:SetNWBool('StopThink', true) and not self.StopThink then
-		if step.think then step.think(self) end
+		QuestSystem:CallTableSSC(step, 'think', self)
 
 		local triggers = self.triggers
 		local triggers_count = #triggers
@@ -226,9 +226,6 @@ function ENT:Think()
 				local name = tdata.name
 				local trigger = tdata.trigger
 				local trigger_functions = quest.steps[tdata.step].triggers[name]
-				local trigger_think = trigger_functions.think
-				local trigger_onEnter = trigger_functions.onEnter
-				local trigger_onExit = trigger_functions.onExit
 				local center
 
 				self.trigger_entities[name] = self.trigger_entities[name] or {}
@@ -244,9 +241,7 @@ function ENT:Think()
 				for k = #self.trigger_entities[name], 1, -1 do
 					local ent = self.trigger_entities[name][k]
 					if not table_HasValueBySeq(entities, ent) then
-						if trigger_onExit then
-							trigger_onExit(self, ent, center, trigger)
-						end
+						QuestSystem:CallTableSSC(trigger_functions, 'onExit', self, ent, center, trigger)
 						table_remove(self.trigger_entities[name], k)
 					end
 				end
@@ -254,15 +249,11 @@ function ENT:Think()
 				for _, ent in ipairs(entities) do
 					if not table_HasValueBySeq(self.trigger_entities[name], ent) then
 						table_insert(self.trigger_entities[name], ent)
-						if trigger_onEnter then
-							trigger_onEnter(self, ent, center, trigger)
-						end
+						QuestSystem:CallTableSSC(trigger_functions, 'onEnter', self, ent, center, trigger)
 					end
 				end
 
-				if trigger_think then
-					trigger_think(self, entities, center, trigger)
-				end
+				QuestSystem:CallTableSSC(trigger_functions, 'think', self, entities, center, trigger)
 			end
 		end
 	end
@@ -275,7 +266,7 @@ end
 -------------------------------------
 function ENT:OnRemove()
 	local step = self:GetQuestStepTable()
-	if step and step.onEnd then step.onEnd(self) end
+	QuestSystem:CallTableSSC(step, 'onEnd', self)
 
 	if SERVER then
 		self:RemoveNPC()
@@ -312,9 +303,11 @@ function ENT:OnNextStep()
 	if #self.points ~= 0 and quest.steps[step] and quest.steps[step].points then
 		for i = 1, #self.points do
 			local data = self.points[i]
-			if quest.steps[step].points[data.name] then
-				local func = quest.steps[data.step].points[data.name]
-				if func and isfunction(func) then func(self, data.points) end
+			local points_data = quest.steps[step].points[data.name]
+			if isfunction(points_data) then
+				points_data(self, data.points)
+			elseif istable(points_data) then
+				QuestSystem:CallTableSSC(points_data, 'onStart', self, data.points)
 			end
 		end
 
@@ -329,19 +322,15 @@ function ENT:OnNextStep()
 			local name = tdata.name
 			local trigger = tdata.trigger
 			local trigger_functions = quest.steps[tdata.step].triggers[name]
-			local trigger_construct = trigger_functions.onStart
+			local center
 
-			if trigger_construct and isfunction(trigger_construct) then
-				local center
-
-				if trigger.type == 'box' then
-					center = (trigger.vec1 + trigger.vec2) / 2
-				elseif trigger.type == 'sphere' then
-					center = trigger.center
-				end
-
-				trigger_construct(self, center, trigger)
+			if trigger.type == 'box' then
+				center = (trigger.vec1 + trigger.vec2) / 2
+			elseif trigger.type == 'sphere' then
+				center = trigger.center
 			end
+
+			QuestSystem:CallTableSSC(trigger_functions, 'onStart', self, center, trigger)
 		end
 	end
 
@@ -367,35 +356,8 @@ function ENT:OnNextStep()
 	-- 	self:SetNWBool('StopThink', false)
 	-- end
 
-	if step == 'start' then
-		if SERVER and not quest.disableNotify then
-			if quest.is_event then
-				self:NotifyAllQuestStart(quest.notify_lifetime, quest.notify_image, quest.notify_bgcolor)
-			else
-				self:NotifyQuestStart(quest.notify_lifetime, quest.notify_image, quest.notify_bgcolor)
-			end
-		end
-
-		if quest.global_hooks then
-			for hook_type, func in pairs(quest.global_hooks) do
-				local hook_name = slib.UUID()
-
-				hook.Add(hook_type, hook_name, function(...)
-					if not IsValid(self) then
-						hook_Remove(hook_type, hook_name)
-						return
-					end
-
-					func(self, ...)
-				end)
-
-				table_insert(self.hooks, { hook_type = hook_type, hook_name = hook_name, is_gloabl = true })
-			end
-		end
-	end
-
-	if quest.steps[step] and quest.steps[step].hooks then
-		for hook_type, func in pairs(quest.steps[step].hooks) do
+	local function add_hooks_to_data(global_hooks, is_global)
+		for hook_type, func in pairs(global_hooks) do
 			local hook_name = slib.UUID()
 
 			hook.Add(hook_type, hook_name, function(...)
@@ -407,7 +369,44 @@ function ENT:OnNextStep()
 				func(self, ...)
 			end)
 
-			table_insert(self.hooks, { hook_type = hook_type, hook_name = hook_name, is_gloabl = false })
+			table_insert(self.hooks, { hook_type = hook_type, hook_name = hook_name, is_gloabl = is_global })
+		end
+	end
+
+	if step == 'start' then
+		if SERVER and not quest.disableNotify then
+			if quest.is_event then
+				self:NotifyAllQuestStart(quest.notify_lifetime, quest.notify_image, quest.notify_bgcolor)
+			else
+				self:NotifyQuestStart(quest.notify_lifetime, quest.notify_image, quest.notify_bgcolor)
+			end
+		end
+
+		if quest.global_hooks then
+			add_hooks_to_data(quest.global_hooks, true)
+		end
+
+		if SERVER and quest.global_hooksServer then
+			add_hooks_to_data(quest.global_hooksServer, true)
+		end
+
+		if CLIENT and quest.global_hooksClient then
+			add_hooks_to_data(quest.global_hooksClient, true)
+		end
+	end
+
+	if quest.steps[step] then
+		local step_data = quest.steps[step]
+		if step_data.hooks then
+			add_hooks_to_data(step_data.hooks, false)
+		end
+
+		if SERVER and step_data.hooksServer then
+			add_hooks_to_data(step_data.hooksServer, false)
+		end
+
+		if CLIENT and step_data.hooksClient then
+			add_hooks_to_data(step_data.hooksClient, false)
 		end
 	end
 

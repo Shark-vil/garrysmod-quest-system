@@ -11,37 +11,45 @@ QuestDialogue = {}
 -- @return bool - true if the entity matches validation, else false
 -------------------------------------
 function QuestDialogue:IsValidParentNPCDialogue(npc, ply, data)
+	if not npc or not IsValid(npc) then return false end
+	if not ply or not IsValid(ply) then return false end
+	if not data then return false end
+
 	local is_valid_parent = true
 
-	if data.class then
+	if data.class and npc.GetClass then
 		is_valid_parent = false
-		local npc_class = npc:GetClass():lower()
-
-		if isstring(data.class) and data.class:lower() == npc_class then
-			is_valid_parent = true
-		elseif istable(data.class) then
-			for _, v in ipairs(data.class) do
-				if v:lower() == npc_class then
-					is_valid_parent = true
-					break
+		local npc_class = npc:GetClass()
+		if isstring(npc_class) then
+			npc_class = npc_class:lower()
+			if isstring(data.class) and data.class:lower() == npc_class then
+				is_valid_parent = true
+			elseif istable(data.class) then
+				for _, v in ipairs(data.class) do
+					if v:lower() == npc_class then
+						is_valid_parent = true
+						break
+					end
 				end
 			end
 		end
 	end
 
-	if is_valid_parent and data.model then
+	if is_valid_parent and data.model and npc.GetModel then
 		is_valid_parent = false
-		local npc_model = npc:GetModel():lower()
-
-		if isstring(data.model) then
-			if data.model:lower() == npc_model then
-				is_valid_parent = true
-			end
-		elseif istable(data.model) then
-			for _, v in pairs(data.model) do
-				if v:lower() == npc_model then
+		local npc_model = npc:GetModel()
+		if isstring(npc_model) then
+			npc_model = npc_model:lower()
+			if isstring(data.model) then
+				if data.model:lower() == npc_model then
 					is_valid_parent = true
-					break
+				end
+			elseif istable(data.model) then
+				for _, v in pairs(data.model) do
+					if v:lower() == npc_model then
+						is_valid_parent = true
+						break
+					end
 				end
 			end
 		end

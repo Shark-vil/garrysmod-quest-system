@@ -24,7 +24,7 @@ snet.Callback('qsystem_on_construct', function(_, ent, quest_id, step)
 		end
 	end
 
-	if quest and quest.steps and quest.steps[step] and quest.steps[step].onStart then
-		quest.steps[step].onStart(ent)
+	if quest and quest.steps and quest.steps[step] then
+		QuestSystem:CallTableSSC(quest.steps[step], 'onStart', ent)
 	end
 end).Validator(SNET_ENTITY_VALIDATOR)
