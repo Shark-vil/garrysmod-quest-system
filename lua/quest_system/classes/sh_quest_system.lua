@@ -461,7 +461,7 @@ end
 -------------------------------------
 function QuestSystem:QuestIsValid(ply, quest_id)
 	local quest = QuestSystem:GetQuest(quest_id)
-	if quest.hide or quest.is_event then return false end
+	if quest.is_event then return false end
 	if not QuestSystem:CheckRestiction(ply, quest.restriction) then return false end
 	if quest.condition ~= nil and not quest.condition(ply) then return false end
 	local anyCondition = hook.Run('QSystem.QuestCondition', ply, quest_id)

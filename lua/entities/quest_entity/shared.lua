@@ -242,6 +242,11 @@ function ENT:Think()
 					local ent = self.trigger_entities[name][k]
 					if not table_HasValueBySeq(entities, ent) then
 						QuestSystem:CallTableSSC(trigger_functions, 'onExit', self, ent, center, trigger)
+
+						if self:HasQuester(ent) then
+							QuestSystem:CallTableSSC(trigger_functions, 'onExitQuester', self, ent, center, trigger)
+						end
+
 						table_remove(self.trigger_entities[name], k)
 					end
 				end
@@ -250,6 +255,10 @@ function ENT:Think()
 					if not table_HasValueBySeq(self.trigger_entities[name], ent) then
 						table_insert(self.trigger_entities[name], ent)
 						QuestSystem:CallTableSSC(trigger_functions, 'onEnter', self, ent, center, trigger)
+
+						if self:HasQuester(ent) then
+							QuestSystem:CallTableSSC(trigger_functions, 'onEnterQuester', self, ent, center, trigger)
+						end
 					end
 				end
 

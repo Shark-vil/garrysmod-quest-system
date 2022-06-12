@@ -58,8 +58,9 @@ function ENT:SetStep(step)
 			snet.InvokeAll('qsystem_on_construct', self, quest.id, step)
 
 			self:TimerCreate(function()
-				if quest.steps[step] and quest.steps[step].onStart and quest.steps[step].onStart(self) then
-					return
+				if quest.steps and quest.steps[step] then
+					local result = QuestSystem:CallTableSSC(quest.steps[step], 'onStart', self)
+					if result and result.basic then return end
 				end
 
 				self.StopThink = false
@@ -247,17 +248,25 @@ end
 -- Called to complete a quest and play a sound on success.
 -------------------------------------
 function ENT:Complete()
+	local quest = self:GetQuest()
+
 	self:TimerCreate(function()
-		if self:GetQuest().is_event then
+		if quest.is_event then
 			if SERVER then self:Remove() end
 			return
 		end
 
 		local ply = self:GetPlayer()
+
+		if quest.sound_complete or quest.sound_default then
+			local def = 'vo/NovaProspekt/al_done01.wav'
+			local snd = isstring(quest.sound_complete) and quest.sound_complete or def
+			ply:SendLua([[surface.PlaySound(']] .. snd .. [[')]])
+		end
+
 		local quest_id = self:GetQuestId()
 		ply:DisableQuest(quest_id)
 		ply:RemoveQuest(quest_id)
-		ply:SendLua([[surface.PlaySound('vo/NovaProspekt/al_done01.wav')]])
 	end)
 end
 
@@ -265,17 +274,25 @@ end
 -- Called to complete quest and play sound on failure
 -------------------------------------
 function ENT:Failed()
+	local quest = self:GetQuest()
+
 	self:TimerCreate(function()
-		if self:GetQuest().is_event then
+		if quest.is_event then
 			if SERVER then self:Remove() end
 			return
 		end
 
 		local ply = self:GetPlayer()
+
+		if quest.sound_failed or quest.sound_default then
+			local def = 'vo/k_lab/ba_getoutofsight01.wav'
+			local snd = isstring(quest.sound_failed) and quest.sound_failed or def
+			ply:SendLua([[surface.PlaySound(']] .. snd .. [[')]])
+		end
+
 		local quest_id = self:GetQuestId()
 		ply:DisableQuest(quest_id)
 		ply:RemoveQuest(quest_id)
-		ply:SendLua([[surface.PlaySound('vo/k_lab/ba_getoutofsight01.wav')]])
 	end)
 end
 
